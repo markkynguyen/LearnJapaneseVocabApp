@@ -1,0 +1,41 @@
+name: jvocab
+description: App học từ vựng tiếng Nhật theo phương pháp Spaced Repetition.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  go_router: ^13.2.0
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.3
+  path: ^1.9.0
+  excel: ^4.0.2
+  file_picker: ^8.0.0
+  share_plus: ^9.0.0
+  flutter_local_notifications: ^17.1.2
+  timezone: ^0.9.4
+  intl: ^0.20.2
+  permission_handler: ^11.3.1
+  flutter_tts: ^4.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  drift_dev: ^2.18.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.0
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
