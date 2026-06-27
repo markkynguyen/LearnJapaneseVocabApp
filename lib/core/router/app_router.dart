@@ -8,6 +8,10 @@ import '../../features/folders/presentation/providers/folder_provider.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/import_export/presentation/excel_export_screen.dart';
 import '../../features/import_export/presentation/excel_import_screen.dart';
+import '../../features/learning/domain/learning_models.dart';
+import '../../features/learning/presentation/learning_preview_screen.dart';
+import '../../features/learning/presentation/learning_result_screen.dart';
+import '../../features/learning/presentation/learning_session_screen.dart';
 import '../../features/review/domain/review_models.dart';
 import '../../features/review/presentation/review_result_screen.dart';
 import '../../features/review/presentation/review_session_screen.dart';
@@ -119,6 +123,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
+            path: '/learning/folder/:folderId',
+            builder: (context, state) {
+              final folderId =
+                  int.tryParse(state.pathParameters['folderId'] ?? '');
+              if (folderId == null) {
+                return const _RouteErrorScreen(
+                  message: 'Bộ từ không hợp lệ.',
+                );
+              }
+              return LearningPreviewScreen(
+                folderId: folderId,
+                request: state.extra is LearningPreviewRequest
+                    ? state.extra! as LearningPreviewRequest
+                    : const LearningPreviewRequest(),
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.learningSession,
+            builder: (context, state) => const LearningSessionScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.learningResult,
+            builder: (context, state) {
+              final summary = state.extra;
+              if (summary is! LearningResultSummary) {
+                return const _RouteErrorScreen(
+                  message: 'Không có kết quả học để hiển thị.',
+                );
+              }
+              return LearningResultScreen(summary: summary);
+            },
+          ),
+          GoRoute(
             path: AppRoutes.settings,
             builder: (context, state) => const SettingsScreen(),
             routes: [
@@ -163,6 +201,9 @@ class _AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
+    if (_hideNavigation(location)) {
+      return child;
+    }
 
     return Scaffold(
       body: child,
@@ -197,6 +238,11 @@ class _AppShell extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  bool _hideNavigation(String location) {
+    return location.startsWith(AppRoutes.review) ||
+        location.startsWith('/learning');
   }
 
   int _selectedIndex(String location) {

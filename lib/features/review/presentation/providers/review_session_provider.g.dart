@@ -22,7 +22,7 @@ final reviewRepositoryProvider = AutoDisposeProvider<ReviewRepository>.internal(
 
 typedef ReviewRepositoryRef = AutoDisposeProviderRef<ReviewRepository>;
 String _$reviewSessionControllerHash() =>
-    r'ff650c0c8801f9e66c8c61ed0fbdeaa2f9148dad';
+    r'b98c1750261b117cbda97ed7417548075c723a86';
 
 /// See also [ReviewSessionController].
 @ProviderFor(ReviewSessionController)

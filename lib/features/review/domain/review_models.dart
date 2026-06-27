@@ -25,12 +25,14 @@ class ReviewQuestion {
   const ReviewQuestion({
     required this.item,
     required this.type,
+    required this.japaneseText,
     required this.choices,
     required this.retryCount,
   });
 
   final VocabWithProgress item;
   final ReviewQuestionType type;
+  final String japaneseText;
   final List<String> choices;
   final int retryCount;
 
@@ -42,7 +44,7 @@ class ReviewQuestion {
         return vocab.meaning;
       case ReviewQuestionType.write:
       case ReviewQuestionType.chooseWord:
-        return _displayJapanese(vocab);
+        return japaneseText;
     }
   }
 
@@ -55,7 +57,7 @@ class ReviewQuestion {
       case ReviewQuestionType.chooseWord:
         return vocab.meaning;
       case ReviewQuestionType.chooseMeaning:
-        return _displayJapanese(vocab);
+        return japaneseText;
     }
   }
 
@@ -63,15 +65,10 @@ class ReviewQuestion {
     return ReviewQuestion(
       item: item,
       type: type,
+      japaneseText: japaneseText,
       choices: choices,
       retryCount: retryCount + 1,
     );
-  }
-
-  static String _displayJapanese(VocabularyEntry vocab) {
-    return (vocab.kanji?.trim().isNotEmpty ?? false)
-        ? vocab.kanji!.trim()
-        : vocab.kana.trim();
   }
 }
 

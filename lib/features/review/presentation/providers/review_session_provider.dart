@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../../../../core/utils/quiz_utils.dart';
 import '../../domain/review_models.dart';
 import '../../domain/review_repository.dart';
 
@@ -140,15 +141,8 @@ class ReviewSessionController extends _$ReviewSessionController {
   }
 
   bool _isCorrect(ReviewQuestion question, String answer) {
-    if (question.type == ReviewQuestionType.write) {
-      final vocab = question.item.vocab;
-      final accepted = {
-        if (vocab.kanji?.trim().isNotEmpty ?? false) vocab.kanji!.trim(),
-        vocab.kana.trim(),
-      };
-      return accepted.any((value) => _normalize(answer) == _normalize(value));
-    }
-    return _normalize(answer) == _normalize(question.expectedAnswer);
+    return normalizeQuizAnswer(answer) ==
+        normalizeQuizAnswer(question.expectedAnswer);
   }
 
   Map<int, ReviewWordResult> _withDefaultSrsDecisions(
@@ -160,9 +154,5 @@ class ReviewSessionController extends _$ReviewSessionController {
             ? entry.value.copyWith(srsDecision: ReviewSrsDecision.minusOne)
             : entry.value,
     };
-  }
-
-  String _normalize(String value) {
-    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 }

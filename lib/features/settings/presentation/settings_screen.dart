@@ -44,6 +44,83 @@ class SettingsScreen extends ConsumerWidget {
                       .updateThemeMode(value),
                 ),
                 const SizedBox(height: 22),
+                const _SectionTitle(title: 'Hiển thị trong quiz'),
+                const SizedBox(height: 12),
+                _QuizScriptCard(
+                  selected: settings.quizJapaneseScript,
+                  onChanged: (value) => ref
+                      .read(settingsControllerProvider.notifier)
+                      .updateQuizJapaneseScript(value),
+                ),
+                const SizedBox(height: 22),
+                const _SectionTitle(title: 'Học từ mới'),
+                const SizedBox(height: 12),
+                Card(
+                  child: Column(
+                    children: [
+                      _NumberSettingTile(
+                        icon: Icons.auto_stories_rounded,
+                        title: 'Số từ mới mỗi phiên',
+                        subtitle: 'Giới hạn từ 1 đến 100 từ.',
+                        value: settings.newWordSessionSize,
+                        min: 1,
+                        max: 100,
+                        onChanged: (value) => ref
+                            .read(settingsControllerProvider.notifier)
+                            .updateNewWordSessionSize(value),
+                      ),
+                      const Divider(height: 1),
+                      _NumberSettingTile(
+                        icon: Icons.hearing_rounded,
+                        title: 'Nghe',
+                        subtitle: 'Số câu nghe cho mỗi từ mới.',
+                        value: settings.newWordListenCount,
+                        min: 0,
+                        max: 10,
+                        onChanged: (value) => ref
+                            .read(settingsControllerProvider.notifier)
+                            .updateNewWordListenCount(value),
+                      ),
+                      const Divider(height: 1),
+                      _NumberSettingTile(
+                        icon: Icons.edit_rounded,
+                        title: 'Viết',
+                        subtitle: 'Số lượt viết chấm điểm cho mỗi từ mới.',
+                        value: settings.newWordWriteCount,
+                        min: 0,
+                        max: 10,
+                        onChanged: (value) => ref
+                            .read(settingsControllerProvider.notifier)
+                            .updateNewWordWriteCount(value),
+                      ),
+                      const Divider(height: 1),
+                      _NumberSettingTile(
+                        icon: Icons.translate_rounded,
+                        title: 'Chọn từ',
+                        subtitle: 'Chọn chữ Nhật theo nghĩa.',
+                        value: settings.newWordChooseWordCount,
+                        min: 0,
+                        max: 10,
+                        onChanged: (value) => ref
+                            .read(settingsControllerProvider.notifier)
+                            .updateNewWordChooseWordCount(value),
+                      ),
+                      const Divider(height: 1),
+                      _NumberSettingTile(
+                        icon: Icons.quiz_rounded,
+                        title: 'Chọn nghĩa',
+                        subtitle: 'Chọn nghĩa theo chữ Nhật.',
+                        value: settings.newWordChooseMeaningCount,
+                        min: 0,
+                        max: 10,
+                        onChanged: (value) => ref
+                            .read(settingsControllerProvider.notifier)
+                            .updateNewWordChooseMeaningCount(value),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
                 const _SectionTitle(title: 'Phiên ôn tập'),
                 const SizedBox(height: 12),
                 Card(
@@ -76,7 +153,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 22),
-                const _SectionTitle(title: 'Loại câu hỏi'),
+                const _SectionTitle(title: 'Loại câu hỏi ôn tập'),
                 const SizedBox(height: 12),
                 Card(
                   child: Column(
@@ -565,6 +642,72 @@ class _ThemeCard extends StatelessWidget {
                 onSelectionChanged:
                     isBusy ? null : (value) => onChanged(value.single),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuizScriptCard extends StatelessWidget {
+  const _QuizScriptCard({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final normalized = selected == quizScriptKanaValue
+        ? quizScriptKanaValue
+        : quizScriptKanjiValue;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.translate_rounded, color: colors.primary),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Chữ Nhật dùng để hỏi',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: quizScriptKanjiValue,
+                    label: Text('Kanji'),
+                  ),
+                  ButtonSegment(
+                    value: quizScriptKanaValue,
+                    label: Text('Kana'),
+                  ),
+                ],
+                selected: {normalized},
+                onSelectionChanged: (value) => onChanged(value.single),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              normalized == quizScriptKanjiValue
+                  ? 'Ưu tiên kanji; từ không có kanji sẽ dùng kana.'
+                  : 'Mọi câu hỏi và lựa chọn sẽ dùng kana.',
+              style: TextStyle(color: colors.onSurfaceVariant),
             ),
           ],
         ),

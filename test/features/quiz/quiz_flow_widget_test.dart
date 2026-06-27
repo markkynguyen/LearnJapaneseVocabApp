@@ -1,0 +1,485 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:jvocab/core/audio/audio_service.dart';
+import 'package:jvocab/core/database/app_database.dart';
+import 'package:jvocab/core/router/app_router.dart';
+import 'package:jvocab/core/router/app_routes.dart';
+import 'package:jvocab/features/learning/domain/learning_models.dart';
+import 'package:jvocab/features/learning/presentation/learning_preview_screen.dart';
+import 'package:jvocab/features/learning/presentation/providers/learning_provider.dart';
+import 'package:jvocab/features/review/domain/review_models.dart';
+import 'package:jvocab/features/review/presentation/providers/review_session_provider.dart';
+
+void main() {
+  test('review exit route follows the session source', () {
+    expect(AppRoutes.reviewExit(null), AppRoutes.home);
+    expect(AppRoutes.reviewExit(7), AppRoutes.folderVocab(7));
+  });
+
+  testWidgets('new-word preview uses a readable flashcard layout on mobile',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final item = _item(
+      level: 0,
+      example: '毎日ご飯を食べる。',
+      pitchAccent: 'HHL',
+    );
+    final session = LearningSessionState(
+      folderId: 1,
+      questions: const [],
+      currentIndex: 0,
+      resultsByVocabId: {
+        item.vocab.id: LearningWordResult(
+          item: item,
+          totalRequirements: 1,
+        ),
+      },
+      retryLimit: 2,
+      quizScript: 'kanji',
+    );
+    final audio = _FakeAudioService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          learningControllerProvider.overrideWith(
+            () => _FakeLearningController(session),
+          ),
+          audioServiceProvider.overrideWith((ref) => audio),
+        ],
+        child: const MaterialApp(
+          home: LearningPreviewScreen(folderId: 1),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(audio.spokenVocabIds, [1]);
+    expect(find.text('Từ mới 1/1'), findsOneWidget);
+    expect(find.text('Nghĩa'), findsOneWidget);
+    expect(find.text('Động từ nhóm 2'), findsOneWidget);
+    expect(find.text('毎日ご飯を食べる。'), findsOneWidget);
+    expect(find.text('Bắt đầu quiz'), findsOneWidget);
+    expect(find.byIcon(Icons.auto_stories_rounded), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('new-word preview speaks again when the visible card changes',
+      (tester) async {
+    final first = _item(level: 0);
+    final second = _item(id: 2, level: 0, meaning: 'uống');
+    final session = LearningSessionState(
+      folderId: 1,
+      questions: const [],
+      currentIndex: 0,
+      resultsByVocabId: {
+        first.vocab.id: LearningWordResult(
+          item: first,
+          totalRequirements: 1,
+        ),
+        second.vocab.id: LearningWordResult(
+          item: second,
+          totalRequirements: 1,
+        ),
+      },
+      retryLimit: 2,
+      quizScript: 'kanji',
+    );
+    final audio = _FakeAudioService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          learningControllerProvider.overrideWith(
+            () => _FakeLearningController(session),
+          ),
+          audioServiceProvider.overrideWith((ref) => audio),
+        ],
+        child: const MaterialApp(
+          home: LearningPreviewScreen(folderId: 1),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(audio.spokenVocabIds, [1]);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Tiếp'));
+    await tester.pumpAndSettle();
+    expect(audio.spokenVocabIds, [1, 2]);
+  });
+
+  testWidgets(
+      'learning quiz hides bottom navigation and shows choose-word note',
+      (tester) async {
+    final item = _item(level: 0);
+    final question = LearningQuestion(
+      item: item,
+      type: LearningQuestionType.chooseWord,
+      japaneseText: '食べる',
+      choices: const ['食べる', '飲む', '行く', '寝る'],
+      requirementId: 'choose-word-1',
+    );
+    final session = LearningSessionState(
+      folderId: 1,
+      questions: [question],
+      currentIndex: 0,
+      resultsByVocabId: {
+        item.vocab.id: LearningWordResult(
+          item: item,
+          totalRequirements: 1,
+        ),
+      },
+      retryLimit: 2,
+      quizScript: 'kanji',
+    );
+    final container = ProviderContainer(
+      overrides: [
+        learningControllerProvider.overrideWith(
+          () => _FakeLearningController(session),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider)
+      ..go(AppRoutes.learningSession);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.text('Động từ nhóm 2'), findsOneWidget);
+    expect(find.text('食べる'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('review quiz hides bottom navigation and shows choose-word note',
+      (tester) async {
+    final item = _item(level: 1);
+    final question = ReviewQuestion(
+      item: item,
+      type: ReviewQuestionType.chooseWord,
+      japaneseText: '食べる',
+      choices: const ['食べる', '飲む', '行く', '寝る'],
+      retryCount: 0,
+    );
+    final session = ReviewSessionState(
+      questions: [question],
+      currentIndex: 0,
+      resultsByVocabId: {
+        item.vocab.id: ReviewWordResult(
+          item: item,
+          wasDueAtStart: true,
+        ),
+      },
+      sessionStartTime: 0,
+      retryLimit: 2,
+      isFinished: false,
+      folderId: 1,
+    );
+    final container = ProviderContainer(
+      overrides: [
+        reviewSessionControllerProvider.overrideWith(
+          () => _FakeReviewController(session),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider)
+      ..go(AppRoutes.reviewSession);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.text('Động từ nhóm 2'), findsOneWidget);
+    expect(find.text('食べる'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('feedback audio finishes before the next listening prompt plays',
+      (tester) async {
+    final first = _item(level: 0);
+    final second = _item(id: 2, level: 0, meaning: 'uống');
+    final questions = [
+      LearningQuestion(
+        item: first,
+        type: LearningQuestionType.chooseWord,
+        japaneseText: '食べる',
+        choices: const ['食べる', '飲む', '行く', '寝る'],
+        requirementId: 'choose-word-1',
+      ),
+      LearningQuestion(
+        item: second,
+        type: LearningQuestionType.listen,
+        japaneseText: '飲む',
+        choices: const ['uống', 'ăn', 'đi', 'ngủ'],
+        requirementId: 'listen-2',
+      ),
+    ];
+    final session = LearningSessionState(
+      folderId: 1,
+      questions: questions,
+      currentIndex: 0,
+      resultsByVocabId: {
+        first.vocab.id: LearningWordResult(
+          item: first,
+          totalRequirements: 1,
+        ),
+        second.vocab.id: LearningWordResult(
+          item: second,
+          totalRequirements: 1,
+        ),
+      },
+      retryLimit: 2,
+      quizScript: 'kanji',
+    );
+    final audio = _FakeAudioService();
+    final container = ProviderContainer(
+      overrides: [
+        learningControllerProvider.overrideWith(
+          () => _FakeLearningController(session),
+        ),
+        audioServiceProvider.overrideWith((ref) => audio),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider)
+      ..go(AppRoutes.learningSession);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '食べる'));
+    await tester.pumpAndSettle();
+    expect(audio.spokenVocabIds, [1]);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Tiếp tục'));
+    await tester.pumpAndSettle();
+    expect(audio.spokenVocabIds, [1, 2]);
+
+    await tester.pump();
+    expect(audio.spokenVocabIds, [1, 2]);
+  });
+
+  testWidgets('guided-write feedback shows details without no-score notice',
+      (tester) async {
+    final item = _item(
+      level: 0,
+      example: '毎日ご飯を食べる。',
+    );
+    final session = LearningSessionState(
+      folderId: 1,
+      questions: [
+        LearningQuestion(
+          item: item,
+          type: LearningQuestionType.guidedWrite,
+          japaneseText: '食べる',
+          choices: const [],
+        ),
+      ],
+      currentIndex: 0,
+      resultsByVocabId: {
+        item.vocab.id: LearningWordResult(
+          item: item,
+          totalRequirements: 1,
+        ),
+      },
+      retryLimit: 2,
+      quizScript: 'kanji',
+    );
+    final audio = _FakeAudioService();
+    final container = ProviderContainer(
+      overrides: [
+        learningControllerProvider.overrideWith(
+          () => _FakeLearningController(session),
+        ),
+        audioServiceProvider.overrideWith((ref) => audio),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider)
+      ..go(AppRoutes.learningSession);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Đã viết xong'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đáp án'), findsOneWidget);
+    expect(find.text('Đáp án đúng'), findsOneWidget);
+    expect(find.text('Lượt luyện tập không tính điểm'), findsNothing);
+    expect(find.text('毎日ご飯を食べる。'), findsOneWidget);
+    expect(find.text('Động từ nhóm 2'), findsOneWidget);
+    expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+  });
+
+  testWidgets('last learning answer routes directly to the result screen',
+      (tester) async {
+    final item = _item(level: 0);
+    final session = LearningSessionState(
+      folderId: 1,
+      questions: [
+        LearningQuestion(
+          item: item,
+          type: LearningQuestionType.chooseWord,
+          japaneseText: '食べる',
+          choices: const ['食べる', '飲む', '行く', '寝る'],
+          requirementId: 'choose-word-1',
+        ),
+      ],
+      currentIndex: 0,
+      resultsByVocabId: {
+        item.vocab.id: LearningWordResult(
+          item: item,
+          totalRequirements: 1,
+        ),
+      },
+      retryLimit: 2,
+      quizScript: 'kanji',
+    );
+    final controller = _FakeLearningController(session);
+    final audio = _FakeAudioService();
+    final container = ProviderContainer(
+      overrides: [
+        learningControllerProvider.overrideWith(() => controller),
+        audioServiceProvider.overrideWith((ref) => audio),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider)
+      ..go(AppRoutes.learningSession);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.widgetWithText(OutlinedButton, '食べる'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Xem kết quả'), findsNothing);
+    expect(controller.finishCalled, isFalse);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Tiếp tục'));
+    await tester.pumpAndSettle();
+
+    expect(controller.finishCalled, isTrue);
+    expect(find.text('Kết quả học từ mới'), findsOneWidget);
+  });
+}
+
+class _FakeLearningController extends LearningController {
+  _FakeLearningController(this.initialState);
+
+  final LearningSessionState initialState;
+  bool finishCalled = false;
+
+  @override
+  AsyncValue<LearningSessionState?> build() => AsyncData(initialState);
+
+  @override
+  Future<void> start({
+    required int folderId,
+    List<int> excludeIds = const [],
+  }) async {}
+
+  @override
+  Future<void> startWithWords({
+    required int folderId,
+    required List<VocabWithProgress> words,
+  }) async {}
+
+  @override
+  Future<LearningResultSummary?> finish() async {
+    finishCalled = true;
+    final current = state.valueOrNull;
+    if (current == null) {
+      return null;
+    }
+    return LearningResultSummary(
+      folderId: current.folderId,
+      words: current.resultsByVocabId.values.toList(),
+    );
+  }
+}
+
+class _FakeReviewController extends ReviewSessionController {
+  _FakeReviewController(this.initialState);
+
+  final ReviewSessionState initialState;
+
+  @override
+  AsyncValue<ReviewSessionState?> build() => AsyncData(initialState);
+}
+
+class _FakeAudioService extends AudioService {
+  final List<int> spokenVocabIds = [];
+
+  @override
+  Future<void> speak(VocabularyEntry vocab) async {
+    spokenVocabIds.add(vocab.id);
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+VocabWithProgress _item({
+  int id = 1,
+  required int level,
+  String meaning = 'ăn',
+  String? example,
+  String? pitchAccent,
+}) {
+  return VocabWithProgress(
+    vocab: VocabularyEntry(
+      id: id,
+      folderId: 1,
+      kanji: id == 1 ? '食べる' : '飲む',
+      kana: id == 1 ? 'たべる' : 'のむ',
+      romaji: id == 1 ? 'taberu' : 'nomu',
+      meaning: meaning,
+      pitchAccent: pitchAccent,
+      example: example,
+      note: 'Động từ nhóm 2',
+      isFavorite: false,
+      createdAt: 0,
+    ),
+    progress: SrsProgressEntry(
+      id: id,
+      vocabId: id,
+      level: level,
+      intervalDays: level == 0 ? 0 : 1,
+      nextReviewAt: 0,
+      correctCount: 0,
+      wrongCount: 0,
+    ),
+  );
+}

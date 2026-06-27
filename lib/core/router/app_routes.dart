@@ -8,10 +8,15 @@ abstract final class AppRoutes {
   static const review = '/review';
   static const reviewSession = '/review/session';
   static const reviewResult = '/review/result';
+  static const learningSession = '/learning/session';
+  static const learningResult = '/learning/result';
 
   static String editFolder(int id) => '/folders/$id/edit';
   static String folderVocab(int id) => '/folders/$id/vocab';
   static String folderFlashcards(int id) => '/folders/$id/flashcards';
+  static String learningPreview(int folderId) => '/learning/folder/$folderId';
+  static String reviewExit(int? folderId) =>
+      folderId == null ? home : folderVocab(folderId);
   static String reviewFolder(
     int id, {
     bool favoritesOnly = false,

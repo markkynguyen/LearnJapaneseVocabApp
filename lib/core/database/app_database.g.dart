@@ -1440,6 +1440,54 @@ class $SettingsTable extends Settings
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(2));
+  static const VerificationMeta _newWordSessionSizeMeta =
+      const VerificationMeta('newWordSessionSize');
+  @override
+  late final GeneratedColumn<int> newWordSessionSize = GeneratedColumn<int>(
+      'new_word_session_size', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(5));
+  static const VerificationMeta _newWordListenCountMeta =
+      const VerificationMeta('newWordListenCount');
+  @override
+  late final GeneratedColumn<int> newWordListenCount = GeneratedColumn<int>(
+      'new_word_listen_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _newWordWriteCountMeta =
+      const VerificationMeta('newWordWriteCount');
+  @override
+  late final GeneratedColumn<int> newWordWriteCount = GeneratedColumn<int>(
+      'new_word_write_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _newWordChooseWordCountMeta =
+      const VerificationMeta('newWordChooseWordCount');
+  @override
+  late final GeneratedColumn<int> newWordChooseWordCount = GeneratedColumn<int>(
+      'new_word_choose_word_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _newWordChooseMeaningCountMeta =
+      const VerificationMeta('newWordChooseMeaningCount');
+  @override
+  late final GeneratedColumn<int> newWordChooseMeaningCount =
+      GeneratedColumn<int>('new_word_choose_meaning_count', aliasedName, false,
+          type: DriftSqlType.int,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(1));
+  static const VerificationMeta _quizJapaneseScriptMeta =
+      const VerificationMeta('quizJapaneseScript');
+  @override
+  late final GeneratedColumn<String> quizJapaneseScript =
+      GeneratedColumn<String>('quiz_japanese_script', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant('kanji'));
   static const VerificationMeta _themeModeMeta =
       const VerificationMeta('themeMode');
   @override
@@ -1540,6 +1588,12 @@ class $SettingsTable extends Settings
         quizChooseWordCount,
         quizChooseMeaningCount,
         quizRetryLimit,
+        newWordSessionSize,
+        newWordListenCount,
+        newWordWriteCount,
+        newWordChooseWordCount,
+        newWordChooseMeaningCount,
+        quizJapaneseScript,
         themeMode,
         srsLevel1IntervalDays,
         srsLevel2IntervalDays,
@@ -1629,6 +1683,44 @@ class $SettingsTable extends Settings
           _quizRetryLimitMeta,
           quizRetryLimit.isAcceptableOrUnknown(
               data['quiz_retry_limit']!, _quizRetryLimitMeta));
+    }
+    if (data.containsKey('new_word_session_size')) {
+      context.handle(
+          _newWordSessionSizeMeta,
+          newWordSessionSize.isAcceptableOrUnknown(
+              data['new_word_session_size']!, _newWordSessionSizeMeta));
+    }
+    if (data.containsKey('new_word_listen_count')) {
+      context.handle(
+          _newWordListenCountMeta,
+          newWordListenCount.isAcceptableOrUnknown(
+              data['new_word_listen_count']!, _newWordListenCountMeta));
+    }
+    if (data.containsKey('new_word_write_count')) {
+      context.handle(
+          _newWordWriteCountMeta,
+          newWordWriteCount.isAcceptableOrUnknown(
+              data['new_word_write_count']!, _newWordWriteCountMeta));
+    }
+    if (data.containsKey('new_word_choose_word_count')) {
+      context.handle(
+          _newWordChooseWordCountMeta,
+          newWordChooseWordCount.isAcceptableOrUnknown(
+              data['new_word_choose_word_count']!,
+              _newWordChooseWordCountMeta));
+    }
+    if (data.containsKey('new_word_choose_meaning_count')) {
+      context.handle(
+          _newWordChooseMeaningCountMeta,
+          newWordChooseMeaningCount.isAcceptableOrUnknown(
+              data['new_word_choose_meaning_count']!,
+              _newWordChooseMeaningCountMeta));
+    }
+    if (data.containsKey('quiz_japanese_script')) {
+      context.handle(
+          _quizJapaneseScriptMeta,
+          quizJapaneseScript.isAcceptableOrUnknown(
+              data['quiz_japanese_script']!, _quizJapaneseScriptMeta));
     }
     if (data.containsKey('theme_mode')) {
       context.handle(_themeModeMeta,
@@ -1722,6 +1814,20 @@ class $SettingsTable extends Settings
           data['${effectivePrefix}quiz_choose_meaning_count'])!,
       quizRetryLimit: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}quiz_retry_limit'])!,
+      newWordSessionSize: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}new_word_session_size'])!,
+      newWordListenCount: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}new_word_listen_count'])!,
+      newWordWriteCount: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}new_word_write_count'])!,
+      newWordChooseWordCount: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}new_word_choose_word_count'])!,
+      newWordChooseMeaningCount: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}new_word_choose_meaning_count'])!,
+      quizJapaneseScript: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}quiz_japanese_script'])!,
       themeMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}theme_mode'])!,
       srsLevel1IntervalDays: attachedDatabase.typeMapping.read(
@@ -1770,6 +1876,12 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
   final int quizChooseWordCount;
   final int quizChooseMeaningCount;
   final int quizRetryLimit;
+  final int newWordSessionSize;
+  final int newWordListenCount;
+  final int newWordWriteCount;
+  final int newWordChooseWordCount;
+  final int newWordChooseMeaningCount;
+  final String quizJapaneseScript;
   final String themeMode;
   final double srsLevel1IntervalDays;
   final double srsLevel2IntervalDays;
@@ -1793,6 +1905,12 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
       required this.quizChooseWordCount,
       required this.quizChooseMeaningCount,
       required this.quizRetryLimit,
+      required this.newWordSessionSize,
+      required this.newWordListenCount,
+      required this.newWordWriteCount,
+      required this.newWordChooseWordCount,
+      required this.newWordChooseMeaningCount,
+      required this.quizJapaneseScript,
       required this.themeMode,
       required this.srsLevel1IntervalDays,
       required this.srsLevel2IntervalDays,
@@ -1818,6 +1936,13 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
     map['quiz_choose_word_count'] = Variable<int>(quizChooseWordCount);
     map['quiz_choose_meaning_count'] = Variable<int>(quizChooseMeaningCount);
     map['quiz_retry_limit'] = Variable<int>(quizRetryLimit);
+    map['new_word_session_size'] = Variable<int>(newWordSessionSize);
+    map['new_word_listen_count'] = Variable<int>(newWordListenCount);
+    map['new_word_write_count'] = Variable<int>(newWordWriteCount);
+    map['new_word_choose_word_count'] = Variable<int>(newWordChooseWordCount);
+    map['new_word_choose_meaning_count'] =
+        Variable<int>(newWordChooseMeaningCount);
+    map['quiz_japanese_script'] = Variable<String>(quizJapaneseScript);
     map['theme_mode'] = Variable<String>(themeMode);
     map['srs_level1_interval_days'] = Variable<double>(srsLevel1IntervalDays);
     map['srs_level2_interval_days'] = Variable<double>(srsLevel2IntervalDays);
@@ -1845,6 +1970,12 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
       quizChooseWordCount: Value(quizChooseWordCount),
       quizChooseMeaningCount: Value(quizChooseMeaningCount),
       quizRetryLimit: Value(quizRetryLimit),
+      newWordSessionSize: Value(newWordSessionSize),
+      newWordListenCount: Value(newWordListenCount),
+      newWordWriteCount: Value(newWordWriteCount),
+      newWordChooseWordCount: Value(newWordChooseWordCount),
+      newWordChooseMeaningCount: Value(newWordChooseMeaningCount),
+      quizJapaneseScript: Value(quizJapaneseScript),
       themeMode: Value(themeMode),
       srsLevel1IntervalDays: Value(srsLevel1IntervalDays),
       srsLevel2IntervalDays: Value(srsLevel2IntervalDays),
@@ -1876,6 +2007,15 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
       quizChooseMeaningCount:
           serializer.fromJson<int>(json['quizChooseMeaningCount']),
       quizRetryLimit: serializer.fromJson<int>(json['quizRetryLimit']),
+      newWordSessionSize: serializer.fromJson<int>(json['newWordSessionSize']),
+      newWordListenCount: serializer.fromJson<int>(json['newWordListenCount']),
+      newWordWriteCount: serializer.fromJson<int>(json['newWordWriteCount']),
+      newWordChooseWordCount:
+          serializer.fromJson<int>(json['newWordChooseWordCount']),
+      newWordChooseMeaningCount:
+          serializer.fromJson<int>(json['newWordChooseMeaningCount']),
+      quizJapaneseScript:
+          serializer.fromJson<String>(json['quizJapaneseScript']),
       themeMode: serializer.fromJson<String>(json['themeMode']),
       srsLevel1IntervalDays:
           serializer.fromJson<double>(json['srsLevel1IntervalDays']),
@@ -1911,6 +2051,13 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
       'quizChooseWordCount': serializer.toJson<int>(quizChooseWordCount),
       'quizChooseMeaningCount': serializer.toJson<int>(quizChooseMeaningCount),
       'quizRetryLimit': serializer.toJson<int>(quizRetryLimit),
+      'newWordSessionSize': serializer.toJson<int>(newWordSessionSize),
+      'newWordListenCount': serializer.toJson<int>(newWordListenCount),
+      'newWordWriteCount': serializer.toJson<int>(newWordWriteCount),
+      'newWordChooseWordCount': serializer.toJson<int>(newWordChooseWordCount),
+      'newWordChooseMeaningCount':
+          serializer.toJson<int>(newWordChooseMeaningCount),
+      'quizJapaneseScript': serializer.toJson<String>(quizJapaneseScript),
       'themeMode': serializer.toJson<String>(themeMode),
       'srsLevel1IntervalDays': serializer.toJson<double>(srsLevel1IntervalDays),
       'srsLevel2IntervalDays': serializer.toJson<double>(srsLevel2IntervalDays),
@@ -1937,6 +2084,12 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
           int? quizChooseWordCount,
           int? quizChooseMeaningCount,
           int? quizRetryLimit,
+          int? newWordSessionSize,
+          int? newWordListenCount,
+          int? newWordWriteCount,
+          int? newWordChooseWordCount,
+          int? newWordChooseMeaningCount,
+          String? quizJapaneseScript,
           String? themeMode,
           double? srsLevel1IntervalDays,
           double? srsLevel2IntervalDays,
@@ -1961,6 +2114,14 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
         quizChooseMeaningCount:
             quizChooseMeaningCount ?? this.quizChooseMeaningCount,
         quizRetryLimit: quizRetryLimit ?? this.quizRetryLimit,
+        newWordSessionSize: newWordSessionSize ?? this.newWordSessionSize,
+        newWordListenCount: newWordListenCount ?? this.newWordListenCount,
+        newWordWriteCount: newWordWriteCount ?? this.newWordWriteCount,
+        newWordChooseWordCount:
+            newWordChooseWordCount ?? this.newWordChooseWordCount,
+        newWordChooseMeaningCount:
+            newWordChooseMeaningCount ?? this.newWordChooseMeaningCount,
+        quizJapaneseScript: quizJapaneseScript ?? this.quizJapaneseScript,
         themeMode: themeMode ?? this.themeMode,
         srsLevel1IntervalDays:
             srsLevel1IntervalDays ?? this.srsLevel1IntervalDays,
@@ -2012,6 +2173,24 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
       quizRetryLimit: data.quizRetryLimit.present
           ? data.quizRetryLimit.value
           : this.quizRetryLimit,
+      newWordSessionSize: data.newWordSessionSize.present
+          ? data.newWordSessionSize.value
+          : this.newWordSessionSize,
+      newWordListenCount: data.newWordListenCount.present
+          ? data.newWordListenCount.value
+          : this.newWordListenCount,
+      newWordWriteCount: data.newWordWriteCount.present
+          ? data.newWordWriteCount.value
+          : this.newWordWriteCount,
+      newWordChooseWordCount: data.newWordChooseWordCount.present
+          ? data.newWordChooseWordCount.value
+          : this.newWordChooseWordCount,
+      newWordChooseMeaningCount: data.newWordChooseMeaningCount.present
+          ? data.newWordChooseMeaningCount.value
+          : this.newWordChooseMeaningCount,
+      quizJapaneseScript: data.quizJapaneseScript.present
+          ? data.quizJapaneseScript.value
+          : this.quizJapaneseScript,
       themeMode: data.themeMode.present ? data.themeMode.value : this.themeMode,
       srsLevel1IntervalDays: data.srsLevel1IntervalDays.present
           ? data.srsLevel1IntervalDays.value
@@ -2058,6 +2237,12 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
           ..write('quizChooseWordCount: $quizChooseWordCount, ')
           ..write('quizChooseMeaningCount: $quizChooseMeaningCount, ')
           ..write('quizRetryLimit: $quizRetryLimit, ')
+          ..write('newWordSessionSize: $newWordSessionSize, ')
+          ..write('newWordListenCount: $newWordListenCount, ')
+          ..write('newWordWriteCount: $newWordWriteCount, ')
+          ..write('newWordChooseWordCount: $newWordChooseWordCount, ')
+          ..write('newWordChooseMeaningCount: $newWordChooseMeaningCount, ')
+          ..write('quizJapaneseScript: $quizJapaneseScript, ')
           ..write('themeMode: $themeMode, ')
           ..write('srsLevel1IntervalDays: $srsLevel1IntervalDays, ')
           ..write('srsLevel2IntervalDays: $srsLevel2IntervalDays, ')
@@ -2086,6 +2271,12 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
         quizChooseWordCount,
         quizChooseMeaningCount,
         quizRetryLimit,
+        newWordSessionSize,
+        newWordListenCount,
+        newWordWriteCount,
+        newWordChooseWordCount,
+        newWordChooseMeaningCount,
+        quizJapaneseScript,
         themeMode,
         srsLevel1IntervalDays,
         srsLevel2IntervalDays,
@@ -2113,6 +2304,12 @@ class AppSettings extends DataClass implements Insertable<AppSettings> {
           other.quizChooseWordCount == this.quizChooseWordCount &&
           other.quizChooseMeaningCount == this.quizChooseMeaningCount &&
           other.quizRetryLimit == this.quizRetryLimit &&
+          other.newWordSessionSize == this.newWordSessionSize &&
+          other.newWordListenCount == this.newWordListenCount &&
+          other.newWordWriteCount == this.newWordWriteCount &&
+          other.newWordChooseWordCount == this.newWordChooseWordCount &&
+          other.newWordChooseMeaningCount == this.newWordChooseMeaningCount &&
+          other.quizJapaneseScript == this.quizJapaneseScript &&
           other.themeMode == this.themeMode &&
           other.srsLevel1IntervalDays == this.srsLevel1IntervalDays &&
           other.srsLevel2IntervalDays == this.srsLevel2IntervalDays &&
@@ -2138,6 +2335,12 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
   final Value<int> quizChooseWordCount;
   final Value<int> quizChooseMeaningCount;
   final Value<int> quizRetryLimit;
+  final Value<int> newWordSessionSize;
+  final Value<int> newWordListenCount;
+  final Value<int> newWordWriteCount;
+  final Value<int> newWordChooseWordCount;
+  final Value<int> newWordChooseMeaningCount;
+  final Value<String> quizJapaneseScript;
   final Value<String> themeMode;
   final Value<double> srsLevel1IntervalDays;
   final Value<double> srsLevel2IntervalDays;
@@ -2161,6 +2364,12 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
     this.quizChooseWordCount = const Value.absent(),
     this.quizChooseMeaningCount = const Value.absent(),
     this.quizRetryLimit = const Value.absent(),
+    this.newWordSessionSize = const Value.absent(),
+    this.newWordListenCount = const Value.absent(),
+    this.newWordWriteCount = const Value.absent(),
+    this.newWordChooseWordCount = const Value.absent(),
+    this.newWordChooseMeaningCount = const Value.absent(),
+    this.quizJapaneseScript = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.srsLevel1IntervalDays = const Value.absent(),
     this.srsLevel2IntervalDays = const Value.absent(),
@@ -2185,6 +2394,12 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
     this.quizChooseWordCount = const Value.absent(),
     this.quizChooseMeaningCount = const Value.absent(),
     this.quizRetryLimit = const Value.absent(),
+    this.newWordSessionSize = const Value.absent(),
+    this.newWordListenCount = const Value.absent(),
+    this.newWordWriteCount = const Value.absent(),
+    this.newWordChooseWordCount = const Value.absent(),
+    this.newWordChooseMeaningCount = const Value.absent(),
+    this.quizJapaneseScript = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.srsLevel1IntervalDays = const Value.absent(),
     this.srsLevel2IntervalDays = const Value.absent(),
@@ -2209,6 +2424,12 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
     Expression<int>? quizChooseWordCount,
     Expression<int>? quizChooseMeaningCount,
     Expression<int>? quizRetryLimit,
+    Expression<int>? newWordSessionSize,
+    Expression<int>? newWordListenCount,
+    Expression<int>? newWordWriteCount,
+    Expression<int>? newWordChooseWordCount,
+    Expression<int>? newWordChooseMeaningCount,
+    Expression<String>? quizJapaneseScript,
     Expression<String>? themeMode,
     Expression<double>? srsLevel1IntervalDays,
     Expression<double>? srsLevel2IntervalDays,
@@ -2235,6 +2456,17 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
       if (quizChooseMeaningCount != null)
         'quiz_choose_meaning_count': quizChooseMeaningCount,
       if (quizRetryLimit != null) 'quiz_retry_limit': quizRetryLimit,
+      if (newWordSessionSize != null)
+        'new_word_session_size': newWordSessionSize,
+      if (newWordListenCount != null)
+        'new_word_listen_count': newWordListenCount,
+      if (newWordWriteCount != null) 'new_word_write_count': newWordWriteCount,
+      if (newWordChooseWordCount != null)
+        'new_word_choose_word_count': newWordChooseWordCount,
+      if (newWordChooseMeaningCount != null)
+        'new_word_choose_meaning_count': newWordChooseMeaningCount,
+      if (quizJapaneseScript != null)
+        'quiz_japanese_script': quizJapaneseScript,
       if (themeMode != null) 'theme_mode': themeMode,
       if (srsLevel1IntervalDays != null)
         'srs_level1_interval_days': srsLevel1IntervalDays,
@@ -2268,6 +2500,12 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
       Value<int>? quizChooseWordCount,
       Value<int>? quizChooseMeaningCount,
       Value<int>? quizRetryLimit,
+      Value<int>? newWordSessionSize,
+      Value<int>? newWordListenCount,
+      Value<int>? newWordWriteCount,
+      Value<int>? newWordChooseWordCount,
+      Value<int>? newWordChooseMeaningCount,
+      Value<String>? quizJapaneseScript,
       Value<String>? themeMode,
       Value<double>? srsLevel1IntervalDays,
       Value<double>? srsLevel2IntervalDays,
@@ -2292,6 +2530,14 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
       quizChooseMeaningCount:
           quizChooseMeaningCount ?? this.quizChooseMeaningCount,
       quizRetryLimit: quizRetryLimit ?? this.quizRetryLimit,
+      newWordSessionSize: newWordSessionSize ?? this.newWordSessionSize,
+      newWordListenCount: newWordListenCount ?? this.newWordListenCount,
+      newWordWriteCount: newWordWriteCount ?? this.newWordWriteCount,
+      newWordChooseWordCount:
+          newWordChooseWordCount ?? this.newWordChooseWordCount,
+      newWordChooseMeaningCount:
+          newWordChooseMeaningCount ?? this.newWordChooseMeaningCount,
+      quizJapaneseScript: quizJapaneseScript ?? this.quizJapaneseScript,
       themeMode: themeMode ?? this.themeMode,
       srsLevel1IntervalDays:
           srsLevel1IntervalDays ?? this.srsLevel1IntervalDays,
@@ -2351,6 +2597,26 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
     if (quizRetryLimit.present) {
       map['quiz_retry_limit'] = Variable<int>(quizRetryLimit.value);
     }
+    if (newWordSessionSize.present) {
+      map['new_word_session_size'] = Variable<int>(newWordSessionSize.value);
+    }
+    if (newWordListenCount.present) {
+      map['new_word_listen_count'] = Variable<int>(newWordListenCount.value);
+    }
+    if (newWordWriteCount.present) {
+      map['new_word_write_count'] = Variable<int>(newWordWriteCount.value);
+    }
+    if (newWordChooseWordCount.present) {
+      map['new_word_choose_word_count'] =
+          Variable<int>(newWordChooseWordCount.value);
+    }
+    if (newWordChooseMeaningCount.present) {
+      map['new_word_choose_meaning_count'] =
+          Variable<int>(newWordChooseMeaningCount.value);
+    }
+    if (quizJapaneseScript.present) {
+      map['quiz_japanese_script'] = Variable<String>(quizJapaneseScript.value);
+    }
     if (themeMode.present) {
       map['theme_mode'] = Variable<String>(themeMode.value);
     }
@@ -2405,6 +2671,12 @@ class SettingsCompanion extends UpdateCompanion<AppSettings> {
           ..write('quizChooseWordCount: $quizChooseWordCount, ')
           ..write('quizChooseMeaningCount: $quizChooseMeaningCount, ')
           ..write('quizRetryLimit: $quizRetryLimit, ')
+          ..write('newWordSessionSize: $newWordSessionSize, ')
+          ..write('newWordListenCount: $newWordListenCount, ')
+          ..write('newWordWriteCount: $newWordWriteCount, ')
+          ..write('newWordChooseWordCount: $newWordChooseWordCount, ')
+          ..write('newWordChooseMeaningCount: $newWordChooseMeaningCount, ')
+          ..write('quizJapaneseScript: $quizJapaneseScript, ')
           ..write('themeMode: $themeMode, ')
           ..write('srsLevel1IntervalDays: $srsLevel1IntervalDays, ')
           ..write('srsLevel2IntervalDays: $srsLevel2IntervalDays, ')
@@ -3048,6 +3320,12 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   Value<int> quizChooseWordCount,
   Value<int> quizChooseMeaningCount,
   Value<int> quizRetryLimit,
+  Value<int> newWordSessionSize,
+  Value<int> newWordListenCount,
+  Value<int> newWordWriteCount,
+  Value<int> newWordChooseWordCount,
+  Value<int> newWordChooseMeaningCount,
+  Value<String> quizJapaneseScript,
   Value<String> themeMode,
   Value<double> srsLevel1IntervalDays,
   Value<double> srsLevel2IntervalDays,
@@ -3072,6 +3350,12 @@ typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<int> quizChooseWordCount,
   Value<int> quizChooseMeaningCount,
   Value<int> quizRetryLimit,
+  Value<int> newWordSessionSize,
+  Value<int> newWordListenCount,
+  Value<int> newWordWriteCount,
+  Value<int> newWordChooseWordCount,
+  Value<int> newWordChooseMeaningCount,
+  Value<String> quizJapaneseScript,
   Value<String> themeMode,
   Value<double> srsLevel1IntervalDays,
   Value<double> srsLevel2IntervalDays,
@@ -3113,6 +3397,12 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<int> quizChooseWordCount = const Value.absent(),
             Value<int> quizChooseMeaningCount = const Value.absent(),
             Value<int> quizRetryLimit = const Value.absent(),
+            Value<int> newWordSessionSize = const Value.absent(),
+            Value<int> newWordListenCount = const Value.absent(),
+            Value<int> newWordWriteCount = const Value.absent(),
+            Value<int> newWordChooseWordCount = const Value.absent(),
+            Value<int> newWordChooseMeaningCount = const Value.absent(),
+            Value<String> quizJapaneseScript = const Value.absent(),
             Value<String> themeMode = const Value.absent(),
             Value<double> srsLevel1IntervalDays = const Value.absent(),
             Value<double> srsLevel2IntervalDays = const Value.absent(),
@@ -3137,6 +3427,12 @@ class $$SettingsTableTableManager extends RootTableManager<
             quizChooseWordCount: quizChooseWordCount,
             quizChooseMeaningCount: quizChooseMeaningCount,
             quizRetryLimit: quizRetryLimit,
+            newWordSessionSize: newWordSessionSize,
+            newWordListenCount: newWordListenCount,
+            newWordWriteCount: newWordWriteCount,
+            newWordChooseWordCount: newWordChooseWordCount,
+            newWordChooseMeaningCount: newWordChooseMeaningCount,
+            quizJapaneseScript: quizJapaneseScript,
             themeMode: themeMode,
             srsLevel1IntervalDays: srsLevel1IntervalDays,
             srsLevel2IntervalDays: srsLevel2IntervalDays,
@@ -3161,6 +3457,12 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<int> quizChooseWordCount = const Value.absent(),
             Value<int> quizChooseMeaningCount = const Value.absent(),
             Value<int> quizRetryLimit = const Value.absent(),
+            Value<int> newWordSessionSize = const Value.absent(),
+            Value<int> newWordListenCount = const Value.absent(),
+            Value<int> newWordWriteCount = const Value.absent(),
+            Value<int> newWordChooseWordCount = const Value.absent(),
+            Value<int> newWordChooseMeaningCount = const Value.absent(),
+            Value<String> quizJapaneseScript = const Value.absent(),
             Value<String> themeMode = const Value.absent(),
             Value<double> srsLevel1IntervalDays = const Value.absent(),
             Value<double> srsLevel2IntervalDays = const Value.absent(),
@@ -3185,6 +3487,12 @@ class $$SettingsTableTableManager extends RootTableManager<
             quizChooseWordCount: quizChooseWordCount,
             quizChooseMeaningCount: quizChooseMeaningCount,
             quizRetryLimit: quizRetryLimit,
+            newWordSessionSize: newWordSessionSize,
+            newWordListenCount: newWordListenCount,
+            newWordWriteCount: newWordWriteCount,
+            newWordChooseWordCount: newWordChooseWordCount,
+            newWordChooseMeaningCount: newWordChooseMeaningCount,
+            quizJapaneseScript: quizJapaneseScript,
             themeMode: themeMode,
             srsLevel1IntervalDays: srsLevel1IntervalDays,
             srsLevel2IntervalDays: srsLevel2IntervalDays,
@@ -3259,6 +3567,36 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<int> get quizRetryLimit => $state.composableBuilder(
       column: $state.table.quizRetryLimit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get newWordSessionSize => $state.composableBuilder(
+      column: $state.table.newWordSessionSize,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get newWordListenCount => $state.composableBuilder(
+      column: $state.table.newWordListenCount,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get newWordWriteCount => $state.composableBuilder(
+      column: $state.table.newWordWriteCount,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get newWordChooseWordCount => $state.composableBuilder(
+      column: $state.table.newWordChooseWordCount,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get newWordChooseMeaningCount => $state.composableBuilder(
+      column: $state.table.newWordChooseMeaningCount,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get quizJapaneseScript => $state.composableBuilder(
+      column: $state.table.quizJapaneseScript,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -3373,6 +3711,37 @@ class $$SettingsTableOrderingComposer
 
   ColumnOrderings<int> get quizRetryLimit => $state.composableBuilder(
       column: $state.table.quizRetryLimit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get newWordSessionSize => $state.composableBuilder(
+      column: $state.table.newWordSessionSize,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get newWordListenCount => $state.composableBuilder(
+      column: $state.table.newWordListenCount,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get newWordWriteCount => $state.composableBuilder(
+      column: $state.table.newWordWriteCount,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get newWordChooseWordCount => $state.composableBuilder(
+      column: $state.table.newWordChooseWordCount,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get newWordChooseMeaningCount =>
+      $state.composableBuilder(
+          column: $state.table.newWordChooseMeaningCount,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get quizJapaneseScript => $state.composableBuilder(
+      column: $state.table.quizJapaneseScript,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

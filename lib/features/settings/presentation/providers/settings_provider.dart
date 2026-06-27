@@ -9,6 +9,8 @@ part 'settings_provider.g.dart';
 
 const String lightThemeModeValue = 'light';
 const String darkThemeModeValue = 'dark';
+const String quizScriptKanjiValue = 'kanji';
+const String quizScriptKanaValue = 'kana';
 
 @riverpod
 Stream<AppSettings> appSettings(AppSettingsRef ref) {
@@ -114,6 +116,45 @@ class SettingsController extends _$SettingsController {
   Future<void> updateQuizRetryLimit(int value) {
     return _updateSettings(
       SettingsCompanion(quizRetryLimit: Value(value.clamp(0, 5))),
+    );
+  }
+
+  Future<void> updateNewWordSessionSize(int value) {
+    return _updateSettings(
+      SettingsCompanion(newWordSessionSize: Value(value.clamp(1, 100))),
+    );
+  }
+
+  Future<void> updateNewWordListenCount(int value) {
+    return _updateSettings(
+      SettingsCompanion(newWordListenCount: Value(value.clamp(0, 10))),
+    );
+  }
+
+  Future<void> updateNewWordWriteCount(int value) {
+    return _updateSettings(
+      SettingsCompanion(newWordWriteCount: Value(value.clamp(0, 10))),
+    );
+  }
+
+  Future<void> updateNewWordChooseWordCount(int value) {
+    return _updateSettings(
+      SettingsCompanion(newWordChooseWordCount: Value(value.clamp(0, 10))),
+    );
+  }
+
+  Future<void> updateNewWordChooseMeaningCount(int value) {
+    return _updateSettings(
+      SettingsCompanion(newWordChooseMeaningCount: Value(value.clamp(0, 10))),
+    );
+  }
+
+  Future<void> updateQuizJapaneseScript(String value) {
+    final normalized = value == quizScriptKanaValue
+        ? quizScriptKanaValue
+        : quizScriptKanjiValue;
+    return _updateSettings(
+      SettingsCompanion(quizJapaneseScript: Value(normalized)),
     );
   }
 

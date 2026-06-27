@@ -99,7 +99,7 @@ class _PitchAccentPickerState extends State<PitchAccentPicker> {
               )
             else
               Wrap(
-                spacing: 8,
+                spacing: 0,
                 runSpacing: 10,
                 children: [
                   for (var i = 0; i < units.length; i++)
@@ -138,49 +138,50 @@ class _PitchToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-        decoration: BoxDecoration(
-          color: isHigh
-              ? colors.primary.withValues(alpha: 0.12)
-              : colors.surfaceContainerHighest.withValues(alpha: 0.45),
-          border: Border.all(
-            color: isHigh ? colors.primary : colors.outline,
+    return SizedBox(
+      width: 52,
+      child: InkWell(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.fromLTRB(0, 8, 0, 10),
+          decoration: BoxDecoration(
+            color: isHigh
+                ? colors.onSurface.withValues(alpha: 0.08)
+                : colors.surfaceContainerHighest.withValues(alpha: 0.45),
+            border: Border.all(
+              color: colors.outline,
+            ),
           ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 24,
-              height: 3,
-              decoration: BoxDecoration(
-                color: isHigh ? colors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: isHigh ? colors.onSurface : Colors.transparent,
+                ),
               ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              text,
-              style: TextStyle(
-                color: colors.onSurface,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
+              const SizedBox(height: 3),
+              Text(
+                text,
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-            Text(
-              isHigh ? 'H' : 'L',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isHigh ? colors.primary : colors.onSurfaceVariant,
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-          ],
+              Text(
+                isHigh ? 'H' : 'L',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color:
+                          isHigh ? colors.onSurface : colors.onSurfaceVariant,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );

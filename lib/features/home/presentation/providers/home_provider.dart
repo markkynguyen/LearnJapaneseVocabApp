@@ -8,12 +8,14 @@ class FolderSummary {
   const FolderSummary({
     required this.folder,
     required this.totalWords,
+    required this.unlearnedCount,
     required this.dueCount,
     required this.lv6Count,
   });
 
   final Folder folder;
   final int totalWords;
+  final int unlearnedCount;
   final int dueCount;
   final int lv6Count;
 
@@ -22,7 +24,7 @@ class FolderSummary {
       return 0;
     }
 
-    return lv6Count / totalWords;
+    return (totalWords - unlearnedCount) / totalWords;
   }
 }
 
@@ -58,6 +60,7 @@ Stream<List<FolderSummary>> folderSummaries(FolderSummariesRef ref) {
               (folder) => FolderSummary(
                 folder: folder.folder,
                 totalWords: folder.totalWords,
+                unlearnedCount: folder.unlearnedCount,
                 dueCount: folder.dueCount,
                 lv6Count: folder.lv6Count,
               ),

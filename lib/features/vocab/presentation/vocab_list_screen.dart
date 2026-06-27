@@ -48,6 +48,9 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
     final favorites = ref.watch(favoriteVocabListProvider(widget.folderId));
     final sortMode = ref.watch(vocabSortProvider(widget.folderId));
     final dueCount = ref.watch(folderDueCountProvider(widget.folderId));
+    final unlearnedCount =
+        ref.watch(folderUnlearnedCountProvider(widget.folderId));
+    final canLearnNewWords = (unlearnedCount.valueOrNull ?? 0) > 0;
 
     return DefaultTabController(
       length: hasFavorites.valueOrNull == true ? 2 : 1,
@@ -128,7 +131,17 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
                           onAction: _handleAction,
                           summaryCard: _FolderDueSummaryCard(
                             dueCount: dueCount,
+                            unlearnedCount: unlearnedCount,
                           ),
+                          learningAction: canLearnNewWords
+                              ? _ReviewListAction(
+                                  icon: Icons.auto_stories_rounded,
+                                  label: 'Học từ mới',
+                                  onPressed: () => context.push(
+                                    AppRoutes.learningPreview(widget.folderId),
+                                  ),
+                                )
+                              : null,
                           reviewAction: _ReviewListAction(
                             icon: Icons.school_rounded,
                             label: 'Ôn bộ từ',
@@ -158,7 +171,17 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
                       onAction: _handleAction,
                       summaryCard: _FolderDueSummaryCard(
                         dueCount: dueCount,
+                        unlearnedCount: unlearnedCount,
                       ),
+                      learningAction: canLearnNewWords
+                          ? _ReviewListAction(
+                              icon: Icons.auto_stories_rounded,
+                              label: 'Học từ mới',
+                              onPressed: () => context.push(
+                                AppRoutes.learningPreview(widget.folderId),
+                              ),
+                            )
+                          : null,
                       reviewAction: _ReviewListAction(
                         icon: Icons.school_rounded,
                         label: 'Ôn bộ từ',
@@ -265,9 +288,11 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
 class _FolderDueSummaryCard extends StatelessWidget {
   const _FolderDueSummaryCard({
     required this.dueCount,
+    required this.unlearnedCount,
   });
 
   final AsyncValue<int> dueCount;
+  final AsyncValue<int> unlearnedCount;
 
   @override
   Widget build(BuildContext context) {
@@ -292,31 +317,33 @@ class _FolderDueSummaryCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: dueCount.when(
-                data: (count) => Column(
+              child: unlearnedCount.when(
+                data: (newCount) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$count từ cần ôn',
+                      '$newCount từ cần học',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      count == 0
-                          ? 'Chưa có từ nào đến lịch ôn trong bộ này.'
-                          : 'Bao gồm cả từ Lv 0 chưa học.',
-                      style: TextStyle(color: colors.onSurfaceVariant),
+                    dueCount.when(
+                      data: (count) => Text(
+                        '$count từ Lv 1–6 đang đến hạn ôn.',
+                        style: TextStyle(color: colors.onSurfaceVariant),
+                      ),
+                      loading: () => const Text('Đang tải lịch ôn...'),
+                      error: (_, __) => const Text('Không thể tải lịch ôn.'),
                     ),
                   ],
                 ),
                 loading: () => Text(
-                  'Đang tải số từ cần ôn...',
+                  'Đang tải số từ cần học...',
                   style: TextStyle(color: colors.onSurfaceVariant),
                 ),
                 error: (error, _) => Text(
-                  'Không thể tải số từ cần ôn.',
+                  'Không thể tải số từ cần học.',
                   style: TextStyle(color: context.appDanger),
                 ),
               ),
@@ -333,6 +360,7 @@ class _VocabListBody extends ConsumerWidget {
     required this.items,
     required this.onAction,
     this.summaryCard,
+    this.learningAction,
     this.reviewAction,
   });
 
@@ -343,6 +371,7 @@ class _VocabListBody extends ConsumerWidget {
     VocabCardAction action,
   ) onAction;
   final Widget? summaryCard;
+  final _ReviewListAction? learningAction;
   final _ReviewListAction? reviewAction;
 
   @override
@@ -351,8 +380,14 @@ class _VocabListBody extends ConsumerWidget {
       data: (items) {
         final leading = <Widget>[
           if (summaryCard != null) summaryCard!,
-          if (reviewAction != null)
+          if (learningAction != null)
             FilledButton.icon(
+              onPressed: learningAction!.onPressed,
+              icon: Icon(learningAction!.icon),
+              label: Text(learningAction!.label),
+            ),
+          if (reviewAction != null)
+            OutlinedButton.icon(
               onPressed: reviewAction!.onPressed,
               icon: Icon(reviewAction!.icon),
               label: Text(reviewAction!.label),
@@ -406,7 +441,7 @@ class _ReviewListAction {
 
   final IconData icon;
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 }
 
 class _EmptyVocabState extends StatelessWidget {

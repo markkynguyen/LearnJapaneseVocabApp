@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../../../core/constants/srs_constants.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/srs/srs_engine.dart';
+import '../../../core/utils/quiz_utils.dart';
 import 'review_models.dart';
 
 class ReviewRepository {
@@ -192,7 +193,11 @@ class ReviewRepository {
           ReviewQuestion(
             item: item,
             type: type,
-            choices: _buildChoices(item, type, words),
+            japaneseText: japaneseForQuiz(
+              item.vocab,
+              settings.quizJapaneseScript,
+            ),
+            choices: _buildChoices(item, type, words, settings),
             retryCount: 0,
           ),
     ];
@@ -202,6 +207,7 @@ class ReviewRepository {
     VocabWithProgress item,
     ReviewQuestionType type,
     List<VocabWithProgress> allWords,
+    AppSettings settings,
   ) {
     if (type != ReviewQuestionType.chooseMeaning &&
         type != ReviewQuestionType.chooseWord &&
@@ -212,6 +218,7 @@ class ReviewRepository {
     final expected = ReviewQuestion(
       item: item,
       type: type,
+      japaneseText: japaneseForQuiz(item.vocab, settings.quizJapaneseScript),
       choices: const [],
       retryCount: 0,
     ).expectedAnswer;
@@ -220,7 +227,7 @@ class ReviewRepository {
         .where((word) => word.vocab.id != item.vocab.id)
         .map((word) {
           return type == ReviewQuestionType.chooseWord
-              ? _displayJapanese(word.vocab)
+              ? japaneseForQuiz(word.vocab, settings.quizJapaneseScript)
               : word.vocab.meaning;
         })
         .where((value) => value.trim().isNotEmpty && value != expected)
@@ -230,11 +237,5 @@ class ReviewRepository {
 
     final choices = [expected, ...distractors.take(3)]..shuffle(Random());
     return choices;
-  }
-
-  String _displayJapanese(VocabularyEntry vocab) {
-    return (vocab.kanji?.trim().isNotEmpty ?? false)
-        ? vocab.kanji!.trim()
-        : vocab.kana.trim();
   }
 }

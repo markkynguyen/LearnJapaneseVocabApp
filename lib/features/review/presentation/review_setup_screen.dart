@@ -24,7 +24,16 @@ class ReviewSetupScreen extends ConsumerWidget {
     final settingsDao = ref.watch(settingsDaoProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ôn tập')),
+      appBar: AppBar(
+        title: const Text('Ôn tập'),
+        leading: folderId == null
+            ? null
+            : IconButton(
+                tooltip: 'Trở về bộ từ',
+                onPressed: () => context.go(AppRoutes.folderVocab(folderId!)),
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+      ),
       body: SafeArea(
         child: FutureBuilder(
           future: Future.wait([

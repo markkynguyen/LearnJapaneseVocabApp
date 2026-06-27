@@ -80,7 +80,7 @@ class _FolderProgressCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '${summary.totalWords} từ • ${summary.lv6Count} từ Lv6',
+                '${summary.totalWords} từ • ${summary.unlearnedCount} từ chưa học',
                 style: TextStyle(
                   color: colors.onSurfaceVariant,
                   fontSize: 13,
@@ -102,7 +102,7 @@ class _FolderProgressCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    '$percent%',
+                    '$percent% đã học',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: colors.onSurface,

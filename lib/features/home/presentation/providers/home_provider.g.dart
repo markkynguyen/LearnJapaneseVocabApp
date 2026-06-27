@@ -50,7 +50,7 @@ final totalLevelStatsProvider = AutoDisposeStreamProvider<LevelStats>.internal(
 );
 
 typedef TotalLevelStatsRef = AutoDisposeStreamProviderRef<LevelStats>;
-String _$folderSummariesHash() => r'af12dd5cfc4744e7100027da86a8e8eebd54a626';
+String _$folderSummariesHash() => r'1536cd947a5e7c5b381cbece10e0b374bf59c211';
 
 /// See also [folderSummaries].
 @ProviderFor(folderSummaries)

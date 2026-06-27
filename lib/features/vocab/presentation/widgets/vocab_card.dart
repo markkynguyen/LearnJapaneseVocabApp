@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/audio/audio_service.dart';
 import '../../../../core/constants/srs_constants.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -14,7 +16,7 @@ enum VocabCardAction {
   delete,
 }
 
-class VocabCard extends StatelessWidget {
+class VocabCard extends ConsumerWidget {
   const VocabCard({
     required this.item,
     required this.onToggleFavorite,
@@ -27,7 +29,7 @@ class VocabCard extends StatelessWidget {
   final ValueChanged<VocabCardAction> onAction;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final vocab = item.vocab;
     final progress = item.progress;
     final colors = Theme.of(context).colorScheme;
@@ -66,44 +68,23 @@ class VocabCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: PitchAccentText(
-                              kana: vocab.kana,
-                              pattern: vocab.pitchAccent,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              textColor: colors.onSurfaceVariant,
-                              accentColor: colors.primary,
-                              overlayAccent: true,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              '•',
-                              style: TextStyle(
-                                color: colors.onSurfaceVariant,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Flexible(
-                            child: Text(
-                              vocab.romaji,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colors.onSurfaceVariant,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                height: 1.2,
-                              ),
-                            ),
-                          ),
-                        ],
+                      PitchAccentText(
+                        kana: vocab.kana,
+                        pattern: vocab.pitchAccent,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        textColor: colors.onSurfaceVariant,
+                        overlayAccent: true,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        vocab.romaji,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -112,6 +93,12 @@ class VocabCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    IconButton(
+                      tooltip: 'Phát âm',
+                      onPressed: () =>
+                          ref.read(audioServiceProvider).speak(vocab),
+                      icon: const Icon(Icons.volume_up_rounded),
+                    ),
                     IconButton(
                       tooltip: vocab.isFavorite
                           ? 'Bỏ yêu thích'
@@ -190,6 +177,24 @@ class VocabCard extends StatelessWidget {
                   progress.level == SrsConstants.unlearnedLevel
                       ? 'Chưa học'
                       : formatNextReview(progress.nextReviewAt),
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.history_rounded,
+                  color: colors.onSurfaceVariant,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  formatLastReview(progress.lastReviewedAt),
                   style: TextStyle(
                     color: colors.onSurfaceVariant,
                     fontSize: 13,

@@ -26,12 +26,14 @@ class FolderWithCount {
   const FolderWithCount({
     required this.folder,
     required this.totalWords,
+    required this.unlearnedCount,
     required this.dueCount,
     required this.lv6Count,
   });
 
   final Folder folder;
   final int totalWords;
+  final int unlearnedCount;
   final int dueCount;
   final int lv6Count;
 }
@@ -136,6 +138,17 @@ class Settings extends Table {
   IntColumn get quizChooseMeaningCount =>
       integer().withDefault(const Constant(1))();
   IntColumn get quizRetryLimit => integer().withDefault(const Constant(2))();
+  IntColumn get newWordSessionSize =>
+      integer().withDefault(const Constant(5))();
+  IntColumn get newWordListenCount =>
+      integer().withDefault(const Constant(1))();
+  IntColumn get newWordWriteCount => integer().withDefault(const Constant(1))();
+  IntColumn get newWordChooseWordCount =>
+      integer().withDefault(const Constant(1))();
+  IntColumn get newWordChooseMeaningCount =>
+      integer().withDefault(const Constant(1))();
+  TextColumn get quizJapaneseScript =>
+      text().withDefault(const Constant('kanji'))();
   TextColumn get themeMode => text().withDefault(const Constant('light'))();
   RealColumn get srsLevel1IntervalDays =>
       real().withDefault(const Constant(2 / 24))();
@@ -178,7 +191,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -202,6 +215,14 @@ class AppDatabase extends _$AppDatabase {
             await customUpdate(
               'UPDATE settings SET default_kana_seeded = 1 WHERE id = 1',
             );
+          }
+          if (from < 6) {
+            await m.addColumn(settings, settings.newWordSessionSize);
+            await m.addColumn(settings, settings.newWordListenCount);
+            await m.addColumn(settings, settings.newWordWriteCount);
+            await m.addColumn(settings, settings.newWordChooseWordCount);
+            await m.addColumn(settings, settings.newWordChooseMeaningCount);
+            await m.addColumn(settings, settings.quizJapaneseScript);
           }
         },
         beforeOpen: (details) async {
@@ -557,7 +578,8 @@ class FolderDao extends DatabaseAccessor<AppDatabase> with _$FolderDaoMixin {
         f.color,
         f.created_at,
         COUNT(v.id) AS total_words,
-        COALESCE(SUM(CASE WHEN sp.next_review_at <= ? THEN 1 ELSE 0 END), 0) AS due_count,
+        COALESCE(SUM(CASE WHEN sp.level = 0 THEN 1 ELSE 0 END), 0) AS unlearned_count,
+        COALESCE(SUM(CASE WHEN sp.level > 0 AND sp.next_review_at <= ? THEN 1 ELSE 0 END), 0) AS due_count,
         COALESCE(SUM(CASE WHEN sp.level = 6 THEN 1 ELSE 0 END), 0) AS lv6_count
       FROM folders f
       LEFT JOIN vocabulary v ON v.folder_id = f.id
@@ -578,6 +600,7 @@ class FolderDao extends DatabaseAccessor<AppDatabase> with _$FolderDaoMixin {
             createdAt: row.read<int>('created_at'),
           ),
           totalWords: row.read<int>('total_words'),
+          unlearnedCount: row.read<int>('unlearned_count'),
           dueCount: row.read<int>('due_count'),
           lv6Count: row.read<int>('lv6_count'),
         );
@@ -780,7 +803,7 @@ class SrsProgressDao extends DatabaseAccessor<AppDatabase>
       SELECT COUNT(v.id) AS due_count
       FROM vocabulary v
       INNER JOIN srs_progress sp ON sp.vocab_id = v.id
-      WHERE sp.next_review_at <= ?
+      WHERE sp.level > 0 AND sp.next_review_at <= ?
       ''',
     );
     final variables = <Variable>[Variable<int>(now)];
@@ -798,6 +821,79 @@ class SrsProgressDao extends DatabaseAccessor<AppDatabase>
       variables: variables,
       readsFrom: {vocabulary, srsProgress},
     ).map((row) => row.read<int>('due_count')).getSingle();
+  }
+
+  Future<int> getUnlearnedCount({int? folderId}) {
+    final query = selectOnly(srsProgress)
+      ..addColumns([srsProgress.id.count()])
+      ..where(srsProgress.level.equals(SrsConstants.unlearnedLevel));
+    if (folderId != null) {
+      query.join([
+        innerJoin(vocabulary, vocabulary.id.equalsExp(srsProgress.vocabId)),
+      ]);
+      query.where(vocabulary.folderId.equals(folderId));
+    }
+    return query
+        .map((row) => row.read(srsProgress.id.count()) ?? 0)
+        .getSingle();
+  }
+
+  Future<List<VocabWithProgress>> getNewVocabForLearning({
+    required int folderId,
+    required int limit,
+    List<int> excludeIds = const [],
+  }) {
+    final query = select(vocabulary).join([
+      innerJoin(srsProgress, srsProgress.vocabId.equalsExp(vocabulary.id)),
+    ])
+      ..where(vocabulary.folderId.equals(folderId))
+      ..where(srsProgress.level.equals(SrsConstants.unlearnedLevel));
+    if (excludeIds.isNotEmpty) {
+      query.where(vocabulary.id.isNotIn(excludeIds));
+    }
+    query
+      ..orderBy([
+        OrderingTerm.asc(srsProgress.lastReviewedAt.isNull()),
+        OrderingTerm.asc(srsProgress.lastReviewedAt),
+        OrderingTerm.asc(vocabulary.createdAt),
+      ])
+      ..limit(limit);
+    return query
+        .map(
+          (row) => VocabWithProgress(
+            vocab: row.readTable(vocabulary),
+            progress: row.readTable(srsProgress),
+          ),
+        )
+        .get();
+  }
+
+  Future<List<VocabWithProgress>> getLearnedVocabForDistractors({
+    int? folderId,
+    required int limit,
+    List<int> excludeIds = const [],
+  }) {
+    final query = select(vocabulary).join([
+      innerJoin(srsProgress, srsProgress.vocabId.equalsExp(vocabulary.id)),
+    ])
+      ..where(srsProgress.level.isBiggerThanValue(SrsConstants.unlearnedLevel));
+    if (folderId != null) {
+      query.where(vocabulary.folderId.equals(folderId));
+    }
+    if (excludeIds.isNotEmpty) {
+      query.where(vocabulary.id.isNotIn(excludeIds));
+    }
+    query
+      ..orderBy([OrderingTerm.asc(srsProgress.lastReviewedAt)])
+      ..limit(limit);
+    return query
+        .map(
+          (row) => VocabWithProgress(
+            vocab: row.readTable(vocabulary),
+            progress: row.readTable(srsProgress),
+          ),
+        )
+        .get();
   }
 
   Future<SrsProgressEntry?> getProgressByVocabId(int vocabId) {
@@ -920,16 +1016,17 @@ class SrsProgressDao extends DatabaseAccessor<AppDatabase>
     if (due != null) {
       final currentTime = now ?? _nowSeconds();
       query.where(
-        due
-            ? srsProgress.nextReviewAt.isSmallerOrEqualValue(currentTime)
-            : srsProgress.nextReviewAt.isBiggerThanValue(currentTime),
+        srsProgress.level.isBiggerThanValue(SrsConstants.unlearnedLevel) &
+            (due
+                ? srsProgress.nextReviewAt.isSmallerOrEqualValue(currentTime)
+                : srsProgress.nextReviewAt.isBiggerThanValue(currentTime)),
       );
     }
 
     if (fallback) {
       final currentTime = now ?? _nowSeconds();
       query.where(
-        srsProgress.level.equals(SrsConstants.unlearnedLevel) |
+        srsProgress.level.isBiggerThanValue(SrsConstants.unlearnedLevel) &
             srsProgress.nextReviewAt.isBiggerThanValue(currentTime),
       );
     }

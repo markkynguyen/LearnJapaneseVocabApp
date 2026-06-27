@@ -42,10 +42,10 @@ void main() {
       expect(progress.intervalDays, 0);
       expect(progress.nextReviewAt, 0);
       expect(progress.lastReviewedAt, isNull);
-      expect(await database.srsProgressDao.getDueCount(folderId: folderId), 1);
+      expect(await database.srsProgressDao.getDueCount(folderId: folderId), 0);
       final dueWords =
           await database.srsProgressDao.watchDueWords(folderId: folderId).first;
-      expect(dueWords.map((item) => item.vocab.id), [vocabId]);
+      expect(dueWords, isEmpty);
     });
 
     test('initSettings creates one settings row with quiz and SRS defaults',
@@ -56,6 +56,12 @@ void main() {
       expect(settings.sessionSize, 10);
       expect(settings.quizListenCount, 1);
       expect(settings.quizRetryLimit, 2);
+      expect(settings.newWordSessionSize, 5);
+      expect(settings.newWordListenCount, 1);
+      expect(settings.newWordWriteCount, 1);
+      expect(settings.newWordChooseWordCount, 1);
+      expect(settings.newWordChooseMeaningCount, 1);
+      expect(settings.quizJapaneseScript, 'kanji');
       expect(settings.themeMode, 'light');
       expect(settings.flashcardShowKana, isTrue);
       expect(settings.flashcardShowRomaji, isTrue);
@@ -158,6 +164,7 @@ void main() {
       final vocabA = await _insertVocab(database, folderId, 'a');
       final vocabB = await _insertVocab(database, folderId, 'b');
       await database.vocabularyDao.toggleFavorite(vocabB);
+      await _setProgress(database, vocabB, level: 1);
 
       final result = await database.srsProgressDao.getFallbackVocabForSession(
         folderId: folderId,
@@ -168,6 +175,49 @@ void main() {
 
       expect(result, hasLength(1));
       expect(result.single.vocab.id, vocabB);
+    });
+
+    test('review excludes level 0 and learning orders attempted words first',
+        () async {
+      final folderId = await database.folderDao.insertFolder(
+        FoldersCompanion.insert(name: 'Learning order'),
+      );
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final attemptedRecent = await _insertVocab(database, folderId, 'recent');
+      final attemptedOld = await _insertVocab(database, folderId, 'old');
+      final untouched = await _insertVocab(database, folderId, 'untouched');
+      final learned = await _insertVocab(database, folderId, 'learned');
+
+      await _setProgress(
+        database,
+        attemptedRecent,
+        level: 0,
+        lastReviewedAt: now - 50,
+      );
+      await _setProgress(
+        database,
+        attemptedOld,
+        level: 0,
+        lastReviewedAt: now - 200,
+      );
+      await _setProgress(database, learned, level: 1, nextReviewAt: 0);
+
+      final newWords = await database.srsProgressDao.getNewVocabForLearning(
+        folderId: folderId,
+        limit: 10,
+      );
+      final dueWords = await database.srsProgressDao
+          .getDueVocabForSession(folderId: folderId, limit: 10);
+
+      expect(
+        newWords.map((item) => item.vocab.id),
+        [attemptedOld, attemptedRecent, untouched],
+      );
+      expect(dueWords.map((item) => item.vocab.id), [learned]);
+      expect(
+        await database.srsProgressDao.getUnlearnedCount(folderId: folderId),
+        3,
+      );
     });
 
     test('level stats count learned levels and exclude level 0 from learned',

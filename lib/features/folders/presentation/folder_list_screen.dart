@@ -133,7 +133,10 @@ class _FolderTile extends StatelessWidget {
           folder.name,
           style: TextStyle(color: colors.onSurface),
         ),
-        subtitle: Text('${item.totalWords} từ - ${item.dueCount} cần ôn'),
+        subtitle: Text(
+          '${item.totalWords} từ • ${item.unlearnedCount} cần học • '
+          '${item.dueCount} cần ôn',
+        ),
         trailing: PopupMenuButton<_FolderAction>(
           onSelected: (action) {
             switch (action) {

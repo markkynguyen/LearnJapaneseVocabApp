@@ -45,7 +45,7 @@ class PitchAccentText extends StatelessWidget {
     if (overlayAccent) {
       return Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 2,
+        spacing: 0,
         runSpacing: 4,
         children: [
           for (var i = 0; i < units.length; i++)
@@ -55,7 +55,7 @@ class PitchAccentText extends StatelessWidget {
               fontSize: fontSize,
               fontWeight: fontWeight,
               color: textColor ?? colors.onSurface,
-              accentColor: accentColor ?? colors.primary,
+              accentColor: accentColor ?? textColor ?? colors.onSurface,
             ),
           if (showPattern) ...[
             const SizedBox(width: 6),
@@ -73,7 +73,7 @@ class PitchAccentText extends StatelessWidget {
 
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 2,
+      spacing: 0,
       runSpacing: 4,
       children: [
         for (var i = 0; i < units.length; i++)
@@ -83,7 +83,7 @@ class PitchAccentText extends StatelessWidget {
             fontSize: fontSize,
             fontWeight: fontWeight,
             color: textColor ?? colors.onSurface,
-            accentColor: accentColor ?? colors.primary,
+            accentColor: accentColor ?? textColor ?? colors.onSurface,
           ),
         if (showPattern) ...[
           const SizedBox(width: 6),
@@ -136,7 +136,6 @@ class _InlinePitchMora extends StatelessWidget {
               height: 3,
               decoration: BoxDecoration(
                 color: isHigh ? accentColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ),
@@ -189,7 +188,6 @@ class _PitchMora extends StatelessWidget {
           height: 3,
           decoration: BoxDecoration(
             color: isHigh ? accentColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
           ),
         ),
         const SizedBox(height: 2),

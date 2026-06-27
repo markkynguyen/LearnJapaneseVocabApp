@@ -24,3 +24,24 @@ String formatNextReview(int nextReviewAt) {
   final diffMonths = diffDays ~/ 30;
   return 'Còn $diffMonths tháng';
 }
+
+String formatLastReview(int? lastReviewedAt) {
+  if (lastReviewedAt == null) {
+    return 'Chưa ôn lần nào';
+  }
+  final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  final diffSeconds = (nowSeconds - lastReviewedAt).clamp(0, 1 << 31);
+  if (diffSeconds < 60) {
+    return 'Vừa ôn';
+  }
+  final minutes = diffSeconds ~/ 60;
+  if (minutes < 60) {
+    return 'Ôn $minutes phút trước';
+  }
+  final hours = diffSeconds ~/ 3600;
+  if (hours < 24) {
+    return 'Ôn $hours giờ trước';
+  }
+  final days = diffSeconds ~/ 86400;
+  return 'Ôn $days ngày trước';
+}

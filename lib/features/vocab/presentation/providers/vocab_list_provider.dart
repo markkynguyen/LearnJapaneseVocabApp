@@ -68,6 +68,14 @@ final folderDueCountProvider = StreamProvider.autoDispose.family<int, int>((
       .map((words) => words.length);
 });
 
+final folderUnlearnedCountProvider =
+    StreamProvider.autoDispose.family<int, int>((ref, folderId) {
+  return ref
+      .watch(srsProgressDaoProvider)
+      .watchLevelStats(folderId: folderId)
+      .map((stats) => stats.totalWords - stats.learnedWords);
+});
+
 @riverpod
 class VocabListController extends _$VocabListController {
   @override

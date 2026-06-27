@@ -25,6 +25,8 @@ class ReviewSessionScreen extends ConsumerStatefulWidget {
 
 class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
   late final TextEditingController _answerController;
+  bool _feedbackOpen = false;
+  String? _lastListenToken;
 
   @override
   void initState() {
@@ -73,6 +75,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
                   onFinish: _finishSession,
                 );
               }
+              _scheduleListen(state);
               return _QuestionView(
                 state: state,
                 answerController: _answerController,
@@ -98,18 +101,55 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
   }
 
   Future<void> _submitAnswer(String answer) async {
+    final current = ref.read(reviewSessionControllerProvider).valueOrNull;
+    final question = current?.currentQuestion;
+    if (question == null) {
+      return;
+    }
+    _feedbackOpen = true;
     final feedback =
         ref.read(reviewSessionControllerProvider.notifier).submitAnswer(answer);
     if (feedback == null || !mounted) {
+      _feedbackOpen = false;
       return;
     }
 
     _answerController.clear();
+    await ref.read(audioServiceProvider).speak(question.item.vocab);
+    if (!mounted) {
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (_) => _AnswerFeedbackSheet(feedback: feedback),
     );
+    _feedbackOpen = false;
+    if (!mounted) {
+      return;
+    }
+    final next = ref.read(reviewSessionControllerProvider).valueOrNull;
+    if (next != null) {
+      _scheduleListen(next);
+    }
+  }
+
+  void _scheduleListen(ReviewSessionState state) {
+    final question = state.currentQuestion;
+    if (_feedbackOpen || question?.type != ReviewQuestionType.listen) {
+      return;
+    }
+    final token =
+        '${state.currentIndex}-${question!.item.vocab.id}-${question.retryCount}';
+    if (_lastListenToken == token) {
+      return;
+    }
+    _lastListenToken = token;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_feedbackOpen) {
+        ref.read(audioServiceProvider).speak(question.item.vocab);
+      }
+    });
   }
 
   Future<void> _finishSession() async {
@@ -152,7 +192,14 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
     );
 
     if (confirmed == true && context.mounted) {
-      context.go(AppRoutes.review);
+      final sessionFolderId =
+          ref.read(reviewSessionControllerProvider).valueOrNull?.folderId;
+      await ref.read(audioServiceProvider).stop();
+      if (context.mounted) {
+        context.go(
+          AppRoutes.reviewExit(sessionFolderId ?? widget.folderId),
+        );
+      }
     }
   }
 }
@@ -178,12 +225,6 @@ class _QuestionView extends ConsumerWidget {
         ? 0.0
         : (state.currentIndex + 1) / state.totalQuestions;
     final isChoiceQuestion = question.choices.isNotEmpty;
-
-    if (question.type == ReviewQuestionType.listen) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(audioServiceProvider).speak(question.item.vocab);
-      });
-    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -226,6 +267,14 @@ class _QuestionView extends ConsumerWidget {
                         height: 1.18,
                       ),
                 ),
+                if (question.type == ReviewQuestionType.chooseWord &&
+                    question.item.vocab.note?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    question.item.vocab.note!.trim(),
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Text(
                   _helperText(question),
