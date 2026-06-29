@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/review_models.dart';
 import 'providers/review_session_provider.dart';
 
@@ -387,70 +388,81 @@ class _AnswerFeedbackSheet extends ConsumerWidget {
     final statusColor =
         feedback.isCorrect ? context.appSuccess : context.appDanger;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                feedback.isCorrect
-                    ? Icons.check_circle_rounded
-                    : Icons.cancel_rounded,
-                color: statusColor,
-              ),
-              const SizedBox(width: 10),
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          24 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  feedback.isCorrect
+                      ? Icons.check_circle_rounded
+                      : Icons.cancel_rounded,
+                  color: statusColor,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  feedback.isCorrect ? 'Chính xác' : 'Chưa đúng',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Phát âm',
+                  onPressed: () => ref.read(audioServiceProvider).speak(vocab),
+                  icon: const Icon(Icons.volume_up_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (vocab.kanji?.trim().isNotEmpty == true) ...[
               Text(
-                feedback.isCorrect ? 'Chính xác' : 'Chưa đúng',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: statusColor,
+                vocab.kanji!.trim(),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
               ),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Phát âm',
-                onPressed: () => ref.read(audioServiceProvider).speak(vocab),
-                icon: const Icon(Icons.volume_up_rounded),
-              ),
+              const SizedBox(height: 6),
             ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            (vocab.kanji?.trim().isNotEmpty ?? false)
-                ? vocab.kanji!
-                : vocab.kana,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${vocab.kana} • ${vocab.romaji}',
-            style: TextStyle(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 14),
-          _DetailLine(
-            label: 'Đáp án đúng',
-            value: feedback.question.expectedAnswer,
-          ),
-          if (!feedback.isCorrect && feedback.answer.trim().isNotEmpty)
-            _DetailLine(label: 'Bạn trả lời', value: feedback.answer.trim()),
-          if (vocab.example?.trim().isNotEmpty ?? false)
-            _DetailLine(label: 'Ví dụ', value: vocab.example!.trim()),
-          if (vocab.note?.trim().isNotEmpty ?? false)
-            _DetailLine(label: 'Ghi chú', value: vocab.note!.trim()),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Tiếp tục'),
+            PitchAccentReading(
+              kana: vocab.kana,
+              pattern: vocab.pitchAccent,
+              romaji: vocab.romaji,
+              fontSize: vocab.kanji?.trim().isNotEmpty == true ? 18 : 24,
+              textColor: colors.onSurfaceVariant,
             ),
-          ),
-        ],
+            const SizedBox(height: 14),
+            _DetailLine(
+              label: 'Đáp án đúng',
+              value: feedback.question.expectedAnswer,
+            ),
+            if (!feedback.isCorrect && feedback.answer.trim().isNotEmpty)
+              _DetailLine(label: 'Bạn trả lời', value: feedback.answer.trim()),
+            if (vocab.example?.trim().isNotEmpty ?? false)
+              _DetailLine(label: 'Ví dụ', value: vocab.example!.trim()),
+            if (vocab.note?.trim().isNotEmpty ?? false)
+              _DetailLine(label: 'Ghi chú', value: vocab.note!.trim()),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Tiếp tục'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -546,13 +558,12 @@ class _ReviewFinishedView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      result.item.vocab.kana,
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                height: 1.15,
-                              ),
+                    PitchAccentReading(
+                      kana: result.item.vocab.kana,
+                      pattern: result.item.vocab.pitchAccent,
+                      romaji: result.item.vocab.romaji,
+                      fontSize: 24,
+                      textColor: colors.onSurface,
                     ),
                     const SizedBox(height: 4),
                     Text(

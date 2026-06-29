@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jvocab/core/database/app_database.dart';
 import 'package:jvocab/core/utils/quiz_utils.dart';
-import 'package:jvocab/features/home/presentation/providers/home_provider.dart';
+import 'package:jvocab/features/folders/presentation/widgets/folder_progress_list.dart';
 import 'package:jvocab/features/learning/domain/learning_models.dart';
 import 'package:jvocab/features/learning/domain/learning_repository.dart';
 import 'package:jvocab/features/learning/domain/learning_session_engine.dart';
@@ -99,7 +99,7 @@ void main() {
   });
 
   test('folder completion is learned words divided by total words', () {
-    const summary = FolderSummary(
+    const summary = FolderWithCount(
       folder: Folder(
         id: 1,
         name: 'N5',
@@ -112,7 +112,7 @@ void main() {
       dueCount: 2,
       lv6Count: 1,
     );
-    final empty = FolderSummary(
+    final empty = FolderWithCount(
       folder: summary.folder,
       totalWords: 0,
       unlearnedCount: 0,
@@ -120,8 +120,8 @@ void main() {
       lv6Count: 0,
     );
 
-    expect(summary.completionRate, 0.6);
-    expect(empty.completionRate, 0);
+    expect(folderCompletionRate(summary), 0.6);
+    expect(folderCompletionRate(empty), 0);
   });
 }
 

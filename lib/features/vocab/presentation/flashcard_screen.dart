@@ -334,7 +334,6 @@ class _FlashcardFront extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final hasKanji = vocab.kanji?.trim().isNotEmpty ?? false;
-    final title = hasKanji ? vocab.kanji!.trim() : vocab.kana.trim();
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -345,14 +344,23 @@ class _FlashcardFront extends StatelessWidget {
           size: 36,
         ),
         const SizedBox(height: 22),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                height: 1.12,
-              ),
-        ),
+        if (hasKanji)
+          Text(
+            vocab.kanji!.trim(),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  height: 1.12,
+                ),
+          )
+        else
+          Center(
+            child: PitchAccentText(
+              kana: vocab.kana,
+              pattern: vocab.pitchAccent,
+              fontSize: 36,
+            ),
+          ),
         if (showKana && hasKanji) ...[
           const SizedBox(height: 16),
           Center(

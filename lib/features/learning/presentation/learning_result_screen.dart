@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
+import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/learning_models.dart';
 
 class LearningResultScreen extends ConsumerWidget {
@@ -45,23 +46,46 @@ class LearningResultScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               ...summary.words.map(
-                (word) => Card(
-                  child: ListTile(
-                    leading: Icon(
-                      word.passed
-                          ? Icons.check_circle_rounded
-                          : Icons.replay_rounded,
+                (word) {
+                  final vocab = word.item.vocab;
+                  final hasKanji = vocab.kanji?.trim().isNotEmpty == true;
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        word.passed
+                            ? Icons.check_circle_rounded
+                            : Icons.replay_rounded,
+                      ),
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (hasKanji) ...[
+                            Text(
+                              vocab.kanji!.trim(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                          PitchAccentReading(
+                            kana: vocab.kana,
+                            pattern: vocab.pitchAccent,
+                            romaji: vocab.romaji,
+                            fontSize: hasKanji ? 16 : 18,
+                          ),
+                        ],
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          word.passed
+                              ? 'Đã chuyển lên Lv 1'
+                              : 'Giữ nguyên Lv 0',
+                        ),
+                      ),
                     ),
-                    title: Text(
-                      word.item.vocab.kanji?.trim().isNotEmpty == true
-                          ? word.item.vocab.kanji!.trim()
-                          : word.item.vocab.kana,
-                    ),
-                    subtitle: Text(
-                      word.passed ? 'Đã chuyển lên Lv 1' : 'Giữ nguyên Lv 0',
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 18),
               FilledButton.icon(

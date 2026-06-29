@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import 'providers/home_provider.dart';
-import 'widgets/folder_progress_list.dart';
+import 'widgets/home_vocab_search.dart';
 import 'widgets/level_stats_dashboard.dart';
 import 'widgets/review_summary_card.dart';
 
@@ -17,27 +17,21 @@ class HomeScreen extends ConsumerWidget {
     final greeting = ref.watch(greetingProvider);
     final totalDueCount = ref.watch(totalDueCountProvider);
     final totalLevelStats = ref.watch(totalLevelStatsProvider);
-    final folderSummaries = ref.watch(folderSummariesProvider);
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push(AppRoutes.newFolder),
-        child: const Icon(Icons.add_rounded),
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(totalDueCountProvider);
             ref.invalidate(totalLevelStatsProvider);
-            ref.invalidate(folderSummariesProvider);
             await Future<void>.delayed(const Duration(milliseconds: 250));
           },
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 100),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -65,6 +59,8 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 18),
+                      const HomeVocabSearch(),
+                      const SizedBox(height: 18),
                       totalLevelStats.when(
                         data: (stats) => LevelStatsDashboard(stats: stats),
                         loading: () => const _LoadingCard(),
@@ -79,31 +75,7 @@ class HomeScreen extends ConsumerWidget {
                         loading: () => const _LoadingCard(),
                         error: (error, _) => _ErrorCard(message: '$error'),
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Các bộ từ',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: colors.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                     ],
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
-                sliver: SliverToBoxAdapter(
-                  child: folderSummaries.when(
-                    data: (folders) => FolderProgressList(
-                      folders: folders,
-                      onOpenFolder: (id) =>
-                          context.push(AppRoutes.folderVocab(id)),
-                    ),
-                    loading: () => const _LoadingCard(),
-                    error: (error, _) => _ErrorCard(message: '$error'),
                   ),
                 ),
               ),

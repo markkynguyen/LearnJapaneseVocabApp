@@ -48,6 +48,16 @@ class VocabWithProgress {
   final SrsProgressEntry progress;
 }
 
+class VocabSearchResult {
+  const VocabSearchResult({
+    required this.item,
+    required this.folder,
+  });
+
+  final VocabWithProgress item;
+  final Folder folder;
+}
+
 class LevelStats {
   const LevelStats({
     required this.totalWords,
@@ -609,7 +619,7 @@ class FolderDao extends DatabaseAccessor<AppDatabase> with _$FolderDaoMixin {
   }
 }
 
-@DriftAccessor(tables: [Vocabulary, SrsProgress])
+@DriftAccessor(tables: [Folders, Vocabulary, SrsProgress])
 class VocabularyDao extends DatabaseAccessor<AppDatabase>
     with _$VocabularyDaoMixin {
   VocabularyDao(super.db);
@@ -667,6 +677,58 @@ class VocabularyDao extends DatabaseAccessor<AppDatabase>
       searchQuery: query,
       sortMode: VocabSortMode.newest,
     ).get();
+  }
+
+  Stream<List<VocabSearchResult>> watchVocabSuggestions(
+    String searchQuery, {
+    int limit = 4,
+  }) {
+    final trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.isEmpty) {
+      return Stream.value(const []);
+    }
+
+    final normalized = trimmedQuery.toLowerCase();
+    final containsPattern = '%$normalized%';
+    final prefixPattern = '$normalized%';
+    final normalizedRomaji = vocabulary.romaji.lower();
+    final normalizedMeaning = vocabulary.meaning.lower();
+    final containsMatch = vocabulary.kanji.like('%$trimmedQuery%') |
+        vocabulary.kana.like('%$trimmedQuery%') |
+        normalizedRomaji.like(containsPattern) |
+        normalizedMeaning.like(containsPattern);
+    final exactMatch = vocabulary.kanji.equals(trimmedQuery) |
+        vocabulary.kana.equals(trimmedQuery) |
+        normalizedRomaji.equals(normalized) |
+        normalizedMeaning.equals(normalized);
+    final prefixMatch = vocabulary.kanji.like('$trimmedQuery%') |
+        vocabulary.kana.like('$trimmedQuery%') |
+        normalizedRomaji.like(prefixPattern) |
+        normalizedMeaning.like(prefixPattern);
+
+    final query = select(vocabulary).join([
+      innerJoin(srsProgress, srsProgress.vocabId.equalsExp(vocabulary.id)),
+      innerJoin(folders, folders.id.equalsExp(vocabulary.folderId)),
+    ])
+      ..where(containsMatch)
+      ..orderBy([
+        OrderingTerm.desc(exactMatch),
+        OrderingTerm.desc(prefixMatch),
+        OrderingTerm.desc(vocabulary.createdAt),
+      ])
+      ..limit(limit.clamp(1, 20));
+
+    return query
+        .map(
+          (row) => VocabSearchResult(
+            item: VocabWithProgress(
+              vocab: row.readTable(vocabulary),
+              progress: row.readTable(srsProgress),
+            ),
+            folder: row.readTable(folders),
+          ),
+        )
+        .watch();
   }
 
   Future<VocabWithProgress?> getVocabById(int id) {
