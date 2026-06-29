@@ -220,6 +220,99 @@ void main() {
       );
     });
 
+    test('global suggestions search four fields and rank exact matches first',
+        () async {
+      final folderA = await database.folderDao.insertFolder(
+        FoldersCompanion.insert(name: 'Động từ N5'),
+      );
+      final folderB = await database.folderDao.insertFolder(
+        FoldersCompanion.insert(name: 'Từ bổ sung'),
+      );
+
+      final containsId = await _insertSearchVocab(
+        database,
+        folderA,
+        kanji: 'お食べる',
+        kana: 'おたべる',
+        romaji: 'otaberu',
+        meaning: 'to eat politely',
+        createdAt: 300,
+      );
+      final prefixId = await _insertSearchVocab(
+        database,
+        folderB,
+        kanji: '食べ物',
+        kana: 'たべもの',
+        romaji: 'taberumono',
+        meaning: 'food',
+        createdAt: 200,
+      );
+      final exactId = await _insertSearchVocab(
+        database,
+        folderA,
+        kanji: '食べる',
+        kana: 'たべる',
+        romaji: 'taberu',
+        meaning: 'eat',
+        note: 'secret-note-only',
+        createdAt: 100,
+      );
+
+      final romajiResults =
+          await database.vocabularyDao.watchVocabSuggestions('TABERU').first;
+      final kanjiResults =
+          await database.vocabularyDao.watchVocabSuggestions('食べる').first;
+      final kanaResults =
+          await database.vocabularyDao.watchVocabSuggestions('たべ').first;
+      final meaningResults =
+          await database.vocabularyDao.watchVocabSuggestions('EAT').first;
+      final noteResults = await database.vocabularyDao
+          .watchVocabSuggestions('secret-note-only')
+          .first;
+
+      expect(
+        romajiResults.map((result) => result.item.vocab.id),
+        [exactId, prefixId, containsId],
+      );
+      expect(romajiResults.first.folder.name, 'Động từ N5');
+      expect(kanjiResults.first.item.vocab.id, exactId);
+      expect(
+        kanaResults.map((result) => result.item.vocab.id),
+        containsAll([exactId, prefixId, containsId]),
+      );
+      expect(
+        meaningResults.map((result) => result.item.vocab.id),
+        containsAll([exactId, containsId]),
+      );
+      expect(noteResults, isEmpty);
+    });
+
+    test('global suggestions enforce the requested result limit', () async {
+      final folderId = await database.folderDao.insertFolder(
+        FoldersCompanion.insert(name: 'Limit'),
+      );
+      for (var index = 0; index < 6; index++) {
+        await _insertSearchVocab(
+          database,
+          folderId,
+          kana: 'かな$index',
+          romaji: 'common$index',
+          meaning: 'shared result $index',
+          createdAt: index,
+        );
+      }
+
+      final results = await database.vocabularyDao
+          .watchVocabSuggestions('common', limit: 4)
+          .first;
+
+      expect(results, hasLength(4));
+      expect(
+        results.map((result) => result.item.vocab.createdAt),
+        [5, 4, 3, 2],
+      );
+    });
+
     test('level stats count learned levels and exclude level 0 from learned',
         () async {
       final folderA = await database.folderDao.insertFolder(
@@ -262,6 +355,29 @@ Future<int> _insertVocab(AppDatabase database, int folderId, String kana) {
       kana: kana,
       romaji: kana,
       meaning: kana,
+    ),
+  );
+}
+
+Future<int> _insertSearchVocab(
+  AppDatabase database,
+  int folderId, {
+  String? kanji,
+  required String kana,
+  required String romaji,
+  required String meaning,
+  String? note,
+  required int createdAt,
+}) {
+  return database.vocabularyDao.insertVocab(
+    VocabularyCompanion.insert(
+      folderId: folderId,
+      kanji: Value(kanji),
+      kana: kana,
+      romaji: romaji,
+      meaning: meaning,
+      note: Value(note),
+      createdAt: Value(createdAt),
     ),
   );
 }

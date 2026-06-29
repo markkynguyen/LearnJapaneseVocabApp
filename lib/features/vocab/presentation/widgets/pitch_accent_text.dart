@@ -100,6 +100,63 @@ class PitchAccentText extends StatelessWidget {
   }
 }
 
+class PitchAccentReading extends StatelessWidget {
+  const PitchAccentReading({
+    required this.kana,
+    required this.pattern,
+    this.romaji,
+    this.fontSize = 18,
+    this.fontWeight = FontWeight.w800,
+    this.textColor,
+    this.accentColor,
+    this.overlayAccent = true,
+    super.key,
+  });
+
+  final String kana;
+  final String? pattern;
+  final String? romaji;
+  final double fontSize;
+  final FontWeight fontWeight;
+  final Color? textColor;
+  final Color? accentColor;
+  final bool overlayAccent;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor =
+        textColor ?? Theme.of(context).colorScheme.onSurfaceVariant;
+    final normalizedRomaji = romaji?.trim();
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 7,
+      runSpacing: 5,
+      children: [
+        PitchAccentText(
+          kana: kana,
+          pattern: pattern,
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          textColor: effectiveColor,
+          accentColor: accentColor ?? effectiveColor,
+          overlayAccent: overlayAccent,
+        ),
+        if (normalizedRomaji?.isNotEmpty == true)
+          Text(
+            '• $normalizedRomaji',
+            style: TextStyle(
+              color: effectiveColor,
+              fontSize: fontSize * 0.82,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _InlinePitchMora extends StatelessWidget {
   const _InlinePitchMora({
     required this.text,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jvocab/core/database/app_database.dart';
+import 'package:jvocab/features/vocab/presentation/flashcard_screen.dart';
+import 'package:jvocab/features/vocab/presentation/providers/flashcard_provider.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/pitch_accent_text.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/vocab_card.dart';
 
@@ -79,14 +81,54 @@ void main() {
         lines.map((line) => (line.decoration! as BoxDecoration).color).toList();
     expect(colors, [Colors.green, Colors.green, Colors.transparent]);
   });
+
+  testWidgets('kana-only flashcard renders pitch accent as its title',
+      (tester) async {
+    final item = _item(kanji: null);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          flashcardVocabularyProvider(1).overrideWith(
+            (ref) => Stream.value([item]),
+          ),
+        ],
+        child: const MaterialApp(
+          home: FlashcardScreen(folderId: 1, folderName: 'N5'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final pitch = tester.widget<PitchAccentText>(
+      find.byWidgetPredicate(
+        (widget) => widget is PitchAccentText && widget.fontSize == 36,
+      ),
+    );
+    expect(pitch.kana, 'たべる');
+    expect(pitch.pattern, 'HHL');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('missing pitch pattern falls back to plain kana', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: PitchAccentText(kana: 'たべる', pattern: null),
+        ),
+      ),
+    );
+
+    expect(find.text('たべる'), findsOneWidget);
+    expect(find.byType(AnimatedContainer), findsNothing);
+  });
 }
 
-VocabWithProgress _item() {
-  return const VocabWithProgress(
+VocabWithProgress _item({String? kanji = '食べる'}) {
+  return VocabWithProgress(
     vocab: VocabularyEntry(
       id: 1,
       folderId: 1,
-      kanji: '食べる',
+      kanji: kanji,
       kana: 'たべる',
       romaji: 'taberu',
       meaning: 'ăn',
@@ -95,7 +137,7 @@ VocabWithProgress _item() {
       isFavorite: false,
       createdAt: 0,
     ),
-    progress: SrsProgressEntry(
+    progress: const SrsProgressEntry(
       id: 1,
       vocabId: 1,
       level: 0,

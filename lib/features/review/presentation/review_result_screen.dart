@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/time_utils.dart';
+import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/review_models.dart';
 import 'providers/review_session_provider.dart';
 
@@ -305,9 +306,7 @@ class _ResultWordTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final vocab = item.reviewResult.item.vocab;
-    final title = (vocab.kanji?.trim().isNotEmpty ?? false)
-        ? vocab.kanji!.trim()
-        : vocab.kana;
+    final hasKanji = vocab.kanji?.trim().isNotEmpty == true;
 
     return Card(
       child: Padding(
@@ -318,13 +317,21 @@ class _ResultWordTile extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  child: hasKanji
+                      ? Text(
+                          vocab.kanji!.trim(),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        )
+                      : PitchAccentReading(
+                          kana: vocab.kana,
+                          pattern: vocab.pitchAccent,
+                          romaji: vocab.romaji,
+                          fontSize: 18,
+                          textColor: colors.onSurface,
+                        ),
                 ),
                 if (item.newLevel != null)
                   Chip(
@@ -332,11 +339,16 @@ class _ResultWordTile extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${vocab.kana} • ${vocab.romaji}',
-              style: TextStyle(color: colors.onSurfaceVariant),
-            ),
+            if (hasKanji) ...[
+              const SizedBox(height: 6),
+              PitchAccentReading(
+                kana: vocab.kana,
+                pattern: vocab.pitchAccent,
+                romaji: vocab.romaji,
+                fontSize: 17,
+                textColor: colors.onSurfaceVariant,
+              ),
+            ],
             const SizedBox(height: 8),
             Text(vocab.meaning),
             if (item.reviewResult.wrongAnswers > 0) ...[

@@ -18,7 +18,6 @@ void main() {
               const LevelStats(totalWords: 0, levelCounts: {}),
             ),
           ),
-          folderSummariesProvider.overrideWith((ref) => Stream.value([])),
           themeModeProvider.overrideWith((ref) => ThemeMode.light),
         ],
         child: const JVocabApp(),
@@ -28,7 +27,16 @@ void main() {
     await tester.pump();
 
     expect(find.text('Chao buoi sáng!'), findsOneWidget);
-    expect(find.text('Các bộ từ'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.hintText ==
+                'Tra kanji, kana, romaji hoặc nghĩa...',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Các bộ từ'), findsNothing);
     expect(find.text('Trang chủ'), findsOneWidget);
   });
 }

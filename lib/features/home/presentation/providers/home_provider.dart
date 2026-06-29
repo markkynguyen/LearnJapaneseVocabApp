@@ -4,30 +4,6 @@ import '../../../../core/database/app_database.dart';
 
 part 'home_provider.g.dart';
 
-class FolderSummary {
-  const FolderSummary({
-    required this.folder,
-    required this.totalWords,
-    required this.unlearnedCount,
-    required this.dueCount,
-    required this.lv6Count,
-  });
-
-  final Folder folder;
-  final int totalWords;
-  final int unlearnedCount;
-  final int dueCount;
-  final int lv6Count;
-
-  double get completionRate {
-    if (totalWords == 0) {
-      return 0;
-    }
-
-    return (totalWords - unlearnedCount) / totalWords;
-  }
-}
-
 @riverpod
 String greeting(GreetingRef ref) {
   final hour = DateTime.now().hour;
@@ -53,18 +29,15 @@ Stream<LevelStats> totalLevelStats(TotalLevelStatsRef ref) {
 }
 
 @riverpod
-Stream<List<FolderSummary>> folderSummaries(FolderSummariesRef ref) {
-  return ref.watch(folderDaoProvider).watchFoldersWithCount().map(
-        (folders) => folders
-            .map(
-              (folder) => FolderSummary(
-                folder: folder.folder,
-                totalWords: folder.totalWords,
-                unlearnedCount: folder.unlearnedCount,
-                dueCount: folder.dueCount,
-                lv6Count: folder.lv6Count,
-              ),
-            )
-            .toList(),
+Stream<List<VocabSearchResult>> homeVocabSuggestions(
+  HomeVocabSuggestionsRef ref,
+  String query,
+) {
+  if (query.trim().isEmpty) {
+    return Stream.value(const []);
+  }
+  return ref.watch(vocabularyDaoProvider).watchVocabSuggestions(
+        query,
+        limit: 4,
       );
 }

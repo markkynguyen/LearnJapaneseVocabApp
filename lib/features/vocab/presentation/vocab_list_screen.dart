@@ -301,55 +301,116 @@ class _FolderDueSummaryCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.event_available_rounded,
-                color: colors.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: unlearnedCount.when(
-                data: (newCount) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$newCount từ cần học',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                    ),
-                    const SizedBox(height: 3),
-                    dueCount.when(
-                      data: (count) => Text(
-                        '$count từ Lv 1–6 đang đến hạn ôn.',
-                        style: TextStyle(color: colors.onSurfaceVariant),
+            Row(
+              children: [
+                Icon(
+                  Icons.event_available_rounded,
+                  size: 20,
+                  color: colors.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Kế hoạch học tập',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
                       ),
-                      loading: () => const Text('Đang tải lịch ôn...'),
-                      error: (_, __) => const Text('Không thể tải lịch ôn.'),
-                    ),
-                  ],
                 ),
-                loading: () => Text(
-                  'Đang tải số từ cần học...',
-                  style: TextStyle(color: colors.onSurfaceVariant),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _StudyCountTile(
+                    count: unlearnedCount,
+                    icon: Icons.auto_stories_rounded,
+                    label: 'Từ cần học',
+                    color: colors.primary,
+                  ),
                 ),
-                error: (error, _) => Text(
-                  'Không thể tải số từ cần học.',
-                  style: TextStyle(color: context.appDanger),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _StudyCountTile(
+                    count: dueCount,
+                    icon: Icons.school_rounded,
+                    label: 'Từ cần ôn',
+                    color: context.appWarning,
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StudyCountTile extends StatelessWidget {
+  const _StudyCountTile({
+    required this.count,
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final AsyncValue<int> count;
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 112),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 22),
+          const Spacer(),
+          count.when(
+            data: (value) => Text(
+              '$value',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            loading: () => SizedBox.square(
+              dimension: 26,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: color,
+              ),
+            ),
+            error: (_, __) => Icon(
+              Icons.error_outline_rounded,
+              color: colors.error,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
       ),
     );
   }

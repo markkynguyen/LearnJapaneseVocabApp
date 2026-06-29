@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/learning_models.dart';
 import 'providers/learning_provider.dart';
 
@@ -341,18 +342,21 @@ class _LearningFeedbackSheet extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
-              vocab.kanji?.trim().isNotEmpty == true
-                  ? vocab.kanji!.trim()
-                  : vocab.kana,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${vocab.kana} • ${vocab.romaji}',
-              style: TextStyle(color: colors.onSurfaceVariant),
+            if (vocab.kanji?.trim().isNotEmpty == true) ...[
+              Text(
+                vocab.kanji!.trim(),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            PitchAccentReading(
+              kana: vocab.kana,
+              pattern: vocab.pitchAccent,
+              romaji: vocab.romaji,
+              fontSize: vocab.kanji?.trim().isNotEmpty == true ? 18 : 24,
+              textColor: colors.onSurfaceVariant,
             ),
             const SizedBox(height: 14),
             _LearningFeedbackDetail(
