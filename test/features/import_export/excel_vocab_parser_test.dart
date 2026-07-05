@@ -19,6 +19,7 @@ void main() {
       TextCellValue('Đồng nghĩa: 食う'),
       const IntCellValue(3),
       const IntCellValue(1780000000),
+      const IntCellValue(1770000000),
     ]);
 
     final preview = const ExcelVocabParser().parse(
@@ -30,6 +31,8 @@ void main() {
     expect(preview.rows.single.note, 'Đồng nghĩa: 食う');
     expect(preview.rows.single.level, 3);
     expect(preview.rows.single.nextReview, 1780000000);
+    expect(preview.rows.single.lastReview, 1770000000);
+    expect(preview.rows.single.hasLastReviewColumn, isTrue);
   });
 
   test('accepts level 0 for unlearned vocabulary', () {
@@ -128,6 +131,7 @@ void main() {
       null,
       const IntCellValue(1),
       null,
+      null,
       TextCellValue('N5 nouns'),
     ]);
 
@@ -166,5 +170,34 @@ void main() {
 
     expect(preview.validCount, 0);
     expect(preview.rows.single.error, contains('folder'));
+  });
+
+  test('accepts legacy files without last_review column', () {
+    final excel = Excel.createExcel();
+    final sheet = excel['jvocab'];
+    excel.delete('Sheet1');
+    final legacyHeaders =
+        excelVocabHeaders.where((header) => header != 'last_review');
+    sheet.appendRow(legacyHeaders.map(TextCellValue.new).toList());
+    sheet.appendRow([
+      null,
+      TextCellValue('いぬ'),
+      TextCellValue('inu'),
+      TextCellValue('dog'),
+      null,
+      null,
+      null,
+      const IntCellValue(2),
+      const IntCellValue(1780000000),
+    ]);
+
+    final preview = const ExcelVocabParser().parse(
+      bytes: excel.encode()!,
+      fileName: 'legacy.xlsx',
+    );
+
+    expect(preview.validCount, 1);
+    expect(preview.rows.single.lastReview, isNull);
+    expect(preview.rows.single.hasLastReviewColumn, isFalse);
   });
 }

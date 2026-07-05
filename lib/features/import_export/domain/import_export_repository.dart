@@ -368,7 +368,7 @@ class ImportExportRepository {
   Future<void> _applyImportedProgress(int vocabId, ExcelVocabRow row) async {
     final level = row.level;
     final nextReview = row.nextReview;
-    if (level == null && nextReview == null) {
+    if (level == null && nextReview == null && !row.hasLastReviewColumn) {
       return;
     }
 
@@ -384,6 +384,9 @@ class ImportExportRepository {
         level: Value(effectiveLevel),
         intervalDays: Value(intervalDays),
         nextReviewAt: Value(effectiveNextReview),
+        lastReviewedAt: row.hasLastReviewColumn
+            ? Value(row.lastReview)
+            : const Value.absent(),
       ),
     );
   }

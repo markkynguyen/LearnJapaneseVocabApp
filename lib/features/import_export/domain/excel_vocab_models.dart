@@ -10,6 +10,7 @@ const excelVocabHeaders = [
   'note',
   'level',
   'next_review',
+  'last_review',
 ];
 
 enum DuplicateStrategy {
@@ -34,6 +35,8 @@ class ExcelVocabRow {
     this.note,
     this.level,
     this.nextReview,
+    this.lastReview,
+    this.hasLastReviewColumn = false,
     this.folderName,
     this.error,
     this.isDuplicate = false,
@@ -49,6 +52,8 @@ class ExcelVocabRow {
   final String? note;
   final int? level;
   final int? nextReview;
+  final int? lastReview;
+  final bool hasLastReviewColumn;
   final String? folderName;
   final String? error;
   final bool isDuplicate;
@@ -70,6 +75,8 @@ class ExcelVocabRow {
       note: note,
       level: level,
       nextReview: nextReview,
+      lastReview: lastReview,
+      hasLastReviewColumn: hasLastReviewColumn,
       folderName: folderName,
       error: error ?? this.error,
       isDuplicate: isDuplicate ?? this.isDuplicate,

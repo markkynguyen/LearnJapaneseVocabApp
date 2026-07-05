@@ -45,8 +45,10 @@ class ExcelVocabParser {
     }
 
     final headers = _readHeaders(sheet.rows.first);
+    // last_review được thêm sau định dạng Excel ban đầu. Vẫn hỗ trợ các file
+    // backup cũ; file export và template mới luôn có cột này.
     final requiredHeaders = [
-      ...excelVocabHeaders,
+      ...excelVocabHeaders.where((header) => header != 'last_review'),
       if (requireFolder) 'folder',
     ];
     final missingHeaders = requiredHeaders
@@ -145,6 +147,13 @@ class ExcelVocabParser {
       errors.add('next_review phải là Unix seconds');
     }
 
+    final lastReviewText = _value(row, headers, 'last_review');
+    final lastReview =
+        lastReviewText.isEmpty ? null : int.tryParse(lastReviewText);
+    if (lastReviewText.isNotEmpty && lastReview == null) {
+      errors.add('last_review phải là Unix seconds');
+    }
+
     return ExcelVocabRow(
       rowNumber: rowNumber,
       kanji: _emptyToNull(_value(row, headers, 'kanji')),
@@ -156,6 +165,8 @@ class ExcelVocabParser {
       note: _emptyToNull(_value(row, headers, 'note')),
       level: level,
       nextReview: nextReview,
+      lastReview: lastReview,
+      hasLastReviewColumn: headers.containsKey('last_review'),
       folderName: _emptyToNull(folderName),
       error: errors.isEmpty ? null : errors.join(', '),
     );

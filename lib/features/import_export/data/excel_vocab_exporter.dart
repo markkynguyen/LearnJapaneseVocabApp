@@ -33,6 +33,9 @@ class ExcelVocabExporter {
           _text(vocab.note),
           IntCellValue(progress.level),
           IntCellValue(progress.nextReviewAt),
+          progress.lastReviewedAt == null
+              ? null
+              : IntCellValue(progress.lastReviewedAt!),
           TextCellValue(bundle.folder.name),
         ]);
       }
@@ -59,6 +62,7 @@ class ExcelVocabExporter {
       TextCellValue('朝ご飯を食べます。'),
       TextCellValue('Dong nghia: 食う; luu y lich su dung.'),
       const IntCellValue(1),
+      null,
       null,
     ]);
 
