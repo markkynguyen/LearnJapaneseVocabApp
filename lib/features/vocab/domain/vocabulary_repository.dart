@@ -1,18 +1,14 @@
-import 'package:drift/drift.dart';
-
-import '../../../core/database/app_database.dart';
+import '../../../core/cloud/cloud_store.dart';
+import '../../../core/models/app_models.dart';
 
 class VocabularyRepository {
-  const VocabularyRepository(this._vocabularyDao);
+  const VocabularyRepository(this._store);
+  final CloudStore _store;
 
-  final VocabularyDao _vocabularyDao;
+  Future<VocabWithProgress?> getVocabById(String id) => _store.getVocab(id);
 
-  Future<VocabWithProgress?> getVocabById(int id) {
-    return _vocabularyDao.getVocabById(id);
-  }
-
-  Future<int> createVocab({
-    required int folderId,
+  Future<String> createVocab({
+    required String folderId,
     required String kana,
     required String romaji,
     required String meaning,
@@ -20,22 +16,19 @@ class VocabularyRepository {
     String? pitchAccent,
     String? example,
     String? note,
-  }) {
-    return _vocabularyDao.insertVocab(
-      VocabularyCompanion.insert(
+  }) =>
+      _store.createVocab(
         folderId: folderId,
         kana: kana.trim(),
         romaji: romaji.trim(),
         meaning: meaning.trim(),
-        kanji: Value(_emptyToNull(kanji)),
-        pitchAccent: Value(_emptyToNull(pitchAccent)),
-        example: Value(_emptyToNull(example)),
-        note: Value(_emptyToNull(note)),
-      ),
-    );
-  }
+        kanji: _emptyToNull(kanji),
+        pitchAccent: _emptyToNull(pitchAccent),
+        example: _emptyToNull(example),
+        note: _emptyToNull(note),
+      );
 
-  Future<bool> updateVocab({
+  Future<void> updateVocab({
     required VocabularyEntry existing,
     required String kana,
     required String romaji,
@@ -44,30 +37,20 @@ class VocabularyRepository {
     String? pitchAccent,
     String? example,
     String? note,
-  }) {
-    return _vocabularyDao.updateVocab(
-      VocabularyCompanion(
-        id: Value(existing.id),
-        folderId: Value(existing.folderId),
-        kana: Value(kana.trim()),
-        romaji: Value(romaji.trim()),
-        meaning: Value(meaning.trim()),
-        kanji: Value(_emptyToNull(kanji)),
-        pitchAccent: Value(_emptyToNull(pitchAccent)),
-        example: Value(_emptyToNull(example)),
-        note: Value(_emptyToNull(note)),
-        audioPath: Value(existing.audioPath),
-        isFavorite: Value(existing.isFavorite),
-        createdAt: Value(existing.createdAt),
-      ),
-    );
-  }
+  }) =>
+      _store.updateVocab(
+        id: existing.id,
+        kana: kana.trim(),
+        romaji: romaji.trim(),
+        meaning: meaning.trim(),
+        kanji: _emptyToNull(kanji),
+        pitchAccent: _emptyToNull(pitchAccent),
+        example: _emptyToNull(example),
+        note: _emptyToNull(note),
+      );
 
   String? _emptyToNull(String? value) {
     final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty) {
-      return null;
-    }
-    return trimmed;
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 }

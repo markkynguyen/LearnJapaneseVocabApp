@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jvocab/core/database/app_database.dart';
+import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/core/utils/quiz_utils.dart';
 import 'package:jvocab/features/folders/presentation/widgets/folder_progress_list.dart';
 import 'package:jvocab/features/learning/domain/learning_models.dart';
@@ -79,7 +79,7 @@ void main() {
 
   test('quiz script uses kana or kanji with kana fallback', () {
     final item = _item();
-    final kanaOnly = _item(id: 2, kanji: null);
+    final kanaOnly = _item(id: 'vocab-2', kanji: null);
 
     expect(japaneseForQuiz(item.vocab, quizScriptKanji), '食べる');
     expect(japaneseForQuiz(item.vocab, quizScriptKana), 'たべる');
@@ -101,7 +101,7 @@ void main() {
   test('folder completion is learned words divided by total words', () {
     const summary = FolderWithCount(
       folder: Folder(
-        id: 1,
+        id: 'folder-1',
         name: 'N5',
         description: null,
         color: '#000000',
@@ -125,11 +125,11 @@ void main() {
   });
 }
 
-VocabWithProgress _item({int id = 1, String? kanji = '食べる'}) {
+VocabWithProgress _item({String id = 'vocab-1', String? kanji = '食べる'}) {
   return VocabWithProgress(
     vocab: VocabularyEntry(
       id: id,
-      folderId: 1,
+      folderId: 'folder-1',
       kanji: kanji,
       kana: 'たべる',
       romaji: 'taberu',
@@ -139,7 +139,6 @@ VocabWithProgress _item({int id = 1, String? kanji = '食べる'}) {
       createdAt: 0,
     ),
     progress: SrsProgressEntry(
-      id: id,
       vocabId: id,
       level: 0,
       intervalDays: 0,
@@ -171,7 +170,7 @@ LearningSessionState _session(
 }) {
   final requirements = questions.where((item) => item.requirementId != null);
   return LearningSessionState(
-    folderId: 1,
+    folderId: 'folder-1',
     questions: questions,
     currentIndex: 0,
     resultsByVocabId: {

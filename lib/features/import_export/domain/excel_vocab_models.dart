@@ -1,4 +1,4 @@
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 
 const excelVocabHeaders = [
   'kanji',

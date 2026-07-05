@@ -1,4 +1,4 @@
-import '../database/app_database.dart';
+import '../models/app_models.dart';
 
 const quizScriptKanji = 'kanji';
 const quizScriptKana = 'kana';

@@ -13,7 +13,7 @@ class ExcelExportScreen extends ConsumerStatefulWidget {
 }
 
 class _ExcelExportScreenState extends ConsumerState<ExcelExportScreen> {
-  int? _folderId;
+  String? _folderId;
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +33,14 @@ class _ExcelExportScreenState extends ConsumerState<ExcelExportScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     'Export dùng các cột: kanji, kana, romaji, meaning, '
-                    'pitch_accent, example, note, level, next_review.',
+                    'pitch_accent, example, note, level, next_review, '
+                    'last_review.',
                     style: TextStyle(color: colors.onSurfaceVariant),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-              DropdownButtonFormField<int>(
+              DropdownButtonFormField<String>(
                 initialValue: _folderId,
                 decoration: const InputDecoration(
                   labelText: 'Chọn bộ từ',
@@ -89,7 +90,7 @@ class _ExcelExportScreenState extends ConsumerState<ExcelExportScreen> {
     );
   }
 
-  Future<void> _exportFolder(int folderId) async {
+  Future<void> _exportFolder(String folderId) async {
     final path = await ref
         .read(importExportControllerProvider.notifier)
         .exportFolder(folderId);

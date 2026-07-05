@@ -7,7 +7,7 @@ part of 'learning_provider.dart';
 // **************************************************************************
 
 String _$learningRepositoryHash() =>
-    r'562ad358b34c8f6d7673845a7dd9f66b9d926f2c';
+    r'eeb99d3dae06c381730067135b667dd70241a870';
 
 /// See also [learningRepository].
 @ProviderFor(learningRepository)
@@ -24,7 +24,7 @@ final learningRepositoryProvider =
 
 typedef LearningRepositoryRef = AutoDisposeProviderRef<LearningRepository>;
 String _$learningControllerHash() =>
-    r'60fc121835a9c57a89ef313494f61b0994eca7c2';
+    r'7e27e34affbc908295aee5a53701fb98e3629a6c';
 
 /// See also [LearningController].
 @ProviderFor(LearningController)

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/audio/audio_service.dart';
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../settings/presentation/providers/settings_provider.dart';
 import 'providers/flashcard_provider.dart';
@@ -17,7 +17,7 @@ class FlashcardScreen extends ConsumerWidget {
     super.key,
   });
 
-  final int folderId;
+  final String folderId;
   final String? folderName;
 
   @override
@@ -70,7 +70,7 @@ class _FlashcardContent extends ConsumerWidget {
     required this.state,
   });
 
-  final int folderId;
+  final String folderId;
   final String? folderName;
   final FlashcardDeckState state;
 

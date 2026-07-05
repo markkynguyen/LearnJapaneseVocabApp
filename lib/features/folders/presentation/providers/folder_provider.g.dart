@@ -6,7 +6,7 @@ part of 'folder_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$folderRepositoryHash() => r'fb84a65dea5f8ed8db6680fa0be3f3c2039756f6';
+String _$folderRepositoryHash() => r'538c3d5f5b185d1dd236c6f100d7fbeb9e938085';
 
 /// See also [folderRepository].
 @ProviderFor(folderRepository)
@@ -21,12 +21,12 @@ final folderRepositoryProvider = AutoDisposeProvider<FolderRepository>.internal(
 );
 
 typedef FolderRepositoryRef = AutoDisposeProviderRef<FolderRepository>;
-String _$foldersHash() => r'4499a6e8d30baba17184e2aed74b010745efc6d6';
+String _$foldersHash() => r'3f4fa92b16f7db57a2b18c9b55df7eaf52d437d2';
 
 /// See also [folders].
 @ProviderFor(folders)
 final foldersProvider =
-    AutoDisposeStreamProvider<List<FolderWithCount>>.internal(
+    AutoDisposeFutureProvider<List<FolderWithCount>>.internal(
   folders,
   name: r'foldersProvider',
   debugGetCreateSourceHash:
@@ -35,8 +35,8 @@ final foldersProvider =
   allTransitiveDependencies: null,
 );
 
-typedef FoldersRef = AutoDisposeStreamProviderRef<List<FolderWithCount>>;
-String _$folderByIdHash() => r'884ca4c87b589b66dda370169900392e444db302';
+typedef FoldersRef = AutoDisposeFutureProviderRef<List<FolderWithCount>>;
+String _$folderByIdHash() => r'14f87cba71c37ecc103d5e8f06b7b2ef77efeaba';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -70,7 +70,7 @@ class FolderByIdFamily extends Family<AsyncValue<Folder?>> {
 
   /// See also [folderById].
   FolderByIdProvider call(
-    int id,
+    String id,
   ) {
     return FolderByIdProvider(
       id,
@@ -105,7 +105,7 @@ class FolderByIdFamily extends Family<AsyncValue<Folder?>> {
 class FolderByIdProvider extends AutoDisposeFutureProvider<Folder?> {
   /// See also [folderById].
   FolderByIdProvider(
-    int id,
+    String id,
   ) : this._internal(
           (ref) => folderById(
             ref as FolderByIdRef,
@@ -133,7 +133,7 @@ class FolderByIdProvider extends AutoDisposeFutureProvider<Folder?> {
     required this.id,
   }) : super.internal();
 
-  final int id;
+  final String id;
 
   @override
   Override overrideWith(
@@ -174,7 +174,7 @@ class FolderByIdProvider extends AutoDisposeFutureProvider<Folder?> {
 
 mixin FolderByIdRef on AutoDisposeFutureProviderRef<Folder?> {
   /// The parameter `id` of this provider.
-  int get id;
+  String get id;
 }
 
 class _FolderByIdProviderElement
@@ -182,10 +182,10 @@ class _FolderByIdProviderElement
   _FolderByIdProviderElement(super.provider);
 
   @override
-  int get id => (origin as FolderByIdProvider).id;
+  String get id => (origin as FolderByIdProvider).id;
 }
 
-String _$folderControllerHash() => r'327feb81dfc49832c0da060e2d4f1a0ce19d3938';
+String _$folderControllerHash() => r'f8665f5085490c2184eebbc95bbc6c371190fc14';
 
 /// See also [FolderController].
 @ProviderFor(FolderController)

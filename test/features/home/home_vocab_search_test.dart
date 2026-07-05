@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jvocab/core/audio/audio_service.dart';
-import 'package:jvocab/core/database/app_database.dart';
+import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/features/home/presentation/home_screen.dart';
 import 'package:jvocab/features/home/presentation/providers/home_provider.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/pitch_accent_text.dart';
@@ -22,14 +22,12 @@ void main() {
       ProviderScope(
         overrides: [
           greetingProvider.overrideWith((ref) => 'Xin chào'),
-          totalDueCountProvider.overrideWith((ref) => Stream.value(0)),
+          totalDueCountProvider.overrideWith((ref) => 0),
           totalLevelStatsProvider.overrideWith(
-            (ref) => Stream.value(
-              const LevelStats(totalWords: 1, levelCounts: {1: 1}),
-            ),
+            (ref) => const LevelStats(totalWords: 1, levelCounts: {1: 1}),
           ),
           homeVocabSuggestionsProvider('tab').overrideWith(
-            (ref) => Stream.value([result]),
+            (ref) => [result],
           ),
           audioServiceProvider.overrideWith((ref) => audio),
         ],
@@ -78,7 +76,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Phát âm'));
     await tester.pump();
-    expect(audio.spokenVocabIds, [1]);
+    expect(audio.spokenVocabIds, ['vocab-1']);
 
     await tester.tap(find.byTooltip('Đóng'));
     await tester.pumpAndSettle();
@@ -89,7 +87,7 @@ void main() {
 }
 
 class _FakeAudioService extends AudioService {
-  final List<int> spokenVocabIds = [];
+  final List<String> spokenVocabIds = [];
 
   @override
   Future<void> speak(VocabularyEntry vocab) async {
@@ -104,8 +102,8 @@ VocabSearchResult _result() {
   return const VocabSearchResult(
     item: VocabWithProgress(
       vocab: VocabularyEntry(
-        id: 1,
-        folderId: 10,
+        id: 'vocab-1',
+        folderId: 'folder-10',
         kanji: '食べる',
         kana: 'たべる',
         romaji: 'taberu',
@@ -117,8 +115,7 @@ VocabSearchResult _result() {
         createdAt: 0,
       ),
       progress: SrsProgressEntry(
-        id: 1,
-        vocabId: 1,
+        vocabId: 'vocab-1',
         level: 1,
         intervalDays: 1,
         nextReviewAt: 0,
@@ -127,7 +124,7 @@ VocabSearchResult _result() {
       ),
     ),
     folder: Folder(
-      id: 10,
+      id: 'folder-10',
       name: 'Động từ N5',
       description: null,
       color: '#6366F1',

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/models/app_models.dart';
 import 'pitch_accent_text.dart';
 
 class VocabularyStudyCard extends StatelessWidget {

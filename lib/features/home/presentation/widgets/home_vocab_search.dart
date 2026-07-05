@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/audio/audio_service.dart';
-import '../../../../core/database/app_database.dart';
+import '../../../../core/models/app_models.dart';
 import '../../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../../../vocab/presentation/widgets/vocabulary_study_card.dart';
 import '../providers/home_provider.dart';

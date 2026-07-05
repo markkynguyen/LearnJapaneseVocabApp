@@ -7,7 +7,7 @@ part of 'vocab_form_provider.dart';
 // **************************************************************************
 
 String _$vocabularyRepositoryHash() =>
-    r'530f0b8fb24b4fd7998566da26e14ea32c3159cd';
+    r'f9367c072bc6e9979a0187286fdd237c9dfa10d5';
 
 /// See also [vocabularyRepository].
 @ProviderFor(vocabularyRepository)
@@ -23,7 +23,7 @@ final vocabularyRepositoryProvider =
 );
 
 typedef VocabularyRepositoryRef = AutoDisposeProviderRef<VocabularyRepository>;
-String _$vocabFormItemHash() => r'a01b3962a919984bd916c0bb002d24c40c701e28';
+String _$vocabFormItemHash() => r'85ab63a5aca855b7315683510c1793eddc4b7c0c';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -57,7 +57,7 @@ class VocabFormItemFamily extends Family<AsyncValue<VocabWithProgress?>> {
 
   /// See also [vocabFormItem].
   VocabFormItemProvider call(
-    int vocabId,
+    String vocabId,
   ) {
     return VocabFormItemProvider(
       vocabId,
@@ -93,7 +93,7 @@ class VocabFormItemProvider
     extends AutoDisposeFutureProvider<VocabWithProgress?> {
   /// See also [vocabFormItem].
   VocabFormItemProvider(
-    int vocabId,
+    String vocabId,
   ) : this._internal(
           (ref) => vocabFormItem(
             ref as VocabFormItemRef,
@@ -121,7 +121,7 @@ class VocabFormItemProvider
     required this.vocabId,
   }) : super.internal();
 
-  final int vocabId;
+  final String vocabId;
 
   @override
   Override overrideWith(
@@ -162,7 +162,7 @@ class VocabFormItemProvider
 
 mixin VocabFormItemRef on AutoDisposeFutureProviderRef<VocabWithProgress?> {
   /// The parameter `vocabId` of this provider.
-  int get vocabId;
+  String get vocabId;
 }
 
 class _VocabFormItemProviderElement
@@ -171,11 +171,11 @@ class _VocabFormItemProviderElement
   _VocabFormItemProviderElement(super.provider);
 
   @override
-  int get vocabId => (origin as VocabFormItemProvider).vocabId;
+  String get vocabId => (origin as VocabFormItemProvider).vocabId;
 }
 
 String _$vocabFormControllerHash() =>
-    r'9437b84e4250bc3331597348ba7e528b0049c65f';
+    r'7eba132aa38a11fcde4402615a1b9bbd295d59a9';
 
 /// See also [VocabFormController].
 @ProviderFor(VocabFormController)

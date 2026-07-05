@@ -34,7 +34,7 @@ LearningSubmissionResult? submitLearningAnswer(
   }
 
   final questions = [...session.questions];
-  final results = Map<int, LearningWordResult>.from(
+  final results = Map<String, LearningWordResult>.from(
     session.resultsByVocabId,
   );
   final result = results[question.item.vocab.id]!;

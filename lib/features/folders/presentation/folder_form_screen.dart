@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 import 'providers/folder_provider.dart';
 import 'widgets/folder_color_picker.dart';
 
@@ -155,7 +155,6 @@ class _FolderFormScreenState extends ConsumerState<FolderFormScreen> {
         name: _nameController.text,
         description: _descriptionController.text,
         color: _selectedColor,
-        createdAt: folder.createdAt,
       );
     }
 

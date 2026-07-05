@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/app_database.dart';
+import '../../../core/cloud/cloud_store.dart';
+import '../../../core/models/app_models.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import 'providers/review_session_provider.dart';
@@ -15,13 +16,13 @@ class ReviewSetupScreen extends ConsumerWidget {
     super.key,
   });
 
-  final int? folderId;
+  final String? folderId;
   final String? folderName;
   final bool favoritesOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settingsDao = ref.watch(settingsDaoProvider);
+    final store = ref.watch(cloudStoreProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -37,11 +38,11 @@ class ReviewSetupScreen extends ConsumerWidget {
       body: SafeArea(
         child: FutureBuilder(
           future: Future.wait([
-            ref.watch(srsProgressDaoProvider).getDueCount(
-                  folderId: folderId,
-                  favoritesOnly: favoritesOnly,
-                ),
-            settingsDao.getSettings(),
+            store.getDueCount(
+              folderId: folderId,
+              favoritesOnly: favoritesOnly,
+            ),
+            store.getLearningSettings(),
           ]),
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {

@@ -6,7 +6,7 @@ part of 'review_session_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$reviewRepositoryHash() => r'5e98cfa9cd447f95d522cbc3fc7b1da9865a1628';
+String _$reviewRepositoryHash() => r'6091dfe2c09ae9482cccb8478f123fb9ef19cd42';
 
 /// See also [reviewRepository].
 @ProviderFor(reviewRepository)
@@ -22,7 +22,7 @@ final reviewRepositoryProvider = AutoDisposeProvider<ReviewRepository>.internal(
 
 typedef ReviewRepositoryRef = AutoDisposeProviderRef<ReviewRepository>;
 String _$reviewSessionControllerHash() =>
-    r'b98c1750261b117cbda97ed7417548075c723a86';
+    r'c252b1f3e8e0d2174c5027d99808758a7a7935e5';
 
 /// See also [ReviewSessionController].
 @ProviderFor(ReviewSessionController)

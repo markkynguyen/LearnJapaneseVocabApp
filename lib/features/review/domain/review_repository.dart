@@ -1,53 +1,59 @@
 import 'dart:math';
 
-import 'package:drift/drift.dart';
-
+import '../../../core/cloud/cloud_store.dart';
 import '../../../core/constants/srs_constants.dart';
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 import '../../../core/srs/srs_engine.dart';
 import '../../../core/utils/quiz_utils.dart';
 import 'review_models.dart';
 
 class ReviewRepository {
-  const ReviewRepository({
-    required SrsProgressDao srsProgressDao,
-    required SettingsDao settingsDao,
-  })  : _srsProgressDao = srsProgressDao,
-        _settingsDao = settingsDao;
-
-  final SrsProgressDao _srsProgressDao;
-  final SettingsDao _settingsDao;
+  const ReviewRepository({required CloudStore store}) : _store = store;
+  final CloudStore _store;
 
   Future<ReviewSessionState> createSession({
-    int? folderId,
+    String? folderId,
     bool favoritesOnly = false,
-    List<int> excludeIds = const [],
+    List<String> excludeIds = const [],
   }) async {
-    final settings = await _settingsDao.getSettings();
-    final sessionSize = settings.sessionSize.clamp(1, 100);
-
-    final dueWords = await _srsProgressDao.getDueVocabForSession(
-      folderId: folderId,
-      limit: sessionSize,
-      excludeIds: excludeIds,
-      favoritesOnly: favoritesOnly,
-    );
-    final remaining = sessionSize - dueWords.length;
-    final fallbackExcludeIds = {
-      ...excludeIds,
-      ...dueWords.map((item) => item.vocab.id),
-    }.toList();
-    final fallbackWords = remaining > 0
-        ? await _srsProgressDao.getFallbackVocabForSession(
-            folderId: folderId,
-            limit: remaining,
-            excludeIds: fallbackExcludeIds,
+    final settings = await _store.getLearningSettings();
+    final all = folderId == null
+        ? await _store.getAllVocab()
+        : await _store.getVocabByFolder(
+            folderId,
             favoritesOnly: favoritesOnly,
+          );
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final available = all.where(
+      (item) =>
+          !excludeIds.contains(item.vocab.id) &&
+          (!favoritesOnly || item.vocab.isFavorite),
+    );
+    final due = available
+        .where(
+          (item) =>
+              item.progress.level > 0 && item.progress.nextReviewAt <= now,
+        )
+        .toList()
+      ..sort(
+        (a, b) => a.progress.nextReviewAt.compareTo(b.progress.nextReviewAt),
+      );
+    final selected = due.take(settings.sessionSize).toList();
+    if (selected.length < settings.sessionSize) {
+      final used = selected.map((item) => item.vocab.id).toSet();
+      final fallback = available
+          .where(
+            (item) => item.progress.level > 0 && !used.contains(item.vocab.id),
           )
-        : <VocabWithProgress>[];
-
+          .toList()
+        ..sort(
+          (a, b) => (a.progress.lastReviewedAt ?? 0)
+              .compareTo(b.progress.lastReviewedAt ?? 0),
+        );
+      selected.addAll(fallback.take(settings.sessionSize - selected.length));
+    }
     return _createSessionFromWords(
-      [...dueWords, ...fallbackWords],
+      selected,
       settings,
       folderId: folderId,
       favoritesOnly: favoritesOnly,
@@ -56,45 +62,38 @@ class ReviewRepository {
 
   Future<ReviewSessionState> createSessionFromWords(
     List<VocabWithProgress> words, {
-    int? folderId,
+    String? folderId,
     bool favoritesOnly = false,
-  }) async {
-    final settings = await _settingsDao.getSettings();
-    return _createSessionFromWords(
-      words,
-      settings,
-      folderId: folderId,
-      favoritesOnly: favoritesOnly,
-    );
-  }
+  }) async =>
+      _createSessionFromWords(
+        words,
+        await _store.getLearningSettings(),
+        folderId: folderId,
+        favoritesOnly: favoritesOnly,
+      );
 
   Future<ReviewResultSummary> applyEndSessionSrs(
     ReviewSessionState session,
   ) async {
-    final settings = await _settingsDao.getSettings();
-    final engine = SrsEngine(
-      intervalForLevel: settingsIntervalResolver(settings),
-    );
+    final settings = await _store.getLearningSettings();
+    final engine =
+        SrsEngine(intervalForLevel: settingsIntervalResolver(settings));
     final applied = <ReviewAppliedWordResult>[];
-
+    final updates = <SrsProgressEntry>[];
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     for (final result in session.resultsByVocabId.values) {
       final item = result.item;
       final progress = item.progress;
       SrsResult? srsResult;
-
       if (result.wrongAnswers >= 3 &&
-          progress.level == SrsConstants.unlearnedLevel) {
-        srsResult = null;
-      } else if (result.wrongAnswers >= 3) {
-        switch (result.srsDecision) {
-          case ReviewSrsDecision.minusOne:
-            srsResult = engine.processMinus1(progress);
-          case ReviewSrsDecision.reset:
-            srsResult = engine.processReset(progress);
-          case null:
-            continue;
-        }
-      } else {
+          progress.level != SrsConstants.unlearnedLevel) {
+        srsResult = switch (result.srsDecision) {
+          ReviewSrsDecision.minusOne => engine.processMinus1(progress),
+          ReviewSrsDecision.reset => engine.processReset(progress),
+          null => null,
+        };
+        if (result.srsDecision == null) continue;
+      } else if (result.wrongAnswers < 3) {
         srsResult = engine.processEndSessionSuccess(
           progress,
           isDue: result.wasDueAtStart ||
@@ -102,25 +101,15 @@ class ReviewRepository {
           isMarkedForReview: result.isMarkedForReview,
         );
       }
-
-      await _srsProgressDao.updateProgressByVocabId(
-        item.vocab.id,
-        SrsProgressCompanion(
-          level: srsResult == null
-              ? const Value.absent()
-              : Value(srsResult.newLevel),
-          intervalDays: srsResult == null
-              ? const Value.absent()
-              : Value(srsResult.newIntervalDays),
-          nextReviewAt: srsResult == null
-              ? const Value.absent()
-              : Value(srsResult.newNextReviewAt),
-          correctCount: Value(progress.correctCount + result.correctAnswers),
-          wrongCount: Value(progress.wrongCount + result.wrongAnswers),
-          lastReviewedAt: Value(DateTime.now().millisecondsSinceEpoch ~/ 1000),
-        ),
+      final next = progress.copyWith(
+        level: srsResult?.newLevel ?? progress.level,
+        intervalDays: srsResult?.newIntervalDays ?? progress.intervalDays,
+        nextReviewAt: srsResult?.newNextReviewAt ?? progress.nextReviewAt,
+        correctCount: progress.correctCount + result.correctAnswers,
+        wrongCount: progress.wrongCount + result.wrongAnswers,
+        lastReviewedAt: now,
       );
-
+      updates.add(next);
       applied.add(
         ReviewAppliedWordResult(
           reviewResult: result,
@@ -131,7 +120,7 @@ class ReviewRepository {
         ),
       );
     }
-
+    await _store.applySrsUpdates(updates);
     return ReviewResultSummary(
       correctAnswers: session.correctAnswers,
       wrongAnswers: session.wrongAnswers,
@@ -145,23 +134,21 @@ class ReviewRepository {
   ReviewSessionState _createSessionFromWords(
     List<VocabWithProgress> words,
     AppSettings settings, {
-    int? folderId,
+    String? folderId,
     bool favoritesOnly = false,
   }) {
     final sessionStartTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final questions = _buildQuestions(words, settings)..shuffle(Random());
-    final results = {
-      for (final item in words)
-        item.vocab.id: ReviewWordResult(
-          item: item,
-          wasDueAtStart: item.progress.nextReviewAt <= sessionStartTime,
-        ),
-    };
-
     return ReviewSessionState(
       questions: questions,
       currentIndex: 0,
-      resultsByVocabId: results,
+      resultsByVocabId: {
+        for (final item in words)
+          item.vocab.id: ReviewWordResult(
+            item: item,
+            wasDueAtStart: item.progress.nextReviewAt <= sessionStartTime,
+          ),
+      },
       sessionStartTime: sessionStartTime,
       retryLimit: settings.quizRetryLimit,
       isFinished: questions.isEmpty,
@@ -184,29 +171,26 @@ class ReviewRepository {
       for (var i = 0; i < settings.quizChooseMeaningCount; i++)
         ReviewQuestionType.chooseMeaning,
     ];
-    final effectiveTypes =
+    final effective =
         types.isEmpty ? [ReviewQuestionType.chooseMeaning] : types;
-
     return [
       for (final item in words)
-        for (final type in effectiveTypes)
+        for (final type in effective)
           ReviewQuestion(
             item: item,
             type: type,
-            japaneseText: japaneseForQuiz(
-              item.vocab,
-              settings.quizJapaneseScript,
-            ),
-            choices: _buildChoices(item, type, words, settings),
+            japaneseText:
+                japaneseForQuiz(item.vocab, settings.quizJapaneseScript),
+            choices: _choices(item, type, words, settings),
             retryCount: 0,
           ),
     ];
   }
 
-  List<String> _buildChoices(
+  List<String> _choices(
     VocabWithProgress item,
     ReviewQuestionType type,
-    List<VocabWithProgress> allWords,
+    List<VocabWithProgress> words,
     AppSettings settings,
   ) {
     if (type != ReviewQuestionType.chooseMeaning &&
@@ -214,28 +198,20 @@ class ReviewRepository {
         type != ReviewQuestionType.listen) {
       return const [];
     }
-
-    final expected = ReviewQuestion(
-      item: item,
-      type: type,
-      japaneseText: japaneseForQuiz(item.vocab, settings.quizJapaneseScript),
-      choices: const [],
-      retryCount: 0,
-    ).expectedAnswer;
-
-    final distractors = allWords
+    final expected = type == ReviewQuestionType.chooseWord
+        ? japaneseForQuiz(item.vocab, settings.quizJapaneseScript)
+        : item.vocab.meaning;
+    final distractors = words
         .where((word) => word.vocab.id != item.vocab.id)
-        .map((word) {
-          return type == ReviewQuestionType.chooseWord
+        .map(
+          (word) => type == ReviewQuestionType.chooseWord
               ? japaneseForQuiz(word.vocab, settings.quizJapaneseScript)
-              : word.vocab.meaning;
-        })
+              : word.vocab.meaning,
+        )
         .where((value) => value.trim().isNotEmpty && value != expected)
         .toSet()
         .toList()
       ..shuffle(Random());
-
-    final choices = [expected, ...distractors.take(3)]..shuffle(Random());
-    return choices;
+    return [expected, ...distractors.take(3)]..shuffle(Random());
   }
 }

@@ -1,4 +1,4 @@
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 
 enum LearningQuestionType {
   listen,
@@ -120,10 +120,10 @@ class LearningSessionState {
     this.isApplying = false,
   });
 
-  final int folderId;
+  final String folderId;
   final List<LearningQuestion> questions;
   final int currentIndex;
-  final Map<int, LearningWordResult> resultsByVocabId;
+  final Map<String, LearningWordResult> resultsByVocabId;
   final int retryLimit;
   final String quizScript;
   final bool isApplying;
@@ -137,7 +137,7 @@ class LearningSessionState {
   LearningSessionState copyWith({
     List<LearningQuestion>? questions,
     int? currentIndex,
-    Map<int, LearningWordResult>? resultsByVocabId,
+    Map<String, LearningWordResult>? resultsByVocabId,
     bool? isApplying,
   }) {
     return LearningSessionState(
@@ -172,7 +172,7 @@ class LearningResultSummary {
     required this.words,
   });
 
-  final int folderId;
+  final String folderId;
   final List<LearningWordResult> words;
 
   List<LearningWordResult> get passedWords =>
@@ -187,6 +187,6 @@ class LearningPreviewRequest {
     this.words,
   });
 
-  final List<int> excludeIds;
+  final List<String> excludeIds;
   final List<VocabWithProgress>? words;
 }

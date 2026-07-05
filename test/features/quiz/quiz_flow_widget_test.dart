@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jvocab/core/audio/audio_service.dart';
-import 'package:jvocab/core/database/app_database.dart';
+import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/core/router/app_router.dart';
 import 'package:jvocab/core/router/app_routes.dart';
 import 'package:jvocab/features/learning/domain/learning_models.dart';
@@ -18,7 +18,10 @@ import 'package:jvocab/features/vocab/presentation/widgets/vocabulary_study_card
 void main() {
   test('review exit route follows the session source', () {
     expect(AppRoutes.reviewExit(null), AppRoutes.home);
-    expect(AppRoutes.reviewExit(7), AppRoutes.folderVocab(7));
+    expect(
+      AppRoutes.reviewExit('folder-7'),
+      AppRoutes.folderVocab('folder-7'),
+    );
   });
 
   testWidgets('new-word preview uses a readable flashcard layout on mobile',
@@ -34,7 +37,7 @@ void main() {
       pitchAccent: 'HHL',
     );
     final session = LearningSessionState(
-      folderId: 1,
+      folderId: 'folder-1',
       questions: const [],
       currentIndex: 0,
       resultsByVocabId: {
@@ -57,13 +60,13 @@ void main() {
           audioServiceProvider.overrideWith((ref) => audio),
         ],
         child: const MaterialApp(
-          home: LearningPreviewScreen(folderId: 1),
+          home: LearningPreviewScreen(folderId: 'folder-1'),
         ),
       ),
     );
     await tester.pump();
 
-    expect(audio.spokenVocabIds, [1]);
+    expect(audio.spokenVocabIds, ['vocab-1']);
     expect(find.text('Từ mới 1/1'), findsOneWidget);
     expect(find.text('Nghĩa'), findsOneWidget);
     expect(find.text('Động từ nhóm 2'), findsOneWidget);
@@ -77,9 +80,9 @@ void main() {
   testWidgets('new-word preview speaks again when the visible card changes',
       (tester) async {
     final first = _item(level: 0);
-    final second = _item(id: 2, level: 0, meaning: 'uống');
+    final second = _item(id: 'vocab-2', level: 0, meaning: 'uống');
     final session = LearningSessionState(
-      folderId: 1,
+      folderId: 'folder-1',
       questions: const [],
       currentIndex: 0,
       resultsByVocabId: {
@@ -106,16 +109,16 @@ void main() {
           audioServiceProvider.overrideWith((ref) => audio),
         ],
         child: const MaterialApp(
-          home: LearningPreviewScreen(folderId: 1),
+          home: LearningPreviewScreen(folderId: 'folder-1'),
         ),
       ),
     );
     await tester.pump();
-    expect(audio.spokenVocabIds, [1]);
+    expect(audio.spokenVocabIds, ['vocab-1']);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Tiếp'));
     await tester.pumpAndSettle();
-    expect(audio.spokenVocabIds, [1, 2]);
+    expect(audio.spokenVocabIds, ['vocab-1', 'vocab-2']);
   });
 
   testWidgets(
@@ -130,7 +133,7 @@ void main() {
       requirementId: 'choose-word-1',
     );
     final session = LearningSessionState(
-      folderId: 1,
+      folderId: 'folder-1',
       questions: [question],
       currentIndex: 0,
       resultsByVocabId: {
@@ -144,6 +147,7 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        routerGuardEnabledProvider.overrideWithValue(false),
         learningControllerProvider.overrideWith(
           () => _FakeLearningController(session),
         ),
@@ -189,11 +193,12 @@ void main() {
       sessionStartTime: 0,
       retryLimit: 2,
       isFinished: false,
-      folderId: 1,
+      folderId: 'folder-1',
     );
     final audio = _FakeAudioService();
     final container = ProviderContainer(
       overrides: [
+        routerGuardEnabledProvider.overrideWithValue(false),
         reviewSessionControllerProvider.overrideWith(
           () => _FakeReviewController(session),
         ),
@@ -227,7 +232,7 @@ void main() {
   testWidgets('feedback audio finishes before the next listening prompt plays',
       (tester) async {
     final first = _item(level: 0, pitchAccent: 'HHL');
-    final second = _item(id: 2, level: 0, meaning: 'uống');
+    final second = _item(id: 'vocab-2', level: 0, meaning: 'uống');
     final questions = [
       LearningQuestion(
         item: first,
@@ -245,7 +250,7 @@ void main() {
       ),
     ];
     final session = LearningSessionState(
-      folderId: 1,
+      folderId: 'folder-1',
       questions: questions,
       currentIndex: 0,
       resultsByVocabId: {
@@ -264,6 +269,7 @@ void main() {
     final audio = _FakeAudioService();
     final container = ProviderContainer(
       overrides: [
+        routerGuardEnabledProvider.overrideWithValue(false),
         learningControllerProvider.overrideWith(
           () => _FakeLearningController(session),
         ),
@@ -285,16 +291,16 @@ void main() {
 
     await tester.tap(find.widgetWithText(OutlinedButton, '食べる'));
     await tester.pumpAndSettle();
-    expect(audio.spokenVocabIds, [1]);
+    expect(audio.spokenVocabIds, ['vocab-1']);
     expect(find.byType(PitchAccentText), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Tiếp tục'));
     await tester.pumpAndSettle();
-    expect(audio.spokenVocabIds, [1, 2]);
+    expect(audio.spokenVocabIds, ['vocab-1', 'vocab-2']);
     expect(find.byType(PitchAccentText), findsNothing);
 
     await tester.pump();
-    expect(audio.spokenVocabIds, [1, 2]);
+    expect(audio.spokenVocabIds, ['vocab-1', 'vocab-2']);
   });
 
   testWidgets('review result renders kana with pitch accent', (tester) async {
@@ -303,7 +309,7 @@ void main() {
       correctAnswers: 1,
       wrongAnswers: 0,
       totalAnswers: 1,
-      folderId: 1,
+      folderId: 'folder-1',
       words: [
         ReviewAppliedWordResult(
           reviewResult: ReviewWordResult(
@@ -354,7 +360,7 @@ void main() {
       sessionStartTime: 0,
       retryLimit: 2,
       isFinished: true,
-      folderId: 1,
+      folderId: 'folder-1',
     );
 
     await tester.pumpWidget(
@@ -364,7 +370,9 @@ void main() {
             () => _FakeReviewController(session),
           ),
         ],
-        child: const MaterialApp(home: ReviewSessionScreen(folderId: 1)),
+        child: const MaterialApp(
+          home: ReviewSessionScreen(folderId: 'folder-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -385,7 +393,7 @@ void main() {
       example: '毎日ご飯を食べる。',
     );
     final session = LearningSessionState(
-      folderId: 1,
+      folderId: 'folder-1',
       questions: [
         LearningQuestion(
           item: item,
@@ -407,6 +415,7 @@ void main() {
     final audio = _FakeAudioService();
     final container = ProviderContainer(
       overrides: [
+        routerGuardEnabledProvider.overrideWithValue(false),
         learningControllerProvider.overrideWith(
           () => _FakeLearningController(session),
         ),
@@ -439,7 +448,7 @@ void main() {
       (tester) async {
     final item = _item(level: 0);
     final session = LearningSessionState(
-      folderId: 1,
+      folderId: 'folder-1',
       questions: [
         LearningQuestion(
           item: item,
@@ -463,6 +472,7 @@ void main() {
     final audio = _FakeAudioService();
     final container = ProviderContainer(
       overrides: [
+        routerGuardEnabledProvider.overrideWithValue(false),
         learningControllerProvider.overrideWith(() => controller),
         audioServiceProvider.overrideWith((ref) => audio),
       ],
@@ -504,13 +514,13 @@ class _FakeLearningController extends LearningController {
 
   @override
   Future<void> start({
-    required int folderId,
-    List<int> excludeIds = const [],
+    required String folderId,
+    List<String> excludeIds = const [],
   }) async {}
 
   @override
   Future<void> startWithWords({
-    required int folderId,
+    required String folderId,
     required List<VocabWithProgress> words,
   }) async {}
 
@@ -538,7 +548,7 @@ class _FakeReviewController extends ReviewSessionController {
 }
 
 class _FakeAudioService extends AudioService {
-  final List<int> spokenVocabIds = [];
+  final List<String> spokenVocabIds = [];
 
   @override
   Future<void> speak(VocabularyEntry vocab) async {
@@ -550,7 +560,7 @@ class _FakeAudioService extends AudioService {
 }
 
 VocabWithProgress _item({
-  int id = 1,
+  String id = 'vocab-1',
   required int level,
   String meaning = 'ăn',
   String? example,
@@ -559,10 +569,10 @@ VocabWithProgress _item({
   return VocabWithProgress(
     vocab: VocabularyEntry(
       id: id,
-      folderId: 1,
-      kanji: id == 1 ? '食べる' : '飲む',
-      kana: id == 1 ? 'たべる' : 'のむ',
-      romaji: id == 1 ? 'taberu' : 'nomu',
+      folderId: 'folder-1',
+      kanji: id == 'vocab-1' ? '食べる' : '飲む',
+      kana: id == 'vocab-1' ? 'たべる' : 'のむ',
+      romaji: id == 'vocab-1' ? 'taberu' : 'nomu',
       meaning: meaning,
       pitchAccent: pitchAccent,
       example: example,
@@ -571,7 +581,6 @@ VocabWithProgress _item({
       createdAt: 0,
     ),
     progress: SrsProgressEntry(
-      id: id,
       vocabId: id,
       level: level,
       intervalDays: level == 0 ? 0 : 1,

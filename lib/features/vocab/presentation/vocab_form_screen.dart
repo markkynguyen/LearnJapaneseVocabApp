@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 import '../../../core/theme/app_theme.dart';
 import 'providers/vocab_form_provider.dart';
 import 'widgets/pitch_accent_picker.dart';
@@ -13,8 +13,8 @@ class VocabFormScreen extends ConsumerStatefulWidget {
     super.key,
   });
 
-  final int folderId;
-  final int? vocabId;
+  final String folderId;
+  final String? vocabId;
 
   @override
   ConsumerState<VocabFormScreen> createState() => _VocabFormScreenState();

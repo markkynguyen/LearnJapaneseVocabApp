@@ -6,7 +6,7 @@ part of 'vocab_list_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$vocabListHash() => r'50407eaf628eb6f8b5a179b6ea343e86052c6c0e';
+String _$vocabListHash() => r'473138acbf86d254679d813ca332bd13f18e434d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -40,7 +40,7 @@ class VocabListFamily extends Family<AsyncValue<List<VocabWithProgress>>> {
 
   /// See also [vocabList].
   VocabListProvider call(
-    int folderId,
+    String folderId,
   ) {
     return VocabListProvider(
       folderId,
@@ -73,10 +73,10 @@ class VocabListFamily extends Family<AsyncValue<List<VocabWithProgress>>> {
 
 /// See also [vocabList].
 class VocabListProvider
-    extends AutoDisposeStreamProvider<List<VocabWithProgress>> {
+    extends AutoDisposeFutureProvider<List<VocabWithProgress>> {
   /// See also [vocabList].
   VocabListProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           (ref) => vocabList(
             ref as VocabListRef,
@@ -103,11 +103,11 @@ class VocabListProvider
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   Override overrideWith(
-    Stream<List<VocabWithProgress>> Function(VocabListRef provider) create,
+    FutureOr<List<VocabWithProgress>> Function(VocabListRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -124,7 +124,7 @@ class VocabListProvider
   }
 
   @override
-  AutoDisposeStreamProviderElement<List<VocabWithProgress>> createElement() {
+  AutoDisposeFutureProviderElement<List<VocabWithProgress>> createElement() {
     return _VocabListProviderElement(this);
   }
 
@@ -142,21 +142,21 @@ class VocabListProvider
   }
 }
 
-mixin VocabListRef on AutoDisposeStreamProviderRef<List<VocabWithProgress>> {
+mixin VocabListRef on AutoDisposeFutureProviderRef<List<VocabWithProgress>> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _VocabListProviderElement
-    extends AutoDisposeStreamProviderElement<List<VocabWithProgress>>
+    extends AutoDisposeFutureProviderElement<List<VocabWithProgress>>
     with VocabListRef {
   _VocabListProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as VocabListProvider).folderId;
+  String get folderId => (origin as VocabListProvider).folderId;
 }
 
-String _$favoriteVocabListHash() => r'f7c3284dde1113e6b55ee7705ce4efd7500e640f';
+String _$favoriteVocabListHash() => r'121f622829f85be3a84ef5af5d51b9d8b3baf6d5';
 
 /// See also [favoriteVocabList].
 @ProviderFor(favoriteVocabList)
@@ -170,7 +170,7 @@ class FavoriteVocabListFamily
 
   /// See also [favoriteVocabList].
   FavoriteVocabListProvider call(
-    int folderId,
+    String folderId,
   ) {
     return FavoriteVocabListProvider(
       folderId,
@@ -203,10 +203,10 @@ class FavoriteVocabListFamily
 
 /// See also [favoriteVocabList].
 class FavoriteVocabListProvider
-    extends AutoDisposeStreamProvider<List<VocabWithProgress>> {
+    extends AutoDisposeFutureProvider<List<VocabWithProgress>> {
   /// See also [favoriteVocabList].
   FavoriteVocabListProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           (ref) => favoriteVocabList(
             ref as FavoriteVocabListRef,
@@ -234,11 +234,11 @@ class FavoriteVocabListProvider
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   Override overrideWith(
-    Stream<List<VocabWithProgress>> Function(FavoriteVocabListRef provider)
+    FutureOr<List<VocabWithProgress>> Function(FavoriteVocabListRef provider)
         create,
   ) {
     return ProviderOverride(
@@ -256,7 +256,7 @@ class FavoriteVocabListProvider
   }
 
   @override
-  AutoDisposeStreamProviderElement<List<VocabWithProgress>> createElement() {
+  AutoDisposeFutureProviderElement<List<VocabWithProgress>> createElement() {
     return _FavoriteVocabListProviderElement(this);
   }
 
@@ -275,21 +275,21 @@ class FavoriteVocabListProvider
 }
 
 mixin FavoriteVocabListRef
-    on AutoDisposeStreamProviderRef<List<VocabWithProgress>> {
+    on AutoDisposeFutureProviderRef<List<VocabWithProgress>> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _FavoriteVocabListProviderElement
-    extends AutoDisposeStreamProviderElement<List<VocabWithProgress>>
+    extends AutoDisposeFutureProviderElement<List<VocabWithProgress>>
     with FavoriteVocabListRef {
   _FavoriteVocabListProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as FavoriteVocabListProvider).folderId;
+  String get folderId => (origin as FavoriteVocabListProvider).folderId;
 }
 
-String _$hasFavoriteVocabHash() => r'5f00e7c11322fe5e106842ff49b3bd20d072fc14';
+String _$hasFavoriteVocabHash() => r'de8ce8a5b8e413effb1142027dc9ddafdb2129aa';
 
 /// See also [hasFavoriteVocab].
 @ProviderFor(hasFavoriteVocab)
@@ -302,7 +302,7 @@ class HasFavoriteVocabFamily extends Family<AsyncValue<bool>> {
 
   /// See also [hasFavoriteVocab].
   HasFavoriteVocabProvider call(
-    int folderId,
+    String folderId,
   ) {
     return HasFavoriteVocabProvider(
       folderId,
@@ -334,10 +334,10 @@ class HasFavoriteVocabFamily extends Family<AsyncValue<bool>> {
 }
 
 /// See also [hasFavoriteVocab].
-class HasFavoriteVocabProvider extends AutoDisposeStreamProvider<bool> {
+class HasFavoriteVocabProvider extends AutoDisposeFutureProvider<bool> {
   /// See also [hasFavoriteVocab].
   HasFavoriteVocabProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           (ref) => hasFavoriteVocab(
             ref as HasFavoriteVocabRef,
@@ -365,11 +365,11 @@ class HasFavoriteVocabProvider extends AutoDisposeStreamProvider<bool> {
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   Override overrideWith(
-    Stream<bool> Function(HasFavoriteVocabRef provider) create,
+    FutureOr<bool> Function(HasFavoriteVocabRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -386,7 +386,7 @@ class HasFavoriteVocabProvider extends AutoDisposeStreamProvider<bool> {
   }
 
   @override
-  AutoDisposeStreamProviderElement<bool> createElement() {
+  AutoDisposeFutureProviderElement<bool> createElement() {
     return _HasFavoriteVocabProviderElement(this);
   }
 
@@ -404,20 +404,20 @@ class HasFavoriteVocabProvider extends AutoDisposeStreamProvider<bool> {
   }
 }
 
-mixin HasFavoriteVocabRef on AutoDisposeStreamProviderRef<bool> {
+mixin HasFavoriteVocabRef on AutoDisposeFutureProviderRef<bool> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _HasFavoriteVocabProviderElement
-    extends AutoDisposeStreamProviderElement<bool> with HasFavoriteVocabRef {
+    extends AutoDisposeFutureProviderElement<bool> with HasFavoriteVocabRef {
   _HasFavoriteVocabProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as HasFavoriteVocabProvider).folderId;
+  String get folderId => (origin as HasFavoriteVocabProvider).folderId;
 }
 
-String _$folderLevelStatsHash() => r'f248867e47466541b6ff316fe87c70fa1d24d739';
+String _$folderLevelStatsHash() => r'b889123b90854d78d859921e0d4b7b24a8ceb0b2';
 
 /// See also [folderLevelStats].
 @ProviderFor(folderLevelStats)
@@ -430,7 +430,7 @@ class FolderLevelStatsFamily extends Family<AsyncValue<LevelStats>> {
 
   /// See also [folderLevelStats].
   FolderLevelStatsProvider call(
-    int folderId,
+    String folderId,
   ) {
     return FolderLevelStatsProvider(
       folderId,
@@ -462,10 +462,10 @@ class FolderLevelStatsFamily extends Family<AsyncValue<LevelStats>> {
 }
 
 /// See also [folderLevelStats].
-class FolderLevelStatsProvider extends AutoDisposeStreamProvider<LevelStats> {
+class FolderLevelStatsProvider extends AutoDisposeFutureProvider<LevelStats> {
   /// See also [folderLevelStats].
   FolderLevelStatsProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           (ref) => folderLevelStats(
             ref as FolderLevelStatsRef,
@@ -493,11 +493,11 @@ class FolderLevelStatsProvider extends AutoDisposeStreamProvider<LevelStats> {
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   Override overrideWith(
-    Stream<LevelStats> Function(FolderLevelStatsRef provider) create,
+    FutureOr<LevelStats> Function(FolderLevelStatsRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -514,7 +514,7 @@ class FolderLevelStatsProvider extends AutoDisposeStreamProvider<LevelStats> {
   }
 
   @override
-  AutoDisposeStreamProviderElement<LevelStats> createElement() {
+  AutoDisposeFutureProviderElement<LevelStats> createElement() {
     return _FolderLevelStatsProviderElement(this);
   }
 
@@ -532,27 +532,27 @@ class FolderLevelStatsProvider extends AutoDisposeStreamProvider<LevelStats> {
   }
 }
 
-mixin FolderLevelStatsRef on AutoDisposeStreamProviderRef<LevelStats> {
+mixin FolderLevelStatsRef on AutoDisposeFutureProviderRef<LevelStats> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _FolderLevelStatsProviderElement
-    extends AutoDisposeStreamProviderElement<LevelStats>
+    extends AutoDisposeFutureProviderElement<LevelStats>
     with FolderLevelStatsRef {
   _FolderLevelStatsProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as FolderLevelStatsProvider).folderId;
+  String get folderId => (origin as FolderLevelStatsProvider).folderId;
 }
 
-String _$vocabSearchQueryHash() => r'96c6eb735a612e0385a092f01b392eb96a14559a';
+String _$vocabSearchQueryHash() => r'819f803497b08883991564f246677f950933326c';
 
 abstract class _$VocabSearchQuery extends BuildlessAutoDisposeNotifier<String> {
-  late final int folderId;
+  late final String folderId;
 
   String build(
-    int folderId,
+    String folderId,
   );
 }
 
@@ -567,7 +567,7 @@ class VocabSearchQueryFamily extends Family<String> {
 
   /// See also [VocabSearchQuery].
   VocabSearchQueryProvider call(
-    int folderId,
+    String folderId,
   ) {
     return VocabSearchQueryProvider(
       folderId,
@@ -603,7 +603,7 @@ class VocabSearchQueryProvider
     extends AutoDisposeNotifierProviderImpl<VocabSearchQuery, String> {
   /// See also [VocabSearchQuery].
   VocabSearchQueryProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           () => VocabSearchQuery()..folderId = folderId,
           from: vocabSearchQueryProvider,
@@ -628,7 +628,7 @@ class VocabSearchQueryProvider
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   String runNotifierBuild(
@@ -676,7 +676,7 @@ class VocabSearchQueryProvider
 
 mixin VocabSearchQueryRef on AutoDisposeNotifierProviderRef<String> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _VocabSearchQueryProviderElement
@@ -685,16 +685,16 @@ class _VocabSearchQueryProviderElement
   _VocabSearchQueryProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as VocabSearchQueryProvider).folderId;
+  String get folderId => (origin as VocabSearchQueryProvider).folderId;
 }
 
-String _$vocabSortHash() => r'b12374887a2e0b06830130faf2156a10bff9f075';
+String _$vocabSortHash() => r'a22e30fcb6d5bd6f88b9377c02c295c5353e19a5';
 
 abstract class _$VocabSort extends BuildlessAutoDisposeNotifier<VocabSortMode> {
-  late final int folderId;
+  late final String folderId;
 
   VocabSortMode build(
-    int folderId,
+    String folderId,
   );
 }
 
@@ -709,7 +709,7 @@ class VocabSortFamily extends Family<VocabSortMode> {
 
   /// See also [VocabSort].
   VocabSortProvider call(
-    int folderId,
+    String folderId,
   ) {
     return VocabSortProvider(
       folderId,
@@ -745,7 +745,7 @@ class VocabSortProvider
     extends AutoDisposeNotifierProviderImpl<VocabSort, VocabSortMode> {
   /// See also [VocabSort].
   VocabSortProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           () => VocabSort()..folderId = folderId,
           from: vocabSortProvider,
@@ -769,7 +769,7 @@ class VocabSortProvider
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   VocabSortMode runNotifierBuild(
@@ -817,7 +817,7 @@ class VocabSortProvider
 
 mixin VocabSortRef on AutoDisposeNotifierProviderRef<VocabSortMode> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _VocabSortProviderElement
@@ -826,11 +826,11 @@ class _VocabSortProviderElement
   _VocabSortProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as VocabSortProvider).folderId;
+  String get folderId => (origin as VocabSortProvider).folderId;
 }
 
 String _$vocabListControllerHash() =>
-    r'954113ae1a6be5fcaf694f29755f3b4874a1af71';
+    r'c68a09edbc755b0c8722b3ab54b5ece0d7c2ad33';
 
 /// See also [VocabListController].
 @ProviderFor(VocabListController)

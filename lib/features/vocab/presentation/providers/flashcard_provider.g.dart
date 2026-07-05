@@ -7,7 +7,7 @@ part of 'flashcard_provider.dart';
 // **************************************************************************
 
 String _$flashcardVocabularyHash() =>
-    r'0053bd454681d6a5c808a4700fce16d8d707f1b4';
+    r'd69e4c45f64599e8368504a48f55a63ed0997f15';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -42,7 +42,7 @@ class FlashcardVocabularyFamily
 
   /// See also [flashcardVocabulary].
   FlashcardVocabularyProvider call(
-    int folderId,
+    String folderId,
   ) {
     return FlashcardVocabularyProvider(
       folderId,
@@ -75,10 +75,10 @@ class FlashcardVocabularyFamily
 
 /// See also [flashcardVocabulary].
 class FlashcardVocabularyProvider
-    extends AutoDisposeStreamProvider<List<VocabWithProgress>> {
+    extends AutoDisposeFutureProvider<List<VocabWithProgress>> {
   /// See also [flashcardVocabulary].
   FlashcardVocabularyProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           (ref) => flashcardVocabulary(
             ref as FlashcardVocabularyRef,
@@ -106,11 +106,11 @@ class FlashcardVocabularyProvider
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   Override overrideWith(
-    Stream<List<VocabWithProgress>> Function(FlashcardVocabularyRef provider)
+    FutureOr<List<VocabWithProgress>> Function(FlashcardVocabularyRef provider)
         create,
   ) {
     return ProviderOverride(
@@ -128,7 +128,7 @@ class FlashcardVocabularyProvider
   }
 
   @override
-  AutoDisposeStreamProviderElement<List<VocabWithProgress>> createElement() {
+  AutoDisposeFutureProviderElement<List<VocabWithProgress>> createElement() {
     return _FlashcardVocabularyProviderElement(this);
   }
 
@@ -147,28 +147,28 @@ class FlashcardVocabularyProvider
 }
 
 mixin FlashcardVocabularyRef
-    on AutoDisposeStreamProviderRef<List<VocabWithProgress>> {
+    on AutoDisposeFutureProviderRef<List<VocabWithProgress>> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _FlashcardVocabularyProviderElement
-    extends AutoDisposeStreamProviderElement<List<VocabWithProgress>>
+    extends AutoDisposeFutureProviderElement<List<VocabWithProgress>>
     with FlashcardVocabularyRef {
   _FlashcardVocabularyProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as FlashcardVocabularyProvider).folderId;
+  String get folderId => (origin as FlashcardVocabularyProvider).folderId;
 }
 
-String _$flashcardDeckHash() => r'0e124ad58d4b222cc49d75d8c456362ac3a3f06f';
+String _$flashcardDeckHash() => r'5f50d4104afec14343dcd3f1de8cee1054440eec';
 
 abstract class _$FlashcardDeck
     extends BuildlessAutoDisposeAsyncNotifier<FlashcardDeckState> {
-  late final int folderId;
+  late final String folderId;
 
   FutureOr<FlashcardDeckState> build(
-    int folderId,
+    String folderId,
   );
 }
 
@@ -183,7 +183,7 @@ class FlashcardDeckFamily extends Family<AsyncValue<FlashcardDeckState>> {
 
   /// See also [FlashcardDeck].
   FlashcardDeckProvider call(
-    int folderId,
+    String folderId,
   ) {
     return FlashcardDeckProvider(
       folderId,
@@ -219,7 +219,7 @@ class FlashcardDeckProvider extends AutoDisposeAsyncNotifierProviderImpl<
     FlashcardDeck, FlashcardDeckState> {
   /// See also [FlashcardDeck].
   FlashcardDeckProvider(
-    int folderId,
+    String folderId,
   ) : this._internal(
           () => FlashcardDeck()..folderId = folderId,
           from: flashcardDeckProvider,
@@ -244,7 +244,7 @@ class FlashcardDeckProvider extends AutoDisposeAsyncNotifierProviderImpl<
     required this.folderId,
   }) : super.internal();
 
-  final int folderId;
+  final String folderId;
 
   @override
   FutureOr<FlashcardDeckState> runNotifierBuild(
@@ -294,7 +294,7 @@ class FlashcardDeckProvider extends AutoDisposeAsyncNotifierProviderImpl<
 mixin FlashcardDeckRef
     on AutoDisposeAsyncNotifierProviderRef<FlashcardDeckState> {
   /// The parameter `folderId` of this provider.
-  int get folderId;
+  String get folderId;
 }
 
 class _FlashcardDeckProviderElement
@@ -303,7 +303,7 @@ class _FlashcardDeckProviderElement
   _FlashcardDeckProviderElement(super.provider);
 
   @override
-  int get folderId => (origin as FlashcardDeckProvider).folderId;
+  String get folderId => (origin as FlashcardDeckProvider).folderId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

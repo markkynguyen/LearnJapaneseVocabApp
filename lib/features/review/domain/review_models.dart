@@ -1,5 +1,5 @@
 import '../../../core/constants/srs_constants.dart';
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 
 enum ReviewQuestionType {
   listen,
@@ -127,11 +127,11 @@ class ReviewSessionState {
 
   final List<ReviewQuestion> questions;
   final int currentIndex;
-  final Map<int, ReviewWordResult> resultsByVocabId;
+  final Map<String, ReviewWordResult> resultsByVocabId;
   final int sessionStartTime;
   final int retryLimit;
   final bool isFinished;
-  final int? folderId;
+  final String? folderId;
   final bool favoritesOnly;
   final bool isApplying;
 
@@ -164,7 +164,7 @@ class ReviewSessionState {
   ReviewSessionState copyWith({
     List<ReviewQuestion>? questions,
     int? currentIndex,
-    Map<int, ReviewWordResult>? resultsByVocabId,
+    Map<String, ReviewWordResult>? resultsByVocabId,
     bool? isFinished,
     bool? isApplying,
   }) {
@@ -216,7 +216,7 @@ class ReviewResultSummary {
   final int wrongAnswers;
   final int totalAnswers;
   final List<ReviewAppliedWordResult> words;
-  final int? folderId;
+  final String? folderId;
   final bool favoritesOnly;
 
   int get percentage {

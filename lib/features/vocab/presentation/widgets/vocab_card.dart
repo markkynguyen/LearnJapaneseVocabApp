@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/audio/audio_service.dart';
 import '../../../../core/constants/srs_constants.dart';
-import '../../../../core/database/app_database.dart';
+import '../../../../core/models/app_models.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/time_utils.dart';
 import 'pitch_accent_text.dart';

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import 'providers/vocab_list_provider.dart';
@@ -17,7 +17,7 @@ class VocabListScreen extends ConsumerStatefulWidget {
     super.key,
   });
 
-  final int folderId;
+  final String folderId;
   final String? folderName;
 
   @override
@@ -260,7 +260,7 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
       return;
     }
 
-    await controller.deleteVocab(item.vocab.id);
+    await controller.deleteVocab(item.vocab);
     if (context.mounted) {
       _showSnackBar(context, 'Đã xóa từ');
     }
@@ -274,7 +274,7 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
     context.push(AppRoutes.folderFlashcards(widget.folderId));
   }
 
-  void _openEditForm(int vocabId) {
+  void _openEditForm(String vocabId) {
     context.push(AppRoutes.editVocab(vocabId, folderId: widget.folderId));
   }
 
@@ -470,7 +470,7 @@ class _VocabListBody extends ConsumerWidget {
               item: item,
               onToggleFavorite: () => ref
                   .read(vocabListControllerProvider.notifier)
-                  .toggleFavorite(item.vocab.id),
+                  .toggleFavorite(item),
               onAction: (action) => onAction(context, item, action),
             );
           },

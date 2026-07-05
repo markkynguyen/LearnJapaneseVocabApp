@@ -14,7 +14,7 @@ class ExcelImportScreen extends ConsumerStatefulWidget {
 }
 
 class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
-  int? _folderId;
+  String? _folderId;
   ExcelImportPreview? _preview;
   ExcelImportMode _mode = ExcelImportMode.singleFolder;
   DuplicateStrategy _strategy = DuplicateStrategy.skip;
@@ -55,7 +55,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
               ),
               if (_mode == ExcelImportMode.singleFolder) ...[
                 const SizedBox(height: 14),
-                DropdownButtonFormField<int>(
+                DropdownButtonFormField<String>(
                   initialValue: _folderId,
                   decoration: const InputDecoration(
                     labelText: 'Import vào bộ từ',

@@ -2,20 +2,22 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/cloud/cloud_store.dart';
+import '../../../../core/models/app_models.dart';
 import '../../domain/vocabulary_repository.dart';
 
 part 'vocab_form_provider.g.dart';
 
 @riverpod
-VocabularyRepository vocabularyRepository(VocabularyRepositoryRef ref) {
-  return VocabularyRepository(ref.watch(vocabularyDaoProvider));
-}
+VocabularyRepository vocabularyRepository(VocabularyRepositoryRef ref) =>
+    VocabularyRepository(ref.watch(cloudStoreProvider));
 
 @riverpod
-Future<VocabWithProgress?> vocabFormItem(VocabFormItemRef ref, int vocabId) {
-  return ref.watch(vocabularyRepositoryProvider).getVocabById(vocabId);
-}
+Future<VocabWithProgress?> vocabFormItem(
+  VocabFormItemRef ref,
+  String vocabId,
+) =>
+    ref.watch(vocabularyRepositoryProvider).getVocabById(vocabId);
 
 @riverpod
 class VocabFormController extends _$VocabFormController {
@@ -23,7 +25,7 @@ class VocabFormController extends _$VocabFormController {
   FutureOr<void> build() {}
 
   Future<void> create({
-    required int folderId,
+    required String folderId,
     required String kana,
     required String romaji,
     required String meaning,

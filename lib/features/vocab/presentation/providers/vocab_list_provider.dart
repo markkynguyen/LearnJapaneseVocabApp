@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/cloud/cloud_store.dart';
+import '../../../../core/models/app_models.dart';
 import '../../../../core/srs/srs_engine.dart';
 
 part 'vocab_list_provider.g.dart';
@@ -11,69 +11,61 @@ part 'vocab_list_provider.g.dart';
 @riverpod
 class VocabSearchQuery extends _$VocabSearchQuery {
   @override
-  String build(int folderId) => '';
-
-  void update(String value) {
-    state = value;
-  }
+  String build(String folderId) => '';
+  void update(String value) => state = value;
 }
 
 @riverpod
 class VocabSort extends _$VocabSort {
   @override
-  VocabSortMode build(int folderId) => VocabSortMode.newest;
-
-  void update(VocabSortMode value) {
-    state = value;
-  }
+  VocabSortMode build(String folderId) => VocabSortMode.newest;
+  void update(VocabSortMode value) => state = value;
 }
 
 @riverpod
-Stream<List<VocabWithProgress>> vocabList(VocabListRef ref, int folderId) {
-  final sortMode = ref.watch(vocabSortProvider(folderId));
-  final searchQuery = ref.watch(vocabSearchQueryProvider(folderId));
-
-  return ref.watch(vocabularyDaoProvider).watchVocabByFolder(
-        folderId,
-        sortMode: sortMode,
-        searchQuery: searchQuery,
-      );
-}
+Future<List<VocabWithProgress>> vocabList(
+  VocabListRef ref,
+  String folderId,
+) =>
+    ref.watch(cloudStoreProvider).getVocabByFolder(
+          folderId,
+          sortMode: ref.watch(vocabSortProvider(folderId)),
+          searchQuery: ref.watch(vocabSearchQueryProvider(folderId)),
+        );
 
 @riverpod
-Stream<List<VocabWithProgress>> favoriteVocabList(
+Future<List<VocabWithProgress>> favoriteVocabList(
   FavoriteVocabListRef ref,
-  int folderId,
-) {
-  return ref.watch(vocabularyDaoProvider).watchFavoriteVocab(folderId);
-}
+  String folderId,
+) =>
+    ref
+        .watch(cloudStoreProvider)
+        .getVocabByFolder(folderId, favoritesOnly: true);
 
 @riverpod
-Stream<bool> hasFavoriteVocab(HasFavoriteVocabRef ref, int folderId) {
-  return ref.watch(vocabularyDaoProvider).hasFavorites(folderId);
-}
+Future<bool> hasFavoriteVocab(HasFavoriteVocabRef ref, String folderId) async =>
+    (await ref
+            .watch(cloudStoreProvider)
+            .getVocabByFolder(folderId, favoritesOnly: true))
+        .isNotEmpty;
 
 @riverpod
-Stream<LevelStats> folderLevelStats(FolderLevelStatsRef ref, int folderId) {
-  return ref.watch(srsProgressDaoProvider).watchLevelStats(folderId: folderId);
-}
+Future<LevelStats> folderLevelStats(
+  FolderLevelStatsRef ref,
+  String folderId,
+) =>
+    ref.watch(cloudStoreProvider).getLevelStats(folderId: folderId);
 
-final folderDueCountProvider = StreamProvider.autoDispose.family<int, int>((
-  ref,
-  folderId,
-) {
-  return ref
-      .watch(srsProgressDaoProvider)
-      .watchDueWords(folderId: folderId)
-      .map((words) => words.length);
-});
+final folderDueCountProvider = FutureProvider.autoDispose.family<int, String>(
+  (ref, folderId) =>
+      ref.watch(cloudStoreProvider).getDueCount(folderId: folderId),
+);
 
 final folderUnlearnedCountProvider =
-    StreamProvider.autoDispose.family<int, int>((ref, folderId) {
-  return ref
-      .watch(srsProgressDaoProvider)
-      .watchLevelStats(folderId: folderId)
-      .map((stats) => stats.totalWords - stats.learnedWords);
+    FutureProvider.autoDispose.family<int, String>((ref, folderId) async {
+  final stats =
+      await ref.watch(cloudStoreProvider).getLevelStats(folderId: folderId);
+  return stats.totalWords - stats.learnedWords;
 });
 
 @riverpod
@@ -81,48 +73,53 @@ class VocabListController extends _$VocabListController {
   @override
   FutureOr<void> build() {}
 
-  Future<void> toggleFavorite(int vocabId) async {
+  Future<void> toggleFavorite(VocabWithProgress item) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(vocabularyDaoProvider).toggleFavorite(vocabId),
+      () => ref.read(cloudStoreProvider).toggleFavorite(item.vocab),
     );
+    _invalidate(item.vocab.folderId);
   }
 
-  Future<void> deleteVocab(int vocabId) async {
+  Future<void> deleteVocab(VocabularyEntry vocab) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(vocabularyDaoProvider).deleteVocab(vocabId),
+      () => ref.read(cloudStoreProvider).deleteVocab(vocab.id),
     );
+    _invalidate(vocab.folderId);
   }
 
-  Future<void> manualMinus1(VocabWithProgress item) async {
-    await _applySrsResult(
-      item,
-      ref.read(srsEngineProvider).manualMinus1(item.progress),
-    );
-  }
+  Future<void> manualMinus1(VocabWithProgress item) => _applySrsResult(
+        item,
+        ref.read(srsEngineProvider).manualMinus1(item.progress),
+      );
 
-  Future<void> manualReset(VocabWithProgress item) async {
-    await _applySrsResult(
-      item,
-      ref.read(srsEngineProvider).manualReset(item.progress),
-    );
-  }
+  Future<void> manualReset(VocabWithProgress item) => _applySrsResult(
+        item,
+        ref.read(srsEngineProvider).manualReset(item.progress),
+      );
 
   Future<void> _applySrsResult(VocabWithProgress item, SrsResult result) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(srsProgressDaoProvider).updateProgressByVocabId(
-            item.vocab.id,
-            SrsProgressCompanion(
-              level: Value(result.newLevel),
-              intervalDays: Value(result.newIntervalDays),
-              nextReviewAt: Value(result.newNextReviewAt),
-              lastReviewedAt: Value(
-                DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-            ),
-          ),
+    final next = item.progress.copyWith(
+      level: result.newLevel,
+      intervalDays: result.newIntervalDays,
+      nextReviewAt: result.newNextReviewAt,
+      lastReviewedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
     );
+    state = await AsyncValue.guard(
+      () => ref.read(cloudStoreProvider).updateProgress(next),
+    );
+    _invalidate(item.vocab.folderId);
+  }
+
+  void _invalidate(String folderId) {
+    if (state.hasError) return;
+    ref
+      ..invalidate(vocabListProvider(folderId))
+      ..invalidate(favoriteVocabListProvider(folderId))
+      ..invalidate(hasFavoriteVocabProvider(folderId))
+      ..invalidate(folderLevelStatsProvider(folderId))
+      ..invalidate(folderDueCountProvider(folderId));
   }
 }

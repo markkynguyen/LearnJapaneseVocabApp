@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jvocab/core/constants/srs_constants.dart';
-import 'package:jvocab/core/database/app_database.dart';
+import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/core/srs/srs_engine.dart';
 
 void main() {
@@ -145,8 +145,7 @@ SrsProgressEntry _progress({
   int nextReviewAt = 0,
 }) {
   return SrsProgressEntry(
-    id: 1,
-    vocabId: 1,
+    vocabId: 'vocab-1',
     level: level,
     intervalDays: intervalDays ?? SrsConstants.defaultIntervalForLevel(level),
     nextReviewAt: nextReviewAt,

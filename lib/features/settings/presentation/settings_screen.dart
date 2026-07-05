@@ -1,386 +1,605 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/app_database.dart';
+import '../../../core/cloud/cloud_store.dart';
+import '../../../core/connectivity/cloud_connectivity.dart';
+import '../../../core/models/app_models.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../import_export/presentation/providers/import_export_provider.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
 
-class SettingsScreen extends ConsumerWidget {
+enum _SettingsExitChoice { cancel, discard, save }
+
+Future<bool> savePendingSettingsChanges(BuildContext context) async {
+  final container = ProviderScope.containerOf(context);
+  final draft = container.read(settingsDraftControllerProvider).draft;
+  if (draft == null) {
+    return true;
+  }
+
+  final messenger = ScaffoldMessenger.of(context);
+  final saved = await container
+      .read(settingsControllerProvider.notifier)
+      .saveSettings(draft);
+  if (!context.mounted) {
+    return false;
+  }
+
+  final saveState = container.read(settingsControllerProvider);
+  if (!saved) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          saveState.hasError
+              ? 'Không thể lưu cài đặt: ${saveState.error}'
+              : 'Bạn cần cấp quyền thông báo trước khi lưu cài đặt này.',
+        ),
+      ),
+    );
+    return false;
+  }
+
+  final refreshed = await container.read(appSettingsProvider.future);
+  if (!context.mounted) {
+    return false;
+  }
+  container.read(settingsDraftControllerProvider.notifier).markSaved(refreshed);
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Đã lưu cài đặt lên cloud.')),
+  );
+  return true;
+}
+
+Future<bool> confirmPendingSettingsChanges(BuildContext context) async {
+  final container = ProviderScope.containerOf(context);
+  if (!container.read(settingsDraftControllerProvider).hasChanges) {
+    return true;
+  }
+
+  final choice = await showDialog<_SettingsExitChoice>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => AlertDialog(
+      icon: const Icon(Icons.save_outlined),
+      title: const Text('Lưu thay đổi?'),
+      content: const Text(
+        'Bạn đã chỉnh sửa cài đặt. Bạn có muốn lưu trước khi rời trang không?',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(
+            _SettingsExitChoice.cancel,
+          ),
+          child: const Text('Hủy'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(
+            _SettingsExitChoice.discard,
+          ),
+          child: const Text('Không lưu'),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.of(dialogContext).pop(
+            _SettingsExitChoice.save,
+          ),
+          icon: const Icon(Icons.save_rounded),
+          label: const Text('Lưu'),
+        ),
+      ],
+    ),
+  );
+  if (!context.mounted) {
+    return false;
+  }
+
+  switch (choice) {
+    case _SettingsExitChoice.discard:
+      container.read(settingsDraftControllerProvider.notifier).discard();
+      return true;
+    case _SettingsExitChoice.save:
+      return savePendingSettingsChanges(context);
+    case _SettingsExitChoice.cancel:
+    case null:
+      return false;
+  }
+}
+
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
+    final draftState = ref.watch(settingsDraftControllerProvider);
+    final settingsSaveState = ref.watch(settingsControllerProvider);
     final importExportState = ref.watch(importExportControllerProvider);
     final colors = Theme.of(context).colorScheme;
+    final isSettingsBusy = settingsSaveState.isLoading;
     final isImportExportBusy = importExportState.isLoading;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Cài đặt')),
+      appBar: AppBar(
+        title: const Text('Cài đặt'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
+                disabledBackgroundColor: colors.surfaceContainerHighest,
+                disabledForegroundColor: colors.onSurfaceVariant,
+              ),
+              onPressed:
+                  draftState.hasChanges && !isSettingsBusy ? _saveDraft : null,
+              icon: isSettingsBusy
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_rounded),
+              label: Text(isSettingsBusy ? 'Đang lưu' : 'Lưu'),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: settings.when(
-          data: (settings) {
+          data: (cloudSettings) {
+            final settings = draftState.draft ?? cloudSettings;
             final selected = settings.themeMode == darkThemeModeValue
                 ? ThemeMode.dark
                 : ThemeMode.light;
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-              children: [
-                if (isImportExportBusy) ...[
-                  const LinearProgressIndicator(),
-                  const SizedBox(height: 14),
-                ],
-                const _SectionTitle(title: 'Giao diện'),
-                const SizedBox(height: 12),
-                _ThemeCard(
-                  selected: selected,
-                  isBusy: false,
-                  onChanged: (value) => ref
-                      .read(settingsControllerProvider.notifier)
-                      .updateThemeMode(value),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Hiển thị trong quiz'),
-                const SizedBox(height: 12),
-                _QuizScriptCard(
-                  selected: settings.quizJapaneseScript,
-                  onChanged: (value) => ref
-                      .read(settingsControllerProvider.notifier)
-                      .updateQuizJapaneseScript(value),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Học từ mới'),
-                const SizedBox(height: 12),
-                Card(
-                  child: Column(
-                    children: [
-                      _NumberSettingTile(
-                        icon: Icons.auto_stories_rounded,
-                        title: 'Số từ mới mỗi phiên',
-                        subtitle: 'Giới hạn từ 1 đến 100 từ.',
-                        value: settings.newWordSessionSize,
-                        min: 1,
-                        max: 100,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateNewWordSessionSize(value),
+            return AbsorbPointer(
+              absorbing: isSettingsBusy,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                children: [
+                  if (isSettingsBusy || isImportExportBusy) ...[
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: 14),
+                  ],
+                  const _SectionTitle(title: 'Giao diện'),
+                  const SizedBox(height: 12),
+                  _ThemeCard(
+                    selected: selected,
+                    isBusy: isSettingsBusy,
+                    onChanged: (value) => _updateDraft(
+                      settings.copyWith(
+                        themeMode: value == ThemeMode.dark
+                            ? darkThemeModeValue
+                            : lightThemeModeValue,
                       ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.hearing_rounded,
-                        title: 'Nghe',
-                        subtitle: 'Số câu nghe cho mỗi từ mới.',
-                        value: settings.newWordListenCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateNewWordListenCount(value),
-                      ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.edit_rounded,
-                        title: 'Viết',
-                        subtitle: 'Số lượt viết chấm điểm cho mỗi từ mới.',
-                        value: settings.newWordWriteCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateNewWordWriteCount(value),
-                      ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.translate_rounded,
-                        title: 'Chọn từ',
-                        subtitle: 'Chọn chữ Nhật theo nghĩa.',
-                        value: settings.newWordChooseWordCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateNewWordChooseWordCount(value),
-                      ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.quiz_rounded,
-                        title: 'Chọn nghĩa',
-                        subtitle: 'Chọn nghĩa theo chữ Nhật.',
-                        value: settings.newWordChooseMeaningCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateNewWordChooseMeaningCount(value),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Phiên ôn tập'),
-                const SizedBox(height: 12),
-                Card(
-                  child: Column(
-                    children: [
-                      _NumberSettingTile(
-                        icon: Icons.fact_check_rounded,
-                        title: 'Số từ mỗi phiên',
-                        subtitle: 'Giới hạn từ 1 đến 100 từ.',
-                        value: settings.sessionSize,
-                        min: 1,
-                        max: 100,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateSessionSize(value),
-                      ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.replay_rounded,
-                        title: 'Số lần làm lại câu sai',
-                        subtitle: 'Giới hạn từ 0 đến 5 lần.',
-                        value: settings.quizRetryLimit,
-                        min: 0,
-                        max: 5,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateQuizRetryLimit(value),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Loại câu hỏi ôn tập'),
-                const SizedBox(height: 12),
-                Card(
-                  child: Column(
-                    children: [
-                      _NumberSettingTile(
-                        icon: Icons.hearing_rounded,
-                        title: 'Nghe',
-                        subtitle: 'Nghe phát âm và chọn nghĩa.',
-                        value: settings.quizListenCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateQuizListenCount(value),
-                      ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.edit_rounded,
-                        title: 'Viết',
-                        subtitle: 'Từ nghĩa tiếng Việt tự viết đáp án Nhật.',
-                        value: settings.quizWriteCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateQuizWriteCount(value),
-                      ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.translate_rounded,
-                        title: 'Chọn từ',
-                        subtitle: 'Từ nghĩa tiếng Việt chọn đáp án Nhật.',
-                        value: settings.quizChooseWordCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateQuizChooseWordCount(value),
-                      ),
-                      const Divider(height: 1),
-                      _NumberSettingTile(
-                        icon: Icons.quiz_rounded,
-                        title: 'Chọn nghĩa',
-                        subtitle: 'Từ tiếng Nhật chọn nghĩa tiếng Việt.',
-                        value: settings.quizChooseMeaningCount,
-                        min: 0,
-                        max: 10,
-                        onChanged: (value) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .updateQuizChooseMeaningCount(value),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Khoảng cách SRS'),
-                const SizedBox(height: 12),
-                Card(
-                  child: Column(
-                    children: [
-                      for (var level = 1; level <= 6; level++) ...[
-                        _SrsIntervalTile(
-                          level: level,
-                          days: _srsIntervalForLevel(settings, level),
-                          enabled: true,
-                          onTap: () => _showSrsIntervalDialog(
-                            context,
-                            ref,
-                            level,
-                            _srsIntervalForLevel(settings, level),
-                          ),
-                        ),
-                        if (level < 6) const Divider(height: 1),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Nhắc ôn tập'),
-                const SizedBox(height: 12),
-                Card(
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        secondary: Icon(
-                          Icons.notifications_active_rounded,
-                          color: settings.notifyEnabled
-                              ? colors.primary
-                              : colors.onSurfaceVariant,
-                        ),
-                        title: const Text('Nhắc học mỗi ngày'),
-                        subtitle: Text(
-                          settings.notifyEnabled
-                              ? 'Nana App sẽ nhắc bạn lúc ${_formatReminderTime(settings.notifyHour, settings.notifyMinute)}.'
-                              : 'Bật để nhận nhắc nhở ôn tập từ vùng nhớ hằng ngày.',
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                        value: settings.notifyEnabled,
-                        onChanged: (enabled) async {
-                          final messenger = ScaffoldMessenger.of(context);
-                          final granted = await ref
-                              .read(settingsControllerProvider.notifier)
-                              .updateReminderEnabled(enabled);
-                          if (!context.mounted) {
-                            return;
-                          }
-                          if (enabled && !granted) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Bạn cần cấp quyền thông báo để bật nhắc nhở ôn tập.',
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        enabled: settings.notifyEnabled,
-                        leading: const Icon(Icons.schedule_rounded),
-                        title: const Text('Giờ nhắc'),
-                        subtitle: Text(
-                          _formatReminderTime(
-                            settings.notifyHour,
-                            settings.notifyMinute,
-                          ),
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: settings.notifyEnabled
-                            ? () async {
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay(
-                                    hour: settings.notifyHour,
-                                    minute: settings.notifyMinute,
-                                  ),
-                                );
-                                if (picked == null || !context.mounted) {
-                                  return;
-                                }
-                                await ref
-                                    .read(settingsControllerProvider.notifier)
-                                    .updateReminderTime(picked);
-                              }
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Dữ liệu'),
-                const SizedBox(height: 12),
-                Card(
-                  child: Column(
-                    children: [
-                      ListTile(
-                        enabled: !isImportExportBusy,
-                        leading: const Icon(Icons.upload_file_rounded),
-                        title: const Text('Import Excel'),
-                        subtitle: Text(
-                          'Khôi phục từ file .xlsx đã xuất hoặc file mẫu.',
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                        onTap: !isImportExportBusy
-                            ? () => context.push(AppRoutes.settingsImport)
-                            : null,
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        enabled: !isImportExportBusy,
-                        leading: const Icon(Icons.ios_share_rounded),
-                        title: const Text('Export Excel'),
-                        subtitle: Text(
-                          'Sao lưu một bộ từ hoặc toàn bộ dữ liệu.',
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                        onTap: !isImportExportBusy
-                            ? () => context.push(AppRoutes.settingsExport)
-                            : null,
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        enabled: !isImportExportBusy,
-                        leading: const Icon(Icons.description_rounded),
-                        title: const Text('Mẫu Excel'),
-                        subtitle: Text(
-                          'Tạo file mẫu dùng header import của Nana App.',
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                        onTap: !isImportExportBusy
-                            ? () async {
-                                final messenger = ScaffoldMessenger.of(context);
-                                final path = await ref
-                                    .read(
-                                      importExportControllerProvider.notifier,
-                                    )
-                                    .exportTemplate();
-                                if (!context.mounted || path == null) {
-                                  return;
-                                }
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Đã tạo mẫu Excel: $path'),
-                                  ),
-                                );
-                              }
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const _SectionTitle(title: 'Thông tin'),
-                const SizedBox(height: 12),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.info_outline_rounded),
-                    title: const Text('Nana App'),
-                    subtitle: Text(
-                      'Phiên bản 1.0.0+1',
-                      style: TextStyle(color: colors.onSurfaceVariant),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Hiển thị trong quiz'),
+                  const SizedBox(height: 12),
+                  _QuizScriptCard(
+                    selected: settings.quizJapaneseScript,
+                    onChanged: (value) => _updateDraft(
+                      settings.copyWith(quizJapaneseScript: value),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Học từ mới'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Column(
+                      children: [
+                        _NumberSettingTile(
+                          icon: Icons.auto_stories_rounded,
+                          title: 'Số từ mới mỗi phiên',
+                          subtitle: 'Giới hạn từ 1 đến 100 từ.',
+                          value: settings.newWordSessionSize,
+                          min: 1,
+                          max: 100,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(newWordSessionSize: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.hearing_rounded,
+                          title: 'Nghe',
+                          subtitle: 'Số câu nghe cho mỗi từ mới.',
+                          value: settings.newWordListenCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(newWordListenCount: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.edit_rounded,
+                          title: 'Viết',
+                          subtitle: 'Số lượt viết chấm điểm cho mỗi từ mới.',
+                          value: settings.newWordWriteCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(newWordWriteCount: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.translate_rounded,
+                          title: 'Chọn từ',
+                          subtitle: 'Chọn chữ Nhật theo nghĩa.',
+                          value: settings.newWordChooseWordCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(newWordChooseWordCount: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.quiz_rounded,
+                          title: 'Chọn nghĩa',
+                          subtitle: 'Chọn nghĩa theo chữ Nhật.',
+                          value: settings.newWordChooseMeaningCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(newWordChooseMeaningCount: value),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Phiên ôn tập'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Column(
+                      children: [
+                        _NumberSettingTile(
+                          icon: Icons.fact_check_rounded,
+                          title: 'Số từ mỗi phiên',
+                          subtitle: 'Giới hạn từ 1 đến 100 từ.',
+                          value: settings.sessionSize,
+                          min: 1,
+                          max: 100,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(sessionSize: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.replay_rounded,
+                          title: 'Số lần làm lại câu sai',
+                          subtitle: 'Giới hạn từ 0 đến 5 lần.',
+                          value: settings.quizRetryLimit,
+                          min: 0,
+                          max: 5,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(quizRetryLimit: value),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Loại câu hỏi ôn tập'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Column(
+                      children: [
+                        _NumberSettingTile(
+                          icon: Icons.hearing_rounded,
+                          title: 'Nghe',
+                          subtitle: 'Nghe phát âm và chọn nghĩa.',
+                          value: settings.quizListenCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(quizListenCount: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.edit_rounded,
+                          title: 'Viết',
+                          subtitle: 'Từ nghĩa tiếng Việt tự viết đáp án Nhật.',
+                          value: settings.quizWriteCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(quizWriteCount: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.translate_rounded,
+                          title: 'Chọn từ',
+                          subtitle: 'Từ nghĩa tiếng Việt chọn đáp án Nhật.',
+                          value: settings.quizChooseWordCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(quizChooseWordCount: value),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _NumberSettingTile(
+                          icon: Icons.quiz_rounded,
+                          title: 'Chọn nghĩa',
+                          subtitle: 'Từ tiếng Nhật chọn nghĩa tiếng Việt.',
+                          value: settings.quizChooseMeaningCount,
+                          min: 0,
+                          max: 10,
+                          onChanged: (value) => _updateDraft(
+                            settings.copyWith(quizChooseMeaningCount: value),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Khoảng cách SRS'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Column(
+                      children: [
+                        for (var level = 1; level <= 6; level++) ...[
+                          _SrsIntervalTile(
+                            level: level,
+                            days: _srsIntervalForLevel(settings, level),
+                            enabled: true,
+                            onTap: () => _showSrsIntervalDialog(
+                              context,
+                              level,
+                              _srsIntervalForLevel(settings, level),
+                            ),
+                          ),
+                          if (level < 6) const Divider(height: 1),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Nhắc ôn tập'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Column(
+                      children: [
+                        SwitchListTile(
+                          secondary: Icon(
+                            Icons.notifications_active_rounded,
+                            color: !kIsWeb && settings.notifyEnabled
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                          title: const Text('Nhắc học mỗi ngày'),
+                          subtitle: Text(
+                            kIsWeb
+                                ? 'Thông báo nhắc học chưa được hỗ trợ trên bản web.'
+                                : settings.notifyEnabled
+                                    ? 'Nana App sẽ nhắc bạn lúc ${_formatReminderTime(settings.notifyHour, settings.notifyMinute)}.'
+                                    : 'Bật để nhận nhắc nhở ôn tập từ vùng nhớ hằng ngày.',
+                            style: TextStyle(color: colors.onSurfaceVariant),
+                          ),
+                          value: !kIsWeb && settings.notifyEnabled,
+                          onChanged: kIsWeb
+                              ? null
+                              : (enabled) => _updateDraft(
+                                    settings.copyWith(
+                                      notifyEnabled: enabled,
+                                    ),
+                                  ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          enabled: !kIsWeb && settings.notifyEnabled,
+                          leading: const Icon(Icons.schedule_rounded),
+                          title: const Text('Giờ nhắc'),
+                          subtitle: Text(
+                            _formatReminderTime(
+                              settings.notifyHour,
+                              settings.notifyMinute,
+                            ),
+                            style: TextStyle(color: colors.onSurfaceVariant),
+                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: !kIsWeb && settings.notifyEnabled
+                              ? () async {
+                                  final picked = await showTimePicker(
+                                    context: context,
+                                    initialTime: TimeOfDay(
+                                      hour: settings.notifyHour,
+                                      minute: settings.notifyMinute,
+                                    ),
+                                  );
+                                  if (picked == null || !context.mounted) {
+                                    return;
+                                  }
+                                  _updateDraft(
+                                    settings.copyWith(
+                                      notifyHour: picked.hour,
+                                      notifyMinute: picked.minute,
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Dữ liệu'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          enabled: !isImportExportBusy,
+                          leading: const Icon(Icons.upload_file_rounded),
+                          title: const Text('Import Excel'),
+                          subtitle: Text(
+                            'Khôi phục từ file .xlsx đã xuất hoặc file mẫu.',
+                            style: TextStyle(color: colors.onSurfaceVariant),
+                          ),
+                          onTap: !isImportExportBusy
+                              ? () => _openSettingsRoute(
+                                    AppRoutes.settingsImport,
+                                  )
+                              : null,
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          enabled: !isImportExportBusy,
+                          leading: const Icon(Icons.ios_share_rounded),
+                          title: const Text('Export Excel'),
+                          subtitle: Text(
+                            'Sao lưu một bộ từ hoặc toàn bộ dữ liệu.',
+                            style: TextStyle(color: colors.onSurfaceVariant),
+                          ),
+                          onTap: !isImportExportBusy
+                              ? () => _openSettingsRoute(
+                                    AppRoutes.settingsExport,
+                                  )
+                              : null,
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          enabled: !isImportExportBusy,
+                          leading: const Icon(Icons.description_rounded),
+                          title: const Text('Mẫu Excel'),
+                          subtitle: Text(
+                            'Tạo file mẫu dùng header import của Nana App.',
+                            style: TextStyle(color: colors.onSurfaceVariant),
+                          ),
+                          onTap: !isImportExportBusy
+                              ? () async {
+                                  final messenger =
+                                      ScaffoldMessenger.of(context);
+                                  final path = await ref
+                                      .read(
+                                        importExportControllerProvider.notifier,
+                                      )
+                                      .exportTemplate();
+                                  if (!context.mounted || path == null) {
+                                    return;
+                                  }
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('Đã tạo mẫu Excel: $path'),
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Tài khoản cloud'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.account_circle_rounded),
+                          title: Text(
+                            ref
+                                    .watch(supabaseClientProvider)
+                                    .auth
+                                    .currentUser
+                                    ?.email ??
+                                'Tài khoản Supabase',
+                          ),
+                          subtitle: const Text(
+                            'Tài khoản dùng để đồng bộ dữ liệu cloud.',
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: Icon(
+                            ref.watch(hasNetworkProvider).valueOrNull == false
+                                ? Icons.cloud_off_rounded
+                                : Icons.cloud_done_rounded,
+                          ),
+                          title: const Text('Trạng thái kết nối'),
+                          subtitle: Text(
+                            ref.watch(hasNetworkProvider).valueOrNull == false
+                                ? 'Đang offline'
+                                : 'Đã kết nối Supabase',
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: Icon(
+                            Icons.logout_rounded,
+                            color: colors.error,
+                          ),
+                          title: Text(
+                            'Đăng xuất',
+                            style: TextStyle(color: colors.error),
+                          ),
+                          onTap: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Đăng xuất?'),
+                                content: const Text(
+                                  'Bạn cần đăng nhập lại để truy cập dữ liệu cloud.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: const Text('Hủy'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    child: const Text('Đăng xuất'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true && context.mounted) {
+                              final canLeave =
+                                  await confirmPendingSettingsChanges(context);
+                              if (!canLeave || !context.mounted) {
+                                return;
+                              }
+                              await ref
+                                  .read(authControllerProvider.notifier)
+                                  .signOut();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const _SectionTitle(title: 'Thông tin'),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.info_outline_rounded),
+                      title: const Text('Nana App'),
+                      subtitle: Text(
+                        'Phiên bản 2.0.0',
+                        style: TextStyle(color: colors.onSurfaceVariant),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -399,9 +618,22 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  void _updateDraft(AppSettings settings) {
+    ref.read(settingsDraftControllerProvider.notifier).update(settings);
+  }
+
+  Future<void> _openSettingsRoute(String location) async {
+    final canLeave = await confirmPendingSettingsChanges(context);
+    if (!canLeave || !mounted) return;
+    context.push(location);
+  }
+
+  Future<void> _saveDraft() async {
+    await savePendingSettingsChanges(context);
+  }
+
   Future<void> _showSrsIntervalDialog(
     BuildContext context,
-    WidgetRef ref,
     int level,
     double currentDays,
   ) async {
@@ -415,23 +647,20 @@ class SettingsScreen extends ConsumerWidget {
     if (days == null || !context.mounted) {
       return;
     }
-    final messenger = ScaffoldMessenger.of(context);
-    await ref
-        .read(settingsControllerProvider.notifier)
-        .updateSrsInterval(level, days);
-    if (!context.mounted) {
+    final draft = ref.read(settingsDraftControllerProvider).draft;
+    if (draft == null) {
       return;
     }
-
-    final state = ref.read(settingsControllerProvider);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          state.hasError
-              ? 'Không thể lưu thời gian SRS: ${state.error}'
-              : 'Đã lưu thời gian SRS Lv $level.',
-        ),
-      ),
+    _updateDraft(
+      switch (level) {
+        1 => draft.copyWith(srsLevel1IntervalDays: days),
+        2 => draft.copyWith(srsLevel2IntervalDays: days),
+        3 => draft.copyWith(srsLevel3IntervalDays: days),
+        4 => draft.copyWith(srsLevel4IntervalDays: days),
+        5 => draft.copyWith(srsLevel5IntervalDays: days),
+        6 => draft.copyWith(srsLevel6IntervalDays: days),
+        _ => draft,
+      },
     );
   }
 

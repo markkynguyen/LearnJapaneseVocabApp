@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/srs_constants.dart';
-import '../../../../core/database/app_database.dart';
+import '../../../../core/models/app_models.dart';
 
 class LevelStatsDashboard extends StatelessWidget {
   const LevelStatsDashboard({

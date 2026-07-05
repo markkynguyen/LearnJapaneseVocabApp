@@ -6,11 +6,11 @@ part of 'settings_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$appSettingsHash() => r'7b1643fc0ef1bb28485613f891c1b3b1b8d94aea';
+String _$appSettingsHash() => r'dd31e783cb40788fb0c8624e716987661b958bdf';
 
 /// See also [appSettings].
 @ProviderFor(appSettings)
-final appSettingsProvider = AutoDisposeStreamProvider<AppSettings>.internal(
+final appSettingsProvider = AutoDisposeFutureProvider<AppSettings>.internal(
   appSettings,
   name: r'appSettingsProvider',
   debugGetCreateSourceHash:
@@ -19,8 +19,8 @@ final appSettingsProvider = AutoDisposeStreamProvider<AppSettings>.internal(
   allTransitiveDependencies: null,
 );
 
-typedef AppSettingsRef = AutoDisposeStreamProviderRef<AppSettings>;
-String _$themeModeHash() => r'1e2defc2bde04c484a42d0a34b47ac4cbc6648fc';
+typedef AppSettingsRef = AutoDisposeFutureProviderRef<AppSettings>;
+String _$themeModeHash() => r'dc3e4365ce28a611c810a387569ae7f242f07ef2';
 
 /// See also [themeMode].
 @ProviderFor(themeMode)
@@ -34,13 +34,30 @@ final themeModeProvider = AutoDisposeProvider<ThemeMode>.internal(
 );
 
 typedef ThemeModeRef = AutoDisposeProviderRef<ThemeMode>;
+String _$settingsDraftControllerHash() =>
+    r'4541b4f40b3024bed4f7bd78a344acb5e7274110';
+
+/// See also [SettingsDraftController].
+@ProviderFor(SettingsDraftController)
+final settingsDraftControllerProvider =
+    NotifierProvider<SettingsDraftController, SettingsDraftState>.internal(
+  SettingsDraftController.new,
+  name: r'settingsDraftControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$settingsDraftControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$SettingsDraftController = Notifier<SettingsDraftState>;
 String _$settingsControllerHash() =>
-    r'6411ae1541375cd97b321e05e1e5c4efe558c44d';
+    r'5e33ed9b669687a89ff7d59c48e8892d49136c8d';
 
 /// See also [SettingsController].
 @ProviderFor(SettingsController)
 final settingsControllerProvider =
-    AutoDisposeAsyncNotifierProvider<SettingsController, void>.internal(
+    AsyncNotifierProvider<SettingsController, void>.internal(
   SettingsController.new,
   name: r'settingsControllerProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -50,6 +67,6 @@ final settingsControllerProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$SettingsController = AutoDisposeAsyncNotifier<void>;
+typedef _$SettingsController = AsyncNotifier<void>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

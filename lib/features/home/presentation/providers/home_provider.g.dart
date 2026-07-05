@@ -6,7 +6,7 @@ part of 'home_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$greetingHash() => r'd342873cee31b1c6b7a1581a40b16d4cf838102b';
+String _$greetingHash() => r'2e4d1f163174058aa6515bb455e0d63114ae0e20';
 
 /// See also [greeting].
 @ProviderFor(greeting)
@@ -20,11 +20,11 @@ final greetingProvider = AutoDisposeProvider<String>.internal(
 );
 
 typedef GreetingRef = AutoDisposeProviderRef<String>;
-String _$totalDueCountHash() => r'3a700376e1acc5568d9a34e6e38631cfef83238f';
+String _$totalDueCountHash() => r'244f7ab4f4f7bde5cc2059b867859e13d5171e38';
 
 /// See also [totalDueCount].
 @ProviderFor(totalDueCount)
-final totalDueCountProvider = AutoDisposeStreamProvider<int>.internal(
+final totalDueCountProvider = AutoDisposeFutureProvider<int>.internal(
   totalDueCount,
   name: r'totalDueCountProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -34,12 +34,12 @@ final totalDueCountProvider = AutoDisposeStreamProvider<int>.internal(
   allTransitiveDependencies: null,
 );
 
-typedef TotalDueCountRef = AutoDisposeStreamProviderRef<int>;
-String _$totalLevelStatsHash() => r'ef091f123914bfd806d834a8c1848af2eed8f97b';
+typedef TotalDueCountRef = AutoDisposeFutureProviderRef<int>;
+String _$totalLevelStatsHash() => r'539ed4f0423111755b45c00c73a1a1ff2a571015';
 
 /// See also [totalLevelStats].
 @ProviderFor(totalLevelStats)
-final totalLevelStatsProvider = AutoDisposeStreamProvider<LevelStats>.internal(
+final totalLevelStatsProvider = AutoDisposeFutureProvider<LevelStats>.internal(
   totalLevelStats,
   name: r'totalLevelStatsProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -49,9 +49,9 @@ final totalLevelStatsProvider = AutoDisposeStreamProvider<LevelStats>.internal(
   allTransitiveDependencies: null,
 );
 
-typedef TotalLevelStatsRef = AutoDisposeStreamProviderRef<LevelStats>;
+typedef TotalLevelStatsRef = AutoDisposeFutureProviderRef<LevelStats>;
 String _$homeVocabSuggestionsHash() =>
-    r'2b2834a2e7ed8b8ba5c3f0a7b6582fd17174a74b';
+    r'6c9c778a9a6ae1f2f98401a93d7637e7c1092d27';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -119,7 +119,7 @@ class HomeVocabSuggestionsFamily
 
 /// See also [homeVocabSuggestions].
 class HomeVocabSuggestionsProvider
-    extends AutoDisposeStreamProvider<List<VocabSearchResult>> {
+    extends AutoDisposeFutureProvider<List<VocabSearchResult>> {
   /// See also [homeVocabSuggestions].
   HomeVocabSuggestionsProvider(
     String query,
@@ -154,7 +154,7 @@ class HomeVocabSuggestionsProvider
 
   @override
   Override overrideWith(
-    Stream<List<VocabSearchResult>> Function(HomeVocabSuggestionsRef provider)
+    FutureOr<List<VocabSearchResult>> Function(HomeVocabSuggestionsRef provider)
         create,
   ) {
     return ProviderOverride(
@@ -172,7 +172,7 @@ class HomeVocabSuggestionsProvider
   }
 
   @override
-  AutoDisposeStreamProviderElement<List<VocabSearchResult>> createElement() {
+  AutoDisposeFutureProviderElement<List<VocabSearchResult>> createElement() {
     return _HomeVocabSuggestionsProviderElement(this);
   }
 
@@ -191,13 +191,13 @@ class HomeVocabSuggestionsProvider
 }
 
 mixin HomeVocabSuggestionsRef
-    on AutoDisposeStreamProviderRef<List<VocabSearchResult>> {
+    on AutoDisposeFutureProviderRef<List<VocabSearchResult>> {
   /// The parameter `query` of this provider.
   String get query;
 }
 
 class _HomeVocabSuggestionsProviderElement
-    extends AutoDisposeStreamProviderElement<List<VocabSearchResult>>
+    extends AutoDisposeFutureProviderElement<List<VocabSearchResult>>
     with HomeVocabSuggestionsRef {
   _HomeVocabSuggestionsProviderElement(super.provider);
 

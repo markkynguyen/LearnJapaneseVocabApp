@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../constants/srs_constants.dart';
-import '../database/app_database.dart';
+import '../models/app_models.dart';
 import '../utils/time_utils.dart';
 
 part 'srs_engine.g.dart';

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/cloud/cloud_store.dart';
 import '../../domain/excel_vocab_models.dart';
 import '../../domain/import_export_repository.dart';
 
@@ -11,9 +11,7 @@ part 'import_export_provider.g.dart';
 @riverpod
 ImportExportRepository importExportRepository(ImportExportRepositoryRef ref) {
   return ImportExportRepository(
-    vocabularyDao: ref.watch(vocabularyDaoProvider),
-    folderDao: ref.watch(folderDaoProvider),
-    srsProgressDao: ref.watch(srsProgressDaoProvider),
+    store: ref.watch(cloudStoreProvider),
   );
 }
 
@@ -22,7 +20,7 @@ class ImportExportController extends _$ImportExportController {
   @override
   FutureOr<void> build() {}
 
-  Future<ExcelImportPreview?> pickPreview({required int folderId}) {
+  Future<ExcelImportPreview?> pickPreview({required String folderId}) {
     return ref
         .read(importExportRepositoryProvider)
         .pickAndPreview(folderId: folderId);
@@ -35,7 +33,7 @@ class ImportExportController extends _$ImportExportController {
   }
 
   Future<ExcelImportResult?> importPreview({
-    required int folderId,
+    required String folderId,
     required ExcelImportPreview preview,
     required DuplicateStrategy duplicateStrategy,
   }) async {
@@ -67,7 +65,7 @@ class ImportExportController extends _$ImportExportController {
     return result;
   }
 
-  Future<String?> exportFolder(int folderId) async {
+  Future<String?> exportFolder(String folderId) async {
     state = const AsyncLoading();
     String? path;
     state = await AsyncValue.guard(() async {

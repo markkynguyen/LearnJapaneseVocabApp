@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../features/auth/presentation/auth_screen.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/folders/presentation/folder_form_screen.dart';
 import '../../features/folders/presentation/folder_list_screen.dart';
 import '../../features/folders/presentation/providers/folder_provider.dart';
@@ -20,13 +24,60 @@ import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/vocab/presentation/flashcard_screen.dart';
 import '../../features/vocab/presentation/vocab_form_screen.dart';
 import '../../features/vocab/presentation/vocab_list_screen.dart';
-import '../database/app_database.dart';
+import '../cloud/supabase_config.dart';
+import '../cloud/cloud_store.dart';
+import '../connectivity/cloud_connectivity.dart';
+import '../connectivity/offline_screen.dart';
+import '../models/app_models.dart';
 import 'app_routes.dart';
 
+final routerGuardEnabledProvider = Provider<bool>((ref) => true);
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final guardEnabled = ref.watch(routerGuardEnabledProvider);
+  final session = guardEnabled ? ref.watch(currentSessionProvider) : null;
+  final authEvent =
+      guardEnabled ? ref.watch(authStateProvider).valueOrNull?.event : null;
   return GoRouter(
     initialLocation: AppRoutes.home,
+    redirect: (context, state) {
+      if (!guardEnabled) return null;
+      if (!SupabaseConfig.isConfigured) {
+        return state.matchedLocation == AppRoutes.configuration
+            ? null
+            : AppRoutes.configuration;
+      }
+      final authLocation = state.matchedLocation == AppRoutes.auth;
+      if (session == null) return authLocation ? null : AppRoutes.auth;
+      if (authEvent == AuthChangeEvent.passwordRecovery &&
+          state.matchedLocation != AppRoutes.resetPassword) {
+        return AppRoutes.resetPassword;
+      }
+      return authLocation ||
+              state.matchedLocation == AppRoutes.authCallback ||
+              state.matchedLocation == AppRoutes.configuration
+          ? AppRoutes.home
+          : null;
+    },
     routes: [
+      GoRoute(
+        path: AppRoutes.auth,
+        builder: (context, state) => const AuthScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.authCallback,
+        builder: (context, state) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (context, state) => const ResetPasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.configuration,
+        builder: (context, state) => const _ConfigurationScreen(),
+      ),
       ShellRoute(
         builder: (context, state, child) => _AppShell(child: child),
         routes: [
@@ -45,7 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id/edit',
                 builder: (context, state) {
-                  final id = int.tryParse(state.pathParameters['id'] ?? '');
+                  final id = state.pathParameters['id'];
                   return _FolderFormRoute(
                     folderId: id,
                     folder:
@@ -56,7 +107,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id/vocab',
                 builder: (context, state) {
-                  final id = int.tryParse(state.pathParameters['id'] ?? '');
+                  final id = state.pathParameters['id'];
                   if (id == null) {
                     return const _RouteErrorScreen(
                       message: 'Folder không hợp lệ.',
@@ -68,7 +119,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'new',
                     builder: (context, state) {
-                      final id = int.tryParse(state.pathParameters['id'] ?? '');
+                      final id = state.pathParameters['id'];
                       if (id == null) {
                         return const _RouteErrorScreen(
                           message: 'Folder khong hop le.',
@@ -82,7 +133,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id/flashcards',
                 builder: (context, state) {
-                  final id = int.tryParse(state.pathParameters['id'] ?? '');
+                  final id = state.pathParameters['id'];
                   if (id == null) {
                     return const _RouteErrorScreen(
                       message: 'Folder không hợp lệ.',
@@ -96,8 +147,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.review,
             builder: (context, state) {
-              final folderId =
-                  int.tryParse(state.uri.queryParameters['folderId'] ?? '');
+              final folderId = state.uri.queryParameters['folderId'];
               final favoritesOnly =
                   state.uri.queryParameters['favoritesOnly'] == '1';
               return ReviewSetupScreen(
@@ -125,8 +175,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/learning/folder/:folderId',
             builder: (context, state) {
-              final folderId =
-                  int.tryParse(state.pathParameters['folderId'] ?? '');
+              final folderId = state.pathParameters['folderId'];
               if (folderId == null) {
                 return const _RouteErrorScreen(
                   message: 'Bộ từ không hợp lệ.',
@@ -159,6 +208,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.settings,
             builder: (context, state) => const SettingsScreen(),
+            onExit: confirmPendingSettingsChanges,
             routes: [
               GoRoute(
                 path: 'import',
@@ -173,9 +223,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/vocab/:id/edit',
             builder: (context, state) {
-              final vocabId = int.tryParse(state.pathParameters['id'] ?? '');
-              final folderId =
-                  int.tryParse(state.uri.queryParameters['folderId'] ?? '');
+              final vocabId = state.pathParameters['id'];
+              final folderId = state.uri.queryParameters['folderId'];
               if (vocabId == null || folderId == null) {
                 return const _RouteErrorScreen(
                   message: 'Từ vựng hoặc folder không hợp lệ.',
@@ -193,13 +242,49 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _AppShell extends StatelessWidget {
+class _AppShell extends ConsumerWidget {
   const _AppShell({required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final network = ref.watch(hasNetworkProvider);
+    if (network.valueOrNull == false) {
+      return OfflineScreen(onRetry: () => ref.invalidate(hasNetworkProvider));
+    }
+    final bootstrap = ref.watch(routerGuardEnabledProvider)
+        ? ref.watch(cloudBootstrapProvider)
+        : const AsyncData<void>(null);
+    if (bootstrap.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (bootstrap.hasError) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Không thể kết nối database cloud: ${bootstrap.error}',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  onPressed: () => ref.invalidate(cloudBootstrapProvider),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     final location = GoRouterState.of(context).uri.path;
     if (_hideNavigation(location)) {
       return child;
@@ -263,7 +348,7 @@ class _FolderFormRoute extends ConsumerWidget {
     this.folder,
   });
 
-  final int? folderId;
+  final String? folderId;
   final Folder? folder;
 
   @override
@@ -294,6 +379,46 @@ class _FolderFormRoute extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _ConfigurationScreen extends StatelessWidget {
+  const _ConfigurationScreen();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 620),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.cloud_sync_rounded,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Chưa cấu hình Supabase',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  const SelectableText(
+                    'Chạy app với:\n\n'
+                    '--dart-define=SUPABASE_URL=https://<project>.supabase.co '
+                    '--dart-define=SUPABASE_PUBLISHABLE_KEY=<publishable-key>',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class _RouteErrorScreen extends StatelessWidget {

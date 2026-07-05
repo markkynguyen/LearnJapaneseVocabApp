@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Nana App
+Exec=jvocab %u
+Type=Application
+Terminal=false
+MimeType=x-scheme-handler/nanaapp;
+Categories=Education;

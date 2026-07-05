@@ -1,43 +1,29 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/cloud/cloud_store.dart';
+import '../../../../core/models/app_models.dart';
 
 part 'home_provider.g.dart';
 
 @riverpod
 String greeting(GreetingRef ref) {
   final hour = DateTime.now().hour;
-  if (hour < 11) {
-    return 'Chào buổi sáng';
-  }
-  if (hour < 18) {
-    return 'Chào buổi chiều';
-  }
+  if (hour < 11) return 'Chào buổi sáng';
+  if (hour < 18) return 'Chào buổi chiều';
   return 'Chào buổi tối';
 }
 
 @riverpod
-Stream<int> totalDueCount(TotalDueCountRef ref) {
-  return ref.watch(srsProgressDaoProvider).watchDueWords().map(
-        (words) => words.length,
-      );
-}
+Future<int> totalDueCount(TotalDueCountRef ref) =>
+    ref.watch(cloudStoreProvider).getDueCount();
 
 @riverpod
-Stream<LevelStats> totalLevelStats(TotalLevelStatsRef ref) {
-  return ref.watch(srsProgressDaoProvider).watchLevelStats();
-}
+Future<LevelStats> totalLevelStats(TotalLevelStatsRef ref) =>
+    ref.watch(cloudStoreProvider).getLevelStats();
 
 @riverpod
-Stream<List<VocabSearchResult>> homeVocabSuggestions(
+Future<List<VocabSearchResult>> homeVocabSuggestions(
   HomeVocabSuggestionsRef ref,
   String query,
-) {
-  if (query.trim().isEmpty) {
-    return Stream.value(const []);
-  }
-  return ref.watch(vocabularyDaoProvider).watchVocabSuggestions(
-        query,
-        limit: 4,
-      );
-}
+) =>
+    ref.watch(cloudStoreProvider).searchAllVocab(query, limit: 4);

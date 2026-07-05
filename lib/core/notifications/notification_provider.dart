@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../database/app_database.dart';
+import '../cloud/cloud_store.dart';
+import '../models/app_models.dart';
 import 'notification_service.dart';
 
 part 'notification_provider.g.dart';
@@ -20,7 +21,7 @@ class NotificationController extends _$NotificationController {
       return;
     }
 
-    final dueCount = await ref.read(srsProgressDaoProvider).getDueCount();
+    final dueCount = await ref.read(cloudStoreProvider).getDueCount();
     await ref.read(notificationServiceProvider).scheduleDailyReviewReminder(
           hour: settings.notifyHour,
           minute: settings.notifyMinute,

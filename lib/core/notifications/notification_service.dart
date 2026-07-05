@@ -23,6 +23,10 @@ class NotificationService {
     if (_initialized) {
       return;
     }
+    if (kIsWeb) {
+      _initialized = true;
+      return;
+    }
 
     tz_data.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Ho_Chi_Minh'));
@@ -57,10 +61,10 @@ class NotificationService {
   }
 
   Future<bool> requestPermission() async {
-    await initialize();
     if (kIsWeb) {
-      return true;
+      return false;
     }
+    await initialize();
 
     final androidResult = await _plugin
         .resolvePlatformSpecificImplementation<
@@ -90,6 +94,9 @@ class NotificationService {
     required int minute,
     int? dueCount,
   }) async {
+    if (kIsWeb) {
+      return;
+    }
     await initialize();
 
     final body = dueCount == null
@@ -124,6 +131,9 @@ class NotificationService {
   }
 
   Future<void> cancelDailyReviewReminder() async {
+    if (kIsWeb) {
+      return;
+    }
     await initialize();
     await _plugin.cancel(dailyReviewReminderId);
   }

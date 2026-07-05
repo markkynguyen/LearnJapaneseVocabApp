@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/cloud/cloud_store.dart';
+import '../../../../core/models/app_models.dart';
 import '../../../../core/utils/quiz_utils.dart';
 import '../../domain/review_models.dart';
 import '../../domain/review_repository.dart';
@@ -22,8 +23,7 @@ class ReviewAnswerFeedback {
 @riverpod
 ReviewRepository reviewRepository(ReviewRepositoryRef ref) {
   return ReviewRepository(
-    srsProgressDao: ref.watch(srsProgressDaoProvider),
-    settingsDao: ref.watch(settingsDaoProvider),
+    store: ref.watch(cloudStoreProvider),
   );
 }
 
@@ -33,9 +33,9 @@ class ReviewSessionController extends _$ReviewSessionController {
   AsyncValue<ReviewSessionState?> build() => const AsyncData(null);
 
   Future<void> start({
-    int? folderId,
+    String? folderId,
     bool favoritesOnly = false,
-    List<int> excludeIds = const [],
+    List<String> excludeIds = const [],
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -49,7 +49,7 @@ class ReviewSessionController extends _$ReviewSessionController {
 
   Future<void> startWithWords(
     List<VocabWithProgress> words, {
-    int? folderId,
+    String? folderId,
     bool favoritesOnly = false,
   }) async {
     state = const AsyncLoading();
@@ -71,7 +71,8 @@ class ReviewSessionController extends _$ReviewSessionController {
 
     final isCorrect = _isCorrect(question, answer);
     final nextQuestions = [...current.questions];
-    final results = Map<int, ReviewWordResult>.from(current.resultsByVocabId);
+    final results =
+        Map<String, ReviewWordResult>.from(current.resultsByVocabId);
     final vocabId = question.item.vocab.id;
     final previousResult = results[vocabId]!;
 
@@ -104,13 +105,14 @@ class ReviewSessionController extends _$ReviewSessionController {
     );
   }
 
-  void setSrsDecision(int vocabId, ReviewSrsDecision decision) {
+  void setSrsDecision(String vocabId, ReviewSrsDecision decision) {
     final current = state.valueOrNull;
     if (current == null) {
       return;
     }
 
-    final results = Map<int, ReviewWordResult>.from(current.resultsByVocabId);
+    final results =
+        Map<String, ReviewWordResult>.from(current.resultsByVocabId);
     final result = results[vocabId];
     if (result == null) {
       return;
@@ -145,8 +147,8 @@ class ReviewSessionController extends _$ReviewSessionController {
         normalizeQuizAnswer(question.expectedAnswer);
   }
 
-  Map<int, ReviewWordResult> _withDefaultSrsDecisions(
-    Map<int, ReviewWordResult> results,
+  Map<String, ReviewWordResult> _withDefaultSrsDecisions(
+    Map<String, ReviewWordResult> results,
   ) {
     return {
       for (final entry in results.entries)

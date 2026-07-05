@@ -1,5 +1,9 @@
 abstract final class AppRoutes {
   static const home = '/';
+  static const auth = '/auth';
+  static const authCallback = '/auth-callback';
+  static const resetPassword = '/reset-password';
+  static const configuration = '/configuration';
   static const folders = '/folders';
   static const newFolder = '/folders/new';
   static const settings = '/settings';
@@ -11,20 +15,21 @@ abstract final class AppRoutes {
   static const learningSession = '/learning/session';
   static const learningResult = '/learning/result';
 
-  static String editFolder(int id) => '/folders/$id/edit';
-  static String folderVocab(int id) => '/folders/$id/vocab';
-  static String folderFlashcards(int id) => '/folders/$id/flashcards';
-  static String learningPreview(int folderId) => '/learning/folder/$folderId';
-  static String reviewExit(int? folderId) =>
+  static String editFolder(String id) => '/folders/$id/edit';
+  static String folderVocab(String id) => '/folders/$id/vocab';
+  static String folderFlashcards(String id) => '/folders/$id/flashcards';
+  static String learningPreview(String folderId) =>
+      '/learning/folder/$folderId';
+  static String reviewExit(String? folderId) =>
       folderId == null ? home : folderVocab(folderId);
   static String reviewFolder(
-    int id, {
+    String id, {
     bool favoritesOnly = false,
   }) =>
       favoritesOnly
           ? '/review?folderId=$id&favoritesOnly=1'
           : '/review?folderId=$id';
-  static String newVocab(int folderId) => '/folders/$folderId/vocab/new';
-  static String editVocab(int id, {required int folderId}) =>
+  static String newVocab(String folderId) => '/folders/$folderId/vocab/new';
+  static String editVocab(String id, {required String folderId}) =>
       '/vocab/$id/edit?folderId=$folderId';
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jvocab/core/database/app_database.dart';
+import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/features/vocab/presentation/flashcard_screen.dart';
 import 'package:jvocab/features/vocab/presentation/providers/flashcard_provider.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/pitch_accent_text.dart';
@@ -88,12 +88,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          flashcardVocabularyProvider(1).overrideWith(
-            (ref) => Stream.value([item]),
+          flashcardVocabularyProvider('folder-1').overrideWith(
+            (ref) => [item],
           ),
         ],
         child: const MaterialApp(
-          home: FlashcardScreen(folderId: 1, folderName: 'N5'),
+          home: FlashcardScreen(folderId: 'folder-1', folderName: 'N5'),
         ),
       ),
     );
@@ -126,8 +126,8 @@ void main() {
 VocabWithProgress _item({String? kanji = '食べる'}) {
   return VocabWithProgress(
     vocab: VocabularyEntry(
-      id: 1,
-      folderId: 1,
+      id: 'vocab-1',
+      folderId: 'folder-1',
       kanji: kanji,
       kana: 'たべる',
       romaji: 'taberu',
@@ -138,8 +138,7 @@ VocabWithProgress _item({String? kanji = '食べる'}) {
       createdAt: 0,
     ),
     progress: const SrsProgressEntry(
-      id: 1,
-      vocabId: 1,
+      vocabId: 'vocab-1',
       level: 0,
       intervalDays: 0,
       nextReviewAt: 0,

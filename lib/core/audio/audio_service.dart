@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../database/app_database.dart';
+import '../models/app_models.dart';
 
 part 'audio_service.g.dart';
 

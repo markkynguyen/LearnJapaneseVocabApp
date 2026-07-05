@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/database/app_database.dart';
+import '../../../../core/models/app_models.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class FolderProgressList extends StatelessWidget {
@@ -10,18 +10,52 @@ class FolderProgressList extends StatelessWidget {
     required this.onOpenFolder,
     required this.onEditFolder,
     required this.onDeleteFolder,
+    this.reorderEnabled = false,
+    this.onReorder,
     super.key,
   });
 
   final List<FolderWithCount> folders;
-  final ValueChanged<int> onOpenFolder;
+  final ValueChanged<String> onOpenFolder;
   final ValueChanged<FolderWithCount> onEditFolder;
   final ValueChanged<FolderWithCount> onDeleteFolder;
+  final bool reorderEnabled;
+  final ReorderCallback? onReorder;
 
   @override
   Widget build(BuildContext context) {
     if (folders.isEmpty) {
       return const _EmptyFolderState();
+    }
+
+    if (reorderEnabled) {
+      assert(onReorder != null);
+      return ReorderableListView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 90),
+        buildDefaultDragHandles: false,
+        itemCount: folders.length,
+        onReorderItem: onReorder!,
+        itemBuilder: (context, index) {
+          final item = folders[index];
+          return Padding(
+            key: ValueKey(item.folder.id),
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _FolderProgressCard(
+              item: item,
+              dragHandle: ReorderableDelayedDragStartListener(
+                index: index,
+                child: const Tooltip(
+                  message: 'Kéo để sắp xếp',
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Icon(Icons.drag_handle_rounded),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
     }
 
     return ListView.separated(
@@ -31,6 +65,7 @@ class FolderProgressList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = folders[index];
         return _FolderProgressCard(
+          key: ValueKey(item.folder.id),
           item: item,
           onTap: () => onOpenFolder(item.folder.id),
           onEdit: () => onEditFolder(item),
@@ -51,15 +86,18 @@ double folderCompletionRate(FolderWithCount item) {
 class _FolderProgressCard extends StatelessWidget {
   const _FolderProgressCard({
     required this.item,
-    required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
+    this.onTap,
+    this.onEdit,
+    this.onDelete,
+    this.dragHandle,
+    super.key,
   });
 
   final FolderWithCount item;
-  final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final Widget? dragHandle;
 
   @override
   Widget build(BuildContext context) {
@@ -93,39 +131,42 @@ class _FolderProgressCard extends StatelessWidget {
                     ),
                   ),
                   if (item.dueCount > 0) _DueBadge(count: item.dueCount),
-                  PopupMenuButton<_FolderAction>(
-                    tooltip: 'Tùy chọn bộ từ',
-                    onSelected: (action) {
-                      switch (action) {
-                        case _FolderAction.edit:
-                          onEdit();
-                        case _FolderAction.delete:
-                          onDelete();
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: _FolderAction.edit,
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_rounded),
-                            SizedBox(width: 10),
-                            Text('Sửa bộ từ'),
-                          ],
+                  if (dragHandle != null)
+                    dragHandle!
+                  else
+                    PopupMenuButton<_FolderAction>(
+                      tooltip: 'Tùy chọn bộ từ',
+                      onSelected: (action) {
+                        switch (action) {
+                          case _FolderAction.edit:
+                            onEdit?.call();
+                          case _FolderAction.delete:
+                            onDelete?.call();
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: _FolderAction.edit,
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_rounded),
+                              SizedBox(width: 10),
+                              Text('Sửa bộ từ'),
+                            ],
+                          ),
                         ),
-                      ),
-                      PopupMenuItem(
-                        value: _FolderAction.delete,
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline_rounded),
-                            SizedBox(width: 10),
-                            Text('Xóa bộ từ'),
-                          ],
+                        PopupMenuItem(
+                          value: _FolderAction.delete,
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded),
+                              SizedBox(width: 10),
+                              Text('Xóa bộ từ'),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
               const SizedBox(height: 8),

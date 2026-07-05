@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/cloud/cloud_store.dart';
+import '../../../../core/models/app_models.dart';
 import '../../domain/learning_models.dart';
 import '../../domain/learning_repository.dart';
 import '../../domain/learning_session_engine.dart';
@@ -12,8 +13,7 @@ part 'learning_provider.g.dart';
 @riverpod
 LearningRepository learningRepository(LearningRepositoryRef ref) {
   return LearningRepository(
-    srsProgressDao: ref.watch(srsProgressDaoProvider),
-    settingsDao: ref.watch(settingsDaoProvider),
+    store: ref.watch(cloudStoreProvider),
   );
 }
 
@@ -23,8 +23,8 @@ class LearningController extends _$LearningController {
   AsyncValue<LearningSessionState?> build() => const AsyncData(null);
 
   Future<void> start({
-    required int folderId,
-    List<int> excludeIds = const [],
+    required String folderId,
+    List<String> excludeIds = const [],
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -36,7 +36,7 @@ class LearningController extends _$LearningController {
   }
 
   Future<void> startWithWords({
-    required int folderId,
+    required String folderId,
     required List<VocabWithProgress> words,
   }) async {
     state = const AsyncLoading();

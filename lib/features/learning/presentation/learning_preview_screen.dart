@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/audio/audio_service.dart';
-import '../../../core/database/app_database.dart';
+import '../../../core/models/app_models.dart';
 import '../../../core/router/app_routes.dart';
 import '../../vocab/presentation/widgets/vocabulary_study_card.dart';
 import '../domain/learning_models.dart';
@@ -16,7 +16,7 @@ class LearningPreviewScreen extends ConsumerStatefulWidget {
     super.key,
   });
 
-  final int folderId;
+  final String folderId;
   final LearningPreviewRequest request;
 
   @override
@@ -209,7 +209,7 @@ class _LearningPreviewScreenState extends ConsumerState<LearningPreviewScreen> {
 
 class _EmptyLearningState extends StatelessWidget {
   const _EmptyLearningState({required this.folderId});
-  final int folderId;
+  final String folderId;
 
   @override
   Widget build(BuildContext context) => Center(

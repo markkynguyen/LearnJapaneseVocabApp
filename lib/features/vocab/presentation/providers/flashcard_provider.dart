@@ -3,7 +3,8 @@ import 'dart:math';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/cloud/cloud_store.dart';
+import '../../../../core/models/app_models.dart';
 
 part 'flashcard_provider.g.dart';
 
@@ -53,11 +54,11 @@ class FlashcardDeckState {
 }
 
 @riverpod
-Stream<List<VocabWithProgress>> flashcardVocabulary(
+Future<List<VocabWithProgress>> flashcardVocabulary(
   FlashcardVocabularyRef ref,
-  int folderId,
+  String folderId,
 ) {
-  return ref.watch(vocabularyDaoProvider).watchVocabByFolder(
+  return ref.watch(cloudStoreProvider).getVocabByFolder(
         folderId,
         sortMode: VocabSortMode.newest,
       );
@@ -66,7 +67,7 @@ Stream<List<VocabWithProgress>> flashcardVocabulary(
 @riverpod
 class FlashcardDeck extends _$FlashcardDeck {
   @override
-  FutureOr<FlashcardDeckState> build(int folderId) async {
+  FutureOr<FlashcardDeckState> build(String folderId) async {
     final items = await ref.watch(flashcardVocabularyProvider(folderId).future);
     return FlashcardDeckState(
       items: items,

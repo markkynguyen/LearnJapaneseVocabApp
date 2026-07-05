@@ -16,7 +16,7 @@ class ReviewSessionScreen extends ConsumerStatefulWidget {
     super.key,
   });
 
-  final int? folderId;
+  final String? folderId;
   final String? folderName;
 
   @override
@@ -508,7 +508,7 @@ class _ReviewFinishedView extends StatelessWidget {
   });
 
   final ReviewSessionState state;
-  final void Function(int vocabId, ReviewSrsDecision decision) onDecision;
+  final void Function(String vocabId, ReviewSrsDecision decision) onDecision;
   final VoidCallback onFinish;
 
   @override
