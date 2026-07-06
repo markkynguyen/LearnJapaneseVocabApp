@@ -22,3 +22,4 @@ ios/Flutter/Flutter.podspec
 # Các file tạm thời của các nền tảng
 **/linux/flutter/ephemeral/
 **/macos/Flutter/ephemeral/
+AGENTS.md

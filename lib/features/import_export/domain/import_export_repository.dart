@@ -31,6 +31,7 @@ class ImportExportRepository {
     final existing = await _existingByKana(folderId);
     return ExcelImportPreview(
       fileName: preview.fileName,
+      ignoredBlankRowCount: preview.ignoredBlankRowCount,
       rows: [
         for (final row in preview.rows)
           row.copyWith(isDuplicate: existing.containsKey(row.kana)),
@@ -58,7 +59,11 @@ class ImportExportRepository {
       cache[folder.id] = existing;
       rows.add(row.copyWith(isDuplicate: existing.containsKey(row.kana)));
     }
-    return ExcelImportPreview(fileName: preview.fileName, rows: rows);
+    return ExcelImportPreview(
+      fileName: preview.fileName,
+      rows: rows,
+      ignoredBlankRowCount: preview.ignoredBlankRowCount,
+    );
   }
 
   Future<ExcelImportPreview?> _pick({required bool requireFolder}) async {

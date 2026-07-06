@@ -88,10 +88,12 @@ class ExcelImportPreview {
   const ExcelImportPreview({
     required this.fileName,
     required this.rows,
+    this.ignoredBlankRowCount = 0,
   });
 
   final String fileName;
   final List<ExcelVocabRow> rows;
+  final int ignoredBlankRowCount;
 
   int get validCount => rows.where((row) => row.isValid).length;
   int get errorCount => rows.where((row) => !row.isValid).length;

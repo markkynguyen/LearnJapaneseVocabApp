@@ -70,9 +70,11 @@ class ExcelVocabParser {
     }
 
     final rows = <ExcelVocabRow>[];
+    var ignoredBlankRowCount = 0;
     for (var i = 1; i < sheet.rows.length; i++) {
       final raw = sheet.rows[i];
       if (raw.every((cell) => _cellText(cell).trim().isEmpty)) {
+        ignoredBlankRowCount++;
         continue;
       }
 
@@ -86,7 +88,11 @@ class ExcelVocabParser {
       );
     }
 
-    return ExcelImportPreview(fileName: fileName, rows: rows);
+    return ExcelImportPreview(
+      fileName: fileName,
+      rows: rows,
+      ignoredBlankRowCount: ignoredBlankRowCount,
+    );
   }
 
   Map<String, int> _readHeaders(List<Data?> row) {

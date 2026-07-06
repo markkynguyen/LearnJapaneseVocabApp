@@ -166,10 +166,25 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
     final preview = _mode == ExcelImportMode.singleFolder
         ? await controller.pickPreview(folderId: _folderId!)
         : await controller.pickPreviewMultipleFolders();
-    if (!mounted || preview == null) {
+    if (!mounted) {
+      return;
+    }
+    if (preview == null) {
+      if (ref.read(importExportControllerProvider).hasError) {
+        _showControllerError('Không thể đọc file Excel');
+      }
       return;
     }
     setState(() => _preview = preview);
+    if (preview.ignoredBlankRowCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã bỏ qua ${preview.ignoredBlankRowCount} hàng trống trong file.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _importRows() async {
@@ -190,7 +205,13 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
             preview: preview,
             duplicateStrategy: _strategy,
           );
-    if (!mounted || result == null) {
+    if (!mounted) {
+      return;
+    }
+    if (result == null) {
+      if (ref.read(importExportControllerProvider).hasError) {
+        _showControllerError('Không thể import dữ liệu');
+      }
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
@@ -203,6 +224,17 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
       ),
     );
     Navigator.of(context).maybePop();
+  }
+
+  void _showControllerError(String title) {
+    final state = ref.read(importExportControllerProvider);
+    final detail = state.hasError ? ': ${state.error}' : '.';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$title$detail'),
+        backgroundColor: context.appDanger,
+      ),
+    );
   }
 }
 

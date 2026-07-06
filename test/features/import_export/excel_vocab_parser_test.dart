@@ -61,6 +61,35 @@ void main() {
     expect(preview.rows.single.level, 0);
   });
 
+  test('skips and reports blank rows kept in the worksheet range', () {
+    final excel = Excel.createExcel();
+    final sheet = excel['jvocab'];
+    excel.delete('Sheet1');
+    sheet.appendRow(excelVocabHeaders.map(TextCellValue.new).toList());
+    sheet.appendRow([
+      null,
+      TextCellValue('ねこ'),
+      TextCellValue('neko'),
+      TextCellValue('cat'),
+      null,
+      null,
+      null,
+      const IntCellValue(0),
+      null,
+      null,
+    ]);
+    sheet.appendRow(List<CellValue?>.filled(excelVocabHeaders.length, null));
+
+    final preview = const ExcelVocabParser().parse(
+      bytes: excel.encode()!,
+      fileName: 'blank-row.xlsx',
+    );
+
+    expect(preview.validCount, 1);
+    expect(preview.errorCount, 0);
+    expect(preview.ignoredBlankRowCount, 1);
+  });
+
   test('parses pitch accent as L/H pattern', () {
     final excel = Excel.createExcel();
     final sheet = excel['jvocab'];
