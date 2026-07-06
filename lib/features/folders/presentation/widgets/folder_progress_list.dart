@@ -42,7 +42,7 @@ class FolderProgressList extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: _FolderProgressCard(
               item: item,
-              dragHandle: ReorderableDelayedDragStartListener(
+              dragHandle: ReorderableDragStartListener(
                 index: index,
                 child: const Tooltip(
                   message: 'Kéo để sắp xếp',
