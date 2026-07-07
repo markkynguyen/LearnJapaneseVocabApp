@@ -466,8 +466,11 @@ class _VocabListBody extends ConsumerWidget {
             }
             final itemIndex = index - leading.length;
             final item = items[itemIndex];
+            final favoriteOverride =
+                ref.watch(favoriteOverrideProvider(item.vocab.id));
             return VocabCard(
               item: item,
+              isFavoriteOverride: favoriteOverride,
               onToggleFavorite: () => ref
                   .read(vocabListControllerProvider.notifier)
                   .toggleFavorite(item),

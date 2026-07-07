@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/cloud/cloud_store.dart';
@@ -21,6 +22,11 @@ class VocabSort extends _$VocabSort {
   VocabSortMode build(String folderId) => VocabSortMode.newest;
   void update(VocabSortMode value) => state = value;
 }
+
+final favoriteOverrideProvider =
+    StateProvider.autoDispose.family<bool?, String>(
+  (ref, vocabId) => null,
+);
 
 @riverpod
 Future<List<VocabWithProgress>> vocabList(
@@ -74,10 +80,17 @@ class VocabListController extends _$VocabListController {
   FutureOr<void> build() {}
 
   Future<void> toggleFavorite(VocabWithProgress item) async {
+    final override = favoriteOverrideProvider(item.vocab.id);
+    final currentValue = ref.read(override) ?? item.vocab.isFavorite;
+    ref.read(override.notifier).state = !currentValue;
+
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(cloudStoreProvider).toggleFavorite(item.vocab),
     );
+    if (state.hasError) {
+      ref.read(override.notifier).state = null;
+    }
     _invalidate(item.vocab.folderId);
   }
 

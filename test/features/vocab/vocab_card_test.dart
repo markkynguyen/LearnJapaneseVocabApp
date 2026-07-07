@@ -121,6 +121,27 @@ void main() {
     expect(find.text('たべる'), findsOneWidget);
     expect(find.byType(AnimatedContainer), findsNothing);
   });
+
+  testWidgets('favorite override updates the card icon immediately',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: VocabCard(
+              item: _item(),
+              isFavoriteOverride: true,
+              onToggleFavorite: () {},
+              onAction: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border_rounded), findsNothing);
+  });
 }
 
 VocabWithProgress _item({String? kanji = '食べる'}) {

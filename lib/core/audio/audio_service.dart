@@ -58,7 +58,7 @@ class AudioService {
     if (_isWeb) {
       await _setJapaneseWebVoice();
     } else {
-      await _setJapaneseLanguage();
+      await _setBestJapaneseNativeVoice();
     }
     await _tts.setSpeechRate(0.5);
     await _tts.setPitch(1.0);
@@ -75,10 +75,7 @@ class AudioService {
   }
 
   Future<void> speak(VocabularyEntry vocab) {
-    final text = (vocab.kanji?.trim().isNotEmpty ?? false)
-        ? vocab.kanji!.trim()
-        : vocab.kana.trim();
-    return speakText(text);
+    return speakText(vocab.kana.trim());
   }
 
   Future<void> speakText(String text) async {
@@ -133,30 +130,89 @@ class AudioService {
     );
   }
 
-  Future<List<_WebVoice>> _readVoices() async {
+  Future<List<_TtsVoice>> _readVoices() async {
     final rawVoices = await _tts.getVoices;
     if (rawVoices is! List) return const [];
 
     return [
       for (final rawVoice in rawVoices)
         if (rawVoice is Map)
-          _WebVoice(
+          _TtsVoice(
             name: '${rawVoice['name'] ?? ''}'.trim(),
             locale: '${rawVoice['locale'] ?? ''}'.trim(),
+            quality: '${rawVoice['quality'] ?? ''}'.trim(),
+            latency: '${rawVoice['latency'] ?? ''}'.trim(),
+            networkRequired:
+                '${rawVoice['network_required'] ?? ''}'.trim() == '1',
+            features: '${rawVoice['features'] ?? ''}'.trim(),
           ),
     ]
         .where((voice) => voice.name.isNotEmpty && voice.locale.isNotEmpty)
         .toList();
   }
 
-  _WebVoice? _findJapaneseVoice(List<_WebVoice> voices) {
-    for (final voice in voices) {
-      if (voice.locale.toLowerCase() == 'ja-jp') return voice;
+  _TtsVoice? _findJapaneseVoice(List<_TtsVoice> voices) {
+    final japaneseVoices = voices
+        .where((voice) => voice.locale.toLowerCase().startsWith('ja'))
+        .toList();
+    if (japaneseVoices.isEmpty) return null;
+
+    japaneseVoices.sort((a, b) => _voiceScore(b).compareTo(_voiceScore(a)));
+    return japaneseVoices.first;
+  }
+
+  int _voiceScore(_TtsVoice voice) {
+    final locale = voice.locale.toLowerCase();
+    final name = voice.name.toLowerCase();
+    final features = voice.features.toLowerCase();
+    var score = locale == 'ja-jp' ? 200 : 100;
+
+    score += switch (voice.quality.toLowerCase()) {
+      'very high' => 80,
+      'high' => 60,
+      'normal' => 20,
+      'low' => -40,
+      'very low' => -80,
+      _ => 0,
+    };
+
+    score += switch (voice.latency.toLowerCase()) {
+      'very low' => 10,
+      'low' => 8,
+      'normal' => 4,
+      'high' => -4,
+      'very high' => -8,
+      _ => 0,
+    };
+
+    if (voice.networkRequired) score += 15;
+    if (name.contains('google')) score += 10;
+    if (name.contains('neural') ||
+        name.contains('wavenet') ||
+        name.contains('premium') ||
+        name.contains('enhanced')) {
+      score += 10;
     }
-    for (final voice in voices) {
-      if (voice.locale.toLowerCase().startsWith('ja')) return voice;
+    if (features.contains('notinstalled')) score -= 200;
+
+    return score;
+  }
+
+  Future<void> _setBestJapaneseNativeVoice() async {
+    final voices = await _readVoices();
+    final voice = _findJapaneseVoice(voices);
+    if (voice != null) {
+      final result = await _tts.setVoice({
+        'name': voice.name,
+        'locale': voice.locale,
+      });
+      if (result == 1 || result == true) {
+        await _tts.setLanguage(voice.locale);
+        return;
+      }
     }
-    return null;
+
+    await _setJapaneseLanguage();
   }
 
   Future<void> _setJapaneseLanguage() async {
@@ -194,11 +250,22 @@ class AudioService {
   }
 }
 
-class _WebVoice {
-  const _WebVoice({required this.name, required this.locale});
+class _TtsVoice {
+  const _TtsVoice({
+    required this.name,
+    required this.locale,
+    this.quality = '',
+    this.latency = '',
+    this.networkRequired = false,
+    this.features = '',
+  });
 
   final String name;
   final String locale;
+  final String quality;
+  final String latency;
+  final bool networkRequired;
+  final String features;
 }
 
 class _AudioInitializationException implements Exception {

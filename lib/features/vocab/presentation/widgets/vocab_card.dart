@@ -21,10 +21,12 @@ class VocabCard extends ConsumerWidget {
     required this.item,
     required this.onToggleFavorite,
     required this.onAction,
+    this.isFavoriteOverride,
     super.key,
   });
 
   final VocabWithProgress item;
+  final bool? isFavoriteOverride;
   final VoidCallback onToggleFavorite;
   final ValueChanged<VocabCardAction> onAction;
 
@@ -32,6 +34,7 @@ class VocabCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vocab = item.vocab;
     final progress = item.progress;
+    final isFavorite = isFavoriteOverride ?? vocab.isFavorite;
     final colors = Theme.of(context).colorScheme;
     final levelColor =
         SrsConstants.levelColors[progress.level] ?? colors.primary;
@@ -100,15 +103,14 @@ class VocabCard extends ConsumerWidget {
                       icon: const Icon(Icons.volume_up_rounded),
                     ),
                     IconButton(
-                      tooltip: vocab.isFavorite
-                          ? 'Bỏ yêu thích'
-                          : 'Đánh dấu yêu thích',
+                      tooltip:
+                          isFavorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích',
                       onPressed: onToggleFavorite,
                       icon: Icon(
-                        vocab.isFavorite
+                        isFavorite
                             ? Icons.favorite_rounded
                             : Icons.favorite_border_rounded,
-                        color: vocab.isFavorite
+                        color: isFavorite
                             ? context.appDanger
                             : colors.onSurfaceVariant,
                       ),

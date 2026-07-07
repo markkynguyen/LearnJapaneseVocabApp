@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:jvocab/core/audio/audio_service.dart';
+import 'package:jvocab/core/models/app_models.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +59,61 @@ void main() {
     expect(tts.spokenTexts, isEmpty);
     expect(await error, contains('giọng đọc tiếng Nhật'));
   });
+  test('native chooses the best available Japanese voice before speaking',
+      () async {
+    final tts = _FakeFlutterTts(
+      voiceResponses: const [
+        [
+          {
+            'name': 'Basic Japanese',
+            'locale': 'ja-JP',
+            'quality': 'normal',
+            'latency': 'low',
+            'network_required': '0',
+          },
+          {
+            'name': 'Google Japanese Network',
+            'locale': 'ja-JP',
+            'quality': 'very high',
+            'latency': 'normal',
+            'network_required': '1',
+          },
+        ],
+      ],
+    );
+    final service = AudioService(tts: tts, isWeb: false);
+    addTearDown(service.dispose);
+
+    await service.speakText('猫');
+
+    expect(tts.selectedVoice, {
+      'name': 'Google Japanese Network',
+      'locale': 'ja-JP',
+    });
+    expect(tts.language, 'ja-JP');
+    expect(tts.spokenTexts, ['猫']);
+  });
+
+  test('speaks kana even when kanji is available', () async {
+    final tts = _FakeFlutterTts(voiceResponses: const []);
+    final service = AudioService(tts: tts, isWeb: false);
+    addTearDown(service.dispose);
+
+    await service.speak(
+      const VocabularyEntry(
+        id: 'vocab-1',
+        folderId: 'folder-1',
+        kanji: '食べる',
+        kana: 'たべる',
+        romaji: 'taberu',
+        meaning: 'ăn',
+        isFavorite: false,
+        createdAt: 0,
+      ),
+    );
+
+    expect(tts.spokenTexts, ['たべる']);
+  });
 }
 
 class _FakeFlutterTts extends FlutterTts {
@@ -71,6 +127,9 @@ class _FakeFlutterTts extends FlutterTts {
 
   @override
   Future<dynamic> get getVoices async {
+    if (voiceResponses.isEmpty) {
+      return const [];
+    }
     final index = getVoicesCallCount < voiceResponses.length
         ? getVoicesCallCount
         : voiceResponses.length - 1;
