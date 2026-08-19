@@ -201,6 +201,34 @@ void main() {
     expect(preview.rows.single.error, contains('folder'));
   });
 
+  test('new folder import accepts files without folder column', () {
+    final excel = Excel.createExcel();
+    final sheet = excel['jvocab'];
+    excel.delete('Sheet1');
+    sheet.appendRow(excelVocabHeaders.map(TextCellValue.new).toList());
+    sheet.appendRow([
+      null,
+      TextCellValue('たべる'),
+      TextCellValue('taberu'),
+      TextCellValue('ăn'),
+      null,
+      null,
+      null,
+      const IntCellValue(1),
+      null,
+      null,
+    ]);
+
+    final preview = const ExcelVocabParser().parse(
+      bytes: excel.encode()!,
+      fileName: 'new-folder.xlsx',
+      requireFolder: false,
+    );
+
+    expect(preview.validCount, 1);
+    expect(preview.rows.single.folderName, isNull);
+  });
+
   test('accepts legacy files without last_review column', () {
     final excel = Excel.createExcel();
     final sheet = excel['jvocab'];

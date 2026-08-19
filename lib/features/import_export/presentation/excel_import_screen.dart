@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../folders/presentation/providers/folder_provider.dart';
 import '../domain/excel_vocab_models.dart';
 import 'providers/import_export_provider.dart';
+import 'widgets/excel_import_preview_widgets.dart';
 
 class ExcelImportScreen extends ConsumerStatefulWidget {
   const ExcelImportScreen({super.key});
@@ -95,7 +96,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
               ),
               if (_preview != null) ...[
                 const SizedBox(height: 18),
-                _PreviewSummary(preview: _preview!),
+                ExcelImportPreviewSummary(preview: _preview!),
                 const SizedBox(height: 14),
                 SegmentedButton<DuplicateStrategy>(
                   segments: const [
@@ -129,7 +130,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
                   label: const Text('Import dữ liệu'),
                 ),
                 const SizedBox(height: 14),
-                ..._preview!.rows.take(30).map(_PreviewRowTile.new),
+                ..._preview!.rows.take(30).map(ExcelImportPreviewRowTile.new),
                 if (_preview!.rows.length > 30)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -233,82 +234,6 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
       SnackBar(
         content: Text('$title$detail'),
         backgroundColor: context.appDanger,
-      ),
-    );
-  }
-}
-
-class _PreviewSummary extends StatelessWidget {
-  const _PreviewSummary({required this.preview});
-
-  final ExcelImportPreview preview;
-
-  @override
-  Widget build(BuildContext context) {
-    final folderCount = preview.rows
-        .map((row) => row.folderName?.trim())
-        .where((name) => name != null && name.isNotEmpty)
-        .toSet()
-        .length;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              preview.fileName,
-              style: const TextStyle(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Hợp lệ ${preview.validCount} • Trùng ${preview.duplicateCount} • '
-              'Lỗi ${preview.errorCount}'
-              '${folderCount > 0 ? ' • $folderCount bộ từ' : ''}',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PreviewRowTile extends StatelessWidget {
-  const _PreviewRowTile(this.row);
-
-  final ExcelVocabRow row;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final statusColor = !row.isValid
-        ? context.appDanger
-        : row.isDuplicate
-            ? context.appWarning
-            : context.appSuccess;
-    final folderName = row.folderName;
-    final details = [
-      if (folderName != null && folderName.trim().isNotEmpty) folderName.trim(),
-      row.romaji,
-      row.meaning,
-      if (row.isDuplicate) 'trùng kana',
-    ].where((item) => item.trim().isNotEmpty).join(' • ');
-
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withValues(alpha: 0.14),
-          child: Text(
-            '${row.rowNumber}',
-            style: TextStyle(color: statusColor, fontWeight: FontWeight.w800),
-          ),
-        ),
-        title: Text(row.kana.isEmpty ? '(thiếu kana)' : row.kana),
-        subtitle: Text(
-          row.error ?? details,
-          style: TextStyle(color: colors.onSurfaceVariant),
-        ),
       ),
     );
   }

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/app_models.dart';
+import '../../import_export/domain/excel_vocab_models.dart';
+import '../../import_export/presentation/providers/import_export_provider.dart';
+import '../../import_export/presentation/widgets/excel_import_preview_widgets.dart';
 import 'providers/folder_provider.dart';
 import 'widgets/folder_color_picker.dart';
 
@@ -23,6 +26,7 @@ class _FolderFormScreenState extends ConsumerState<FolderFormScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late String _selectedColor;
+  ExcelImportPreview? _excelPreview;
 
   bool get _isEditing => widget.folder != null;
 
@@ -48,6 +52,8 @@ class _FolderFormScreenState extends ConsumerState<FolderFormScreen> {
   @override
   Widget build(BuildContext context) {
     final controllerState = ref.watch(folderControllerProvider);
+    final importState = ref.watch(importExportControllerProvider);
+    final isLoading = controllerState.isLoading || importState.isLoading;
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -117,16 +123,28 @@ class _FolderFormScreenState extends ConsumerState<FolderFormScreen> {
                 description: _descriptionController.text.trim(),
                 color: _selectedColor,
               ),
+              if (!_isEditing) ...[
+                const SizedBox(height: 18),
+                _ExcelImportSection(
+                  preview: _excelPreview,
+                  isLoading: importState.isLoading,
+                  onPickFile: _pickExcelFile,
+                  onClearFile: _clearExcelFile,
+                ),
+              ],
               const SizedBox(height: 28),
-              ElevatedButton.icon(
-                onPressed: controllerState.isLoading ? null : _submit,
-                icon: controllerState.isLoading
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_rounded),
-                label: const Text('Lưu'),
+              KeyedSubtree(
+                key: const ValueKey('folder-form-save-button'),
+                child: ElevatedButton.icon(
+                  onPressed: isLoading ? null : _submit,
+                  icon: isLoading
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_rounded),
+                  label: const Text('Lưu'),
+                ),
               ),
             ],
           ),
@@ -142,13 +160,54 @@ class _FolderFormScreenState extends ConsumerState<FolderFormScreen> {
 
     final folder = widget.folder;
     final controller = ref.read(folderControllerProvider.notifier);
+    final importController = ref.read(importExportControllerProvider.notifier);
 
     if (folder == null) {
-      await controller.createFolder(
+      final preview = _excelPreview;
+      if (preview != null && preview.validCount == 0) {
+        _showSnackBar('File Excel chưa có dòng hợp lệ để import.');
+        return;
+      }
+
+      final folderId = await controller.createFolder(
         name: _nameController.text,
         description: _descriptionController.text,
         color: _selectedColor,
       );
+      if (!mounted) {
+        return;
+      }
+      final folderState = ref.read(folderControllerProvider);
+      if (folderState.hasError || folderId == null) {
+        _showSnackBar('Không thể lưu: ${folderState.error}');
+        return;
+      }
+
+      if (preview != null) {
+        final result = await importController.importPreview(
+          folderId: folderId,
+          preview: preview,
+          duplicateStrategy: DuplicateStrategy.skip,
+        );
+        if (!mounted) {
+          return;
+        }
+        ref.invalidate(foldersProvider);
+        if (result == null) {
+          final importState = ref.read(importExportControllerProvider);
+          _showSnackBar(
+            'Đã tạo bộ từ nhưng chưa import được dữ liệu: ${importState.error}',
+          );
+          Navigator.of(context).maybePop();
+          return;
+        }
+        _showSnackBar(
+          'Đã tạo bộ từ và import: thêm ${result.inserted}, '
+          'bỏ qua ${result.skipped}, lỗi ${result.failed}.',
+        );
+        Navigator.of(context).maybePop();
+        return;
+      }
     } else {
       await controller.updateFolder(
         id: folder.id,
@@ -164,18 +223,116 @@ class _FolderFormScreenState extends ConsumerState<FolderFormScreen> {
 
     final state = ref.read(folderControllerProvider);
     if (state.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể lưu: ${state.error}')),
-      );
+      _showSnackBar('Không thể lưu: ${state.error}');
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_isEditing ? 'Đã cập nhật bộ từ' : 'Đã tạo bộ từ'),
-      ),
-    );
+    _showSnackBar(_isEditing ? 'Đã cập nhật bộ từ' : 'Đã tạo bộ từ');
     Navigator.of(context).maybePop();
+  }
+
+  Future<void> _pickExcelFile() async {
+    final preview = await ref
+        .read(importExportControllerProvider.notifier)
+        .pickPreviewForNewFolder();
+    if (!mounted) {
+      return;
+    }
+    if (preview == null) {
+      final state = ref.read(importExportControllerProvider);
+      if (state.hasError) {
+        _showSnackBar('Không thể đọc file Excel: ${state.error}');
+      }
+      return;
+    }
+    setState(() => _excelPreview = preview);
+    if (preview.ignoredBlankRowCount > 0) {
+      _showSnackBar(
+        'Đã bỏ qua ${preview.ignoredBlankRowCount} hàng trống trong file.',
+      );
+    }
+  }
+
+  void _clearExcelFile() {
+    setState(() => _excelPreview = null);
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+}
+
+class _ExcelImportSection extends StatelessWidget {
+  const _ExcelImportSection({
+    required this.preview,
+    required this.isLoading,
+    required this.onPickFile,
+    required this.onClearFile,
+  });
+
+  final ExcelImportPreview? preview;
+  final bool isLoading;
+  final VoidCallback onPickFile;
+  final VoidCallback onClearFile;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final preview = this.preview;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nạp từ vựng bằng Excel',
+          style: TextStyle(
+            color: colors.onSurface,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isLoading ? null : onPickFile,
+                icon: isLoading
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.upload_file_rounded),
+                label: Text(preview == null ? 'Chọn file .xlsx' : 'Đổi file'),
+              ),
+            ),
+            if (preview != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Bỏ file Excel',
+                onPressed: isLoading ? null : onClearFile,
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ],
+        ),
+        if (preview != null) ...[
+          const SizedBox(height: 12),
+          ExcelImportPreviewSummary(preview: preview),
+          const SizedBox(height: 8),
+          ...preview.rows.take(30).map(ExcelImportPreviewRowTile.new),
+          if (preview.rows.length > 30)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Chỉ hiển thị 30 dòng đầu để xem nhanh.',
+                style: TextStyle(color: colors.onSurfaceVariant),
+              ),
+            ),
+        ],
+      ],
+    );
   }
 }
 

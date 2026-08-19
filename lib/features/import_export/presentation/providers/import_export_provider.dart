@@ -20,6 +20,17 @@ class ImportExportController extends _$ImportExportController {
   @override
   FutureOr<void> build() {}
 
+  Future<ExcelImportPreview?> pickPreviewForNewFolder() async {
+    state = const AsyncLoading();
+    ExcelImportPreview? preview;
+    state = await AsyncValue.guard(() async {
+      preview = await ref
+          .read(importExportRepositoryProvider)
+          .pickPreviewForNewFolder();
+    });
+    return preview;
+  }
+
   Future<ExcelImportPreview?> pickPreview({required String folderId}) async {
     state = const AsyncLoading();
     ExcelImportPreview? preview;

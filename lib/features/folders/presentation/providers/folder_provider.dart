@@ -23,18 +23,20 @@ class FolderController extends _$FolderController {
   @override
   FutureOr<void> build() {}
 
-  Future<void> createFolder({
+  Future<String?> createFolder({
     required String name,
     required String color,
     String? description,
   }) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref
+    String? folderId;
+    state = await AsyncValue.guard(() async {
+      folderId = await ref
           .read(folderRepositoryProvider)
-          .createFolder(name: name, color: color, description: description),
-    );
+          .createFolder(name: name, color: color, description: description);
+    });
     if (!state.hasError) ref.invalidate(foldersProvider);
+    return folderId;
   }
 
   Future<void> updateFolder({

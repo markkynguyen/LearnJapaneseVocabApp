@@ -25,6 +25,9 @@ class ImportExportRepository {
   final ExcelVocabParser _parser;
   final ExcelVocabExporter _exporter;
 
+  Future<ExcelImportPreview?> pickPreviewForNewFolder() =>
+      _pick(requireFolder: false);
+
   Future<ExcelImportPreview?> pickAndPreview({required String folderId}) async {
     final preview = await _pick(requireFolder: false);
     if (preview == null) return null;
