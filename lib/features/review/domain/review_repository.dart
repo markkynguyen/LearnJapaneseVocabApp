@@ -93,6 +93,10 @@ class ReviewRepository {
           null => null,
         };
         if (result.srsDecision == null) continue;
+      } else if (result.wrongAnswers > 0 &&
+          result.wasDueAtStart &&
+          progress.level > SrsConstants.unlearnedLevel) {
+        srsResult = engine.processReviewedSameLevel(progress);
       } else if (result.wrongAnswers < 3) {
         srsResult = engine.processEndSessionSuccess(
           progress,

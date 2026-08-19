@@ -77,6 +77,30 @@ void main() {
     expect(result.newNextReviewAt, fixedNow + 2 * 3600);
   });
 
+  test('reviewed same-level lv3 keeps lv3 with default 2 day interval', () {
+    final result = engine.processReviewedSameLevel(_progress(level: 3));
+
+    expect(result.newLevel, 3);
+    expect(result.newIntervalDays, 2.0);
+    expect(result.newNextReviewAt, fixedNow + 2 * 86400);
+    expect(result.message, 'Đã ôn Lv 3');
+  });
+
+  test('reviewed same-level lv6 uses configured lv6 interval', () {
+    final customEngine = SrsEngine(
+      intervalForLevel: (level) => level == 6 ? 8.0 : level.toDouble(),
+      now: () => DateTime.fromMillisecondsSinceEpoch(fixedNow * 1000),
+    );
+
+    final result = customEngine.processReviewedSameLevel(
+      _progress(level: 6, intervalDays: 14.0),
+    );
+
+    expect(result.newLevel, 6);
+    expect(result.newIntervalDays, 8.0);
+    expect(result.newNextReviewAt, fixedNow + 8 * 86400);
+  });
+
   test('custom interval resolver overrides default intervals', () {
     final customEngine = SrsEngine(
       intervalForLevel: (level) => level * 10.0,

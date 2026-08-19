@@ -64,6 +64,17 @@ class SrsEngine {
     return _reset(message: 'Reset về Lv 1');
   }
 
+  SrsResult processReviewedSameLevel(SrsProgressEntry current) {
+    final newIntervalDays = _intervalForLevel(current.level);
+
+    return SrsResult(
+      newLevel: current.level,
+      newIntervalDays: newIntervalDays,
+      newNextReviewAt: calculateNextReview(newIntervalDays),
+      message: 'Đã ôn Lv ${current.level}',
+    );
+  }
+
   SrsResult manualMinus1(SrsProgressEntry current) {
     return _minusOne(current, messagePrefix: 'Đã giảm xuống');
   }
