@@ -226,23 +226,24 @@ class CloudStore {
   }) async {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return const [];
+    final pattern = _postgrestIlikePattern(normalized);
     final rows = await _client
         .from('vocabulary')
         .select('*, folders(*), srs_progress(*)')
-        .limit(100);
+        .or(
+          [
+            'kanji.ilike.$pattern',
+            'kana.ilike.$pattern',
+            'romaji.ilike.$pattern',
+            'meaning.ilike.$pattern',
+            'note.ilike.$pattern',
+          ].join(','),
+        )
+        .order('created_at')
+        .limit(limit);
     final results = <VocabSearchResult>[];
     for (final row in rows) {
       final item = _vocabWithProgress(row);
-      final values = [
-        item.vocab.kanji,
-        item.vocab.kana,
-        item.vocab.romaji,
-        item.vocab.meaning,
-        item.vocab.note,
-      ].whereType<String>();
-      if (!values.any((value) => value.toLowerCase().contains(normalized))) {
-        continue;
-      }
       final folderRaw = row['folders'];
       if (folderRaw is Map) {
         results.add(
@@ -252,7 +253,6 @@ class CloudStore {
           ),
         );
       }
-      if (results.length == limit) break;
     }
     return results;
   }
@@ -410,4 +410,14 @@ class CloudStore {
       progress: SrsProgressEntry.fromJson(progressMap),
     );
   }
+}
+
+String _postgrestIlikePattern(String value) {
+  final escaped = value
+      .replaceAll(r'\', r'\\')
+      .replaceAll('"', r'\"')
+      .replaceAll('%', r'\%')
+      .replaceAll('_', r'\_')
+      .replaceAll('*', r'\*');
+  return '"%$escaped%"';
 }
