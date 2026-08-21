@@ -7,6 +7,7 @@ import 'package:jvocab/core/router/app_router.dart';
 import 'package:jvocab/core/router/app_routes.dart';
 import 'package:jvocab/features/learning/domain/learning_models.dart';
 import 'package:jvocab/features/learning/presentation/learning_preview_screen.dart';
+import 'package:jvocab/features/learning/presentation/learning_session_screen.dart';
 import 'package:jvocab/features/learning/presentation/providers/learning_provider.dart';
 import 'package:jvocab/features/review/domain/review_models.dart';
 import 'package:jvocab/features/review/presentation/providers/review_session_provider.dart';
@@ -226,6 +227,95 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(PitchAccentText), findsOneWidget);
     expect(find.text('たべる'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('learning quiz shows note for every question type',
+      (tester) async {
+    for (final type in LearningQuestionType.values) {
+      final item = _item(level: 0);
+      await _pumpLearningQuestion(
+        tester,
+        LearningQuestion(
+          item: item,
+          type: type,
+          japaneseText: '食べる',
+          choices: _learningChoices(type),
+          requirementId: type == LearningQuestionType.guidedWrite
+              ? null
+              : '${type.name}-1',
+        ),
+      );
+
+      expect(
+        find.text('Động từ nhóm 2'),
+        findsOneWidget,
+        reason: '${type.name} should show note',
+      );
+      expect(tester.takeException(), isNull, reason: type.name);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
+
+  testWidgets('review quiz shows note for every question type', (tester) async {
+    for (final type in ReviewQuestionType.values) {
+      final item = _item(level: 1);
+      await _pumpReviewQuestion(
+        tester,
+        ReviewQuestion(
+          item: item,
+          type: type,
+          japaneseText: 'たべる',
+          choices: _reviewChoices(type),
+          retryCount: 0,
+        ),
+      );
+
+      expect(
+        find.text('Động từ nhóm 2'),
+        findsOneWidget,
+        reason: '${type.name} should show note',
+      );
+      expect(tester.takeException(), isNull, reason: type.name);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
+
+  testWidgets('quiz questions hide missing or blank notes', (tester) async {
+    final learningItem = _item(level: 0, note: null);
+    await _pumpLearningQuestion(
+      tester,
+      LearningQuestion(
+        item: learningItem,
+        type: LearningQuestionType.chooseMeaning,
+        japaneseText: '食べる',
+        choices: const ['ăn', 'uống', 'đi', 'ngủ'],
+        requirementId: 'choose-meaning-1',
+      ),
+    );
+    expect(find.text('Động từ nhóm 2'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    final reviewItem = _item(level: 1, note: '   ');
+    await _pumpReviewQuestion(
+      tester,
+      ReviewQuestion(
+        item: reviewItem,
+        type: ReviewQuestionType.chooseMeaning,
+        japaneseText: 'たべる',
+        choices: const ['ăn', 'uống', 'đi', 'ngủ'],
+        retryCount: 0,
+      ),
+    );
+    expect(find.text('Động từ nhóm 2'), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Text && widget.data == '   ',
+      ),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -559,12 +649,105 @@ class _FakeAudioService extends AudioService {
   Future<void> dispose() async {}
 }
 
+Future<void> _pumpLearningQuestion(
+  WidgetTester tester,
+  LearningQuestion question,
+) async {
+  final item = question.item;
+  final session = LearningSessionState(
+    folderId: 'folder-1',
+    questions: [question],
+    currentIndex: 0,
+    resultsByVocabId: {
+      item.vocab.id: LearningWordResult(
+        item: item,
+        totalRequirements: 1,
+      ),
+    },
+    retryLimit: 2,
+    quizScript: 'kanji',
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        learningControllerProvider.overrideWith(
+          () => _FakeLearningController(session),
+        ),
+        audioServiceProvider.overrideWith((ref) => _FakeAudioService()),
+      ],
+      child: const MaterialApp(home: LearningSessionScreen()),
+    ),
+  );
+  await tester.pump();
+}
+
+Future<void> _pumpReviewQuestion(
+  WidgetTester tester,
+  ReviewQuestion question,
+) async {
+  final item = question.item;
+  final session = ReviewSessionState(
+    questions: [question],
+    currentIndex: 0,
+    resultsByVocabId: {
+      item.vocab.id: ReviewWordResult(
+        item: item,
+        wasDueAtStart: true,
+      ),
+    },
+    sessionStartTime: 0,
+    retryLimit: 2,
+    isFinished: false,
+    folderId: 'folder-1',
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        reviewSessionControllerProvider.overrideWith(
+          () => _FakeReviewController(session),
+        ),
+        audioServiceProvider.overrideWith((ref) => _FakeAudioService()),
+      ],
+      child: const MaterialApp(home: ReviewSessionScreen(folderId: 'folder-1')),
+    ),
+  );
+  await tester.pump();
+}
+
+List<String> _learningChoices(LearningQuestionType type) {
+  switch (type) {
+    case LearningQuestionType.listen:
+    case LearningQuestionType.chooseMeaning:
+      return const ['ăn', 'uống', 'đi', 'ngủ'];
+    case LearningQuestionType.chooseWord:
+      return const ['食べる', '飲む', '行く', '寝る'];
+    case LearningQuestionType.guidedWrite:
+    case LearningQuestionType.write:
+      return const [];
+  }
+}
+
+List<String> _reviewChoices(ReviewQuestionType type) {
+  switch (type) {
+    case ReviewQuestionType.listen:
+    case ReviewQuestionType.chooseMeaning:
+      return const ['ăn', 'uống', 'đi', 'ngủ'];
+    case ReviewQuestionType.chooseWord:
+      return const ['たべる', 'のむ', 'いく', 'ねる'];
+    case ReviewQuestionType.write:
+      return const [];
+  }
+}
+
 VocabWithProgress _item({
   String id = 'vocab-1',
   required int level,
   String meaning = 'ăn',
   String? example,
   String? pitchAccent,
+  String? note = 'Động từ nhóm 2',
 }) {
   return VocabWithProgress(
     vocab: VocabularyEntry(
@@ -576,7 +759,7 @@ VocabWithProgress _item({
       meaning: meaning,
       pitchAccent: pitchAccent,
       example: example,
-      note: 'Động từ nhóm 2',
+      note: note,
       isFavorite: false,
       createdAt: 0,
     ),

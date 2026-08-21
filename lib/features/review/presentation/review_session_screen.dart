@@ -268,8 +268,7 @@ class _QuestionView extends ConsumerWidget {
                         height: 1.18,
                       ),
                 ),
-                if (question.type == ReviewQuestionType.chooseWord &&
-                    question.item.vocab.note?.trim().isNotEmpty == true) ...[
+                if (question.item.vocab.note?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 10),
                   Text(
                     question.item.vocab.note!.trim(),

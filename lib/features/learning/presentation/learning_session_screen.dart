@@ -196,8 +196,7 @@ class _LearningQuestionView extends ConsumerWidget {
                         fontWeight: FontWeight.w900,
                       ),
                 ),
-                if (question.type == LearningQuestionType.chooseWord &&
-                    question.item.vocab.note?.trim().isNotEmpty == true) ...[
+                if (question.item.vocab.note?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 10),
                   Text(
                     question.item.vocab.note!.trim(),
