@@ -116,14 +116,14 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
     }
 
     _answerController.clear();
+    FocusScope.of(context).unfocus();
     await ref.read(audioServiceProvider).speak(question.item.vocab);
     if (!mounted) {
       return;
     }
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
-      showDragHandle: true,
-      builder: (_) => _AnswerFeedbackSheet(feedback: feedback),
+      builder: (_) => _AnswerFeedbackDialog(feedback: feedback),
     );
     _feedbackOpen = false;
     if (!mounted) {
@@ -313,7 +313,7 @@ class _QuestionView extends ConsumerWidget {
                     vertical: 16,
                   ),
                   textStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w400,
                       ),
                 ),
                 child: Align(
@@ -321,7 +321,7 @@ class _QuestionView extends ConsumerWidget {
                   child: Text(
                     choice,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w400,
                         ),
                   ),
                 ),
@@ -381,8 +381,8 @@ class _QuestionView extends ConsumerWidget {
   }
 }
 
-class _AnswerFeedbackSheet extends ConsumerWidget {
-  const _AnswerFeedbackSheet({required this.feedback});
+class _AnswerFeedbackDialog extends ConsumerWidget {
+  const _AnswerFeedbackDialog({required this.feedback});
 
   final ReviewAnswerFeedback feedback;
 
@@ -394,79 +394,87 @@ class _AnswerFeedbackSheet extends ConsumerWidget {
         feedback.isCorrect ? context.appSuccess : context.appDanger;
 
     return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          0,
-          20,
-          24 + MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 480,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  feedback.isCorrect
-                      ? Icons.check_circle_rounded
-                      : Icons.cancel_rounded,
-                  color: statusColor,
+                Row(
+                  children: [
+                    Icon(
+                      feedback.isCorrect
+                          ? Icons.check_circle_rounded
+                          : Icons.cancel_rounded,
+                      color: statusColor,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      feedback.isCorrect ? 'Chính xác' : 'Chưa đúng',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Phát âm',
+                      onPressed: () =>
+                          ref.read(audioServiceProvider).speak(vocab),
+                      icon: const Icon(Icons.volume_up_rounded),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  feedback.isCorrect ? 'Chính xác' : 'Chưa đúng',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: statusColor,
-                        fontWeight: FontWeight.w900,
-                      ),
+                const SizedBox(height: 10),
+                if (vocab.kanji?.trim().isNotEmpty == true) ...[
+                  Text(
+                    vocab.kanji!.trim(),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w400,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                PitchAccentReading(
+                  kana: vocab.kana,
+                  pattern: vocab.pitchAccent,
+                  romaji: vocab.romaji,
+                  fontSize: vocab.kanji?.trim().isNotEmpty == true ? 22 : 30,
+                  textColor: colors.onSurfaceVariant,
                 ),
-                const Spacer(),
-                IconButton(
-                  tooltip: 'Phát âm',
-                  onPressed: () => ref.read(audioServiceProvider).speak(vocab),
-                  icon: const Icon(Icons.volume_up_rounded),
+                const SizedBox(height: 14),
+                _DetailLine(
+                  label: 'Đáp án đúng',
+                  value: feedback.question.expectedAnswer,
+                ),
+                if (!feedback.isCorrect && feedback.answer.trim().isNotEmpty)
+                  _DetailLine(
+                    label: 'Bạn trả lời',
+                    value: feedback.answer.trim(),
+                  ),
+                if (vocab.example?.trim().isNotEmpty ?? false)
+                  _DetailLine(label: 'Ví dụ', value: vocab.example!.trim()),
+                if (vocab.note?.trim().isNotEmpty ?? false)
+                  _DetailLine(label: 'Ghi chú', value: vocab.note!.trim()),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Tiếp tục'),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            if (vocab.kanji?.trim().isNotEmpty == true) ...[
-              Text(
-                vocab.kanji!.trim(),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w400,
-                    ),
-              ),
-              const SizedBox(height: 6),
-            ],
-            PitchAccentReading(
-              kana: vocab.kana,
-              pattern: vocab.pitchAccent,
-              romaji: vocab.romaji,
-              fontSize: vocab.kanji?.trim().isNotEmpty == true ? 22 : 30,
-              textColor: colors.onSurfaceVariant,
-            ),
-            const SizedBox(height: 14),
-            _DetailLine(
-              label: 'Đáp án đúng',
-              value: feedback.question.expectedAnswer,
-            ),
-            if (!feedback.isCorrect && feedback.answer.trim().isNotEmpty)
-              _DetailLine(label: 'Bạn trả lời', value: feedback.answer.trim()),
-            if (vocab.example?.trim().isNotEmpty ?? false)
-              _DetailLine(label: 'Ví dụ', value: vocab.example!.trim()),
-            if (vocab.note?.trim().isNotEmpty ?? false)
-              _DetailLine(label: 'Ghi chú', value: vocab.note!.trim()),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Tiếp tục'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

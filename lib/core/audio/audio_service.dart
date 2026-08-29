@@ -8,6 +8,8 @@ import '../models/app_models.dart';
 
 part 'audio_service.g.dart';
 
+const _googleAndroidTtsEngine = 'com.google.android.tts';
+
 class AudioService {
   AudioService({
     FlutterTts? tts,
@@ -75,7 +77,10 @@ class AudioService {
   }
 
   Future<void> speak(VocabularyEntry vocab) {
-    return speakText(vocab.kana.trim());
+    final kanji = vocab.kanji?.trim();
+    final textToSpeak =
+        kanji != null && kanji.isNotEmpty ? kanji : vocab.kana.trim();
+    return speakText(textToSpeak);
   }
 
   Future<void> speakText(String text) async {
@@ -199,6 +204,8 @@ class AudioService {
   }
 
   Future<void> _setBestJapaneseNativeVoice() async {
+    await _preferGoogleAndroidEngine();
+
     final voices = await _readVoices();
     final voice = _findJapaneseVoice(voices);
     if (voice != null) {
@@ -213,6 +220,29 @@ class AudioService {
     }
 
     await _setJapaneseLanguage();
+  }
+
+  Future<void> _preferGoogleAndroidEngine() async {
+    try {
+      final rawEngines = await _tts.getEngines;
+      if (rawEngines is! List) return;
+
+      final engines = rawEngines
+          .map((engine) => '$engine'.trim())
+          .where((engine) => engine.isNotEmpty);
+      final googleEngine = engines.where(_isGoogleAndroidEngine).firstOrNull;
+      if (googleEngine == null) return;
+
+      await _tts.setEngine(googleEngine);
+    } catch (_) {
+      // Some non-Android native targets expose no engine APIs.
+    }
+  }
+
+  bool _isGoogleAndroidEngine(String engine) {
+    final normalized = engine.toLowerCase();
+    return normalized == _googleAndroidTtsEngine ||
+        normalized.contains('google');
   }
 
   Future<void> _setJapaneseLanguage() async {

@@ -110,15 +110,14 @@ class _LearningSessionScreenState extends ConsumerState<LearningSessionScreen> {
       _feedbackOpen = false;
       return;
     }
+    FocusScope.of(context).unfocus();
     await ref.read(audioServiceProvider).speak(question.item.vocab);
     if (!mounted) {
       return;
     }
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) => _LearningFeedbackSheet(feedback: feedback),
+      builder: (context) => _LearningFeedbackDialog(feedback: feedback),
     );
     _feedbackOpen = false;
     if (!mounted) {
@@ -243,7 +242,7 @@ class _LearningQuestionView extends ConsumerWidget {
                     vertical: 16,
                   ),
                   textStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w400,
                       ),
                 ),
                 child: Align(
@@ -251,7 +250,7 @@ class _LearningQuestionView extends ConsumerWidget {
                   child: Text(
                     choice,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w400,
                         ),
                   ),
                 ),
@@ -287,8 +286,8 @@ class _LearningQuestionView extends ConsumerWidget {
   }
 }
 
-class _LearningFeedbackSheet extends ConsumerWidget {
-  const _LearningFeedbackSheet({required this.feedback});
+class _LearningFeedbackDialog extends ConsumerWidget {
+  const _LearningFeedbackDialog({required this.feedback});
   final LearningAnswerFeedback feedback;
 
   @override
@@ -312,85 +311,90 @@ class _LearningFeedbackSheet extends ConsumerWidget {
             : 'Chưa đúng';
 
     return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          0,
-          20,
-          24 + MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 480,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(statusIcon, color: statusColor),
-                const SizedBox(width: 10),
-                Text(
-                  message,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: statusColor,
-                        fontWeight: FontWeight.w900,
-                      ),
+                Row(
+                  children: [
+                    Icon(statusIcon, color: statusColor),
+                    const SizedBox(width: 10),
+                    Text(
+                      message,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Phát âm',
+                      onPressed: () =>
+                          ref.read(audioServiceProvider).speak(vocab),
+                      icon: const Icon(Icons.volume_up_rounded),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                IconButton(
-                  tooltip: 'Phát âm',
-                  onPressed: () => ref.read(audioServiceProvider).speak(vocab),
-                  icon: const Icon(Icons.volume_up_rounded),
+                const SizedBox(height: 10),
+                if (vocab.kanji?.trim().isNotEmpty == true) ...[
+                  Text(
+                    vocab.kanji!.trim(),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w400,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                PitchAccentReading(
+                  kana: vocab.kana,
+                  pattern: vocab.pitchAccent,
+                  romaji: vocab.romaji,
+                  fontSize: vocab.kanji?.trim().isNotEmpty == true ? 22 : 30,
+                  textColor: colors.onSurfaceVariant,
+                ),
+                const SizedBox(height: 14),
+                _LearningFeedbackDetail(
+                  label: 'Đáp án đúng',
+                  value: feedback.question.expectedAnswer,
+                ),
+                if (feedback.wasGraded &&
+                    !feedback.isCorrect &&
+                    feedback.answer.trim().isNotEmpty)
+                  _LearningFeedbackDetail(
+                    label: 'Bạn trả lời',
+                    value: feedback.answer.trim(),
+                  ),
+                if (vocab.example?.trim().isNotEmpty == true)
+                  _LearningFeedbackDetail(
+                    label: 'Ví dụ',
+                    value: vocab.example!.trim(),
+                  ),
+                if (vocab.note?.trim().isNotEmpty == true)
+                  _LearningFeedbackDetail(
+                    label: 'Ghi chú',
+                    value: vocab.note!.trim(),
+                  ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Tiếp tục'),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            if (vocab.kanji?.trim().isNotEmpty == true) ...[
-              Text(
-                vocab.kanji!.trim(),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w400,
-                    ),
-              ),
-              const SizedBox(height: 6),
-            ],
-            PitchAccentReading(
-              kana: vocab.kana,
-              pattern: vocab.pitchAccent,
-              romaji: vocab.romaji,
-              fontSize: vocab.kanji?.trim().isNotEmpty == true ? 22 : 30,
-              textColor: colors.onSurfaceVariant,
-            ),
-            const SizedBox(height: 14),
-            _LearningFeedbackDetail(
-              label: 'Đáp án đúng',
-              value: feedback.question.expectedAnswer,
-            ),
-            if (feedback.wasGraded &&
-                !feedback.isCorrect &&
-                feedback.answer.trim().isNotEmpty)
-              _LearningFeedbackDetail(
-                label: 'Bạn trả lời',
-                value: feedback.answer.trim(),
-              ),
-            if (vocab.example?.trim().isNotEmpty == true)
-              _LearningFeedbackDetail(
-                label: 'Ví dụ',
-                value: vocab.example!.trim(),
-              ),
-            if (vocab.note?.trim().isNotEmpty == true)
-              _LearningFeedbackDetail(
-                label: 'Ghi chú',
-                value: vocab.note!.trim(),
-              ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Tiếp tục'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

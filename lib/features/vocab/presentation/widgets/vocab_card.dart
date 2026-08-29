@@ -65,8 +65,8 @@ class VocabCard extends ConsumerWidget {
                             : vocab.kana,
                         style: TextStyle(
                           color: colors.onSurface,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w400,
                           height: 1.15,
                         ),
                       ),

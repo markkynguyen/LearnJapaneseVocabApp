@@ -158,6 +158,70 @@ void main() {
     expect(store.lastFolderId, 'paused-folder');
     expect(session.resultsByVocabId.keys, ['paused-vocab']);
   });
+
+  test('review session puts write questions before other question types',
+      () async {
+    const writeCount = 2;
+    final words = [
+      _item(
+        vocabId: 'vocab-1',
+        level: 1,
+        intervalDays: 1,
+        nextReviewAt: 1,
+      ),
+      _item(
+        vocabId: 'vocab-2',
+        level: 1,
+        intervalDays: 1,
+        nextReviewAt: 1,
+      ),
+      _item(
+        vocabId: 'vocab-3',
+        level: 1,
+        intervalDays: 1,
+        nextReviewAt: 1,
+      ),
+    ];
+    final store = _FakeReviewStore(
+      settings: const AppSettings(
+        quizListenCount: 1,
+        quizWriteCount: writeCount,
+        quizChooseWordCount: 1,
+        quizChooseMeaningCount: 1,
+      ),
+    );
+    final repository = ReviewRepository(store: store);
+
+    final session = await repository.createSessionFromWords(words);
+
+    final types = session.questions.map((question) => question.type).toList();
+    final expectedWriteQuestions = words.length * writeCount;
+    expect(types, hasLength(words.length * 5));
+    expect(
+      types.take(expectedWriteQuestions),
+      everyElement(ReviewQuestionType.write),
+    );
+    expect(
+      types.skip(expectedWriteQuestions),
+      isNot(contains(ReviewQuestionType.write)),
+    );
+    expect(
+      types.where((type) => type == ReviewQuestionType.listen),
+      hasLength(words.length),
+    );
+    expect(
+      types.where((type) => type == ReviewQuestionType.write),
+      hasLength(expectedWriteQuestions),
+    );
+    expect(
+      types.where((type) => type == ReviewQuestionType.chooseWord),
+      hasLength(words.length),
+    );
+    expect(
+      types.where((type) => type == ReviewQuestionType.chooseMeaning),
+      hasLength(words.length),
+    );
+  });
 }
 
 void expectReviewTime(
@@ -276,7 +340,7 @@ VocabWithProgress _item({
       createdAt: 0,
     ),
     progress: SrsProgressEntry(
-      vocabId: 'vocab-1',
+      vocabId: vocabId,
       level: level,
       intervalDays: intervalDays,
       nextReviewAt: nextReviewAt,

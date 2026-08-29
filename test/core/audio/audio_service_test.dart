@@ -62,6 +62,7 @@ void main() {
   test('native chooses the best available Japanese voice before speaking',
       () async {
     final tts = _FakeFlutterTts(
+      engines: const ['com.samsung.SMT', 'com.google.android.tts'],
       voiceResponses: const [
         [
           {
@@ -86,6 +87,7 @@ void main() {
 
     await service.speakText('猫');
 
+    expect(tts.selectedEngine, 'com.google.android.tts');
     expect(tts.selectedVoice, {
       'name': 'Google Japanese Network',
       'locale': 'ja-JP',
@@ -94,7 +96,7 @@ void main() {
     expect(tts.spokenTexts, ['猫']);
   });
 
-  test('speaks kana even when kanji is available', () async {
+  test('speaks kanji when kanji is available', () async {
     final tts = _FakeFlutterTts(voiceResponses: const []);
     final service = AudioService(tts: tts, isWeb: false);
     addTearDown(service.dispose);
@@ -112,17 +114,55 @@ void main() {
       ),
     );
 
-    expect(tts.spokenTexts, ['たべる']);
+    expect(tts.spokenTexts, ['食べる']);
+  });
+
+  test('falls back to kana when kanji is missing or blank', () async {
+    final tts = _FakeFlutterTts(voiceResponses: const []);
+    final service = AudioService(tts: tts, isWeb: false);
+    addTearDown(service.dispose);
+
+    await service.speak(
+      const VocabularyEntry(
+        id: 'vocab-1',
+        folderId: 'folder-1',
+        kanji: null,
+        kana: ' たべる ',
+        romaji: 'taberu',
+        meaning: 'ăn',
+        isFavorite: false,
+        createdAt: 0,
+      ),
+    );
+    await service.speak(
+      const VocabularyEntry(
+        id: 'vocab-2',
+        folderId: 'folder-1',
+        kanji: '   ',
+        kana: 'のむ',
+        romaji: 'nomu',
+        meaning: 'uống',
+        isFavorite: false,
+        createdAt: 0,
+      ),
+    );
+
+    expect(tts.spokenTexts, ['たべる', 'のむ']);
   });
 }
 
 class _FakeFlutterTts extends FlutterTts {
-  _FakeFlutterTts({required this.voiceResponses});
+  _FakeFlutterTts({
+    required this.voiceResponses,
+    this.engines = const [],
+  });
 
   final List<List<Map<String, String>>> voiceResponses;
+  final List<String> engines;
   final List<String> spokenTexts = [];
   int getVoicesCallCount = 0;
   Map<String, String>? selectedVoice;
+  String? selectedEngine;
   String? language;
 
   @override
@@ -135,6 +175,15 @@ class _FakeFlutterTts extends FlutterTts {
         : voiceResponses.length - 1;
     getVoicesCallCount++;
     return voiceResponses[index];
+  }
+
+  @override
+  Future<dynamic> get getEngines async => engines;
+
+  @override
+  Future<dynamic> setEngine(String engine) async {
+    selectedEngine = engine;
+    return 1;
   }
 
   @override

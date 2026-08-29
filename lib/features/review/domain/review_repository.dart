@@ -142,7 +142,9 @@ class ReviewRepository {
     bool favoritesOnly = false,
   }) {
     final sessionStartTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final questions = _buildQuestions(words, settings)..shuffle(Random());
+    final questions = _prioritizeWriteQuestions(
+      _buildQuestions(words, settings),
+    );
     return ReviewSessionState(
       questions: questions,
       currentIndex: 0,
@@ -189,6 +191,20 @@ class ReviewRepository {
             retryCount: 0,
           ),
     ];
+  }
+
+  List<ReviewQuestion> _prioritizeWriteQuestions(
+    List<ReviewQuestion> questions,
+  ) {
+    final writeQuestions = questions
+        .where((question) => question.type == ReviewQuestionType.write)
+        .toList()
+      ..shuffle(Random());
+    final otherQuestions = questions
+        .where((question) => question.type != ReviewQuestionType.write)
+        .toList()
+      ..shuffle(Random());
+    return [...writeQuestions, ...otherQuestions];
   }
 
   List<String> _choices(

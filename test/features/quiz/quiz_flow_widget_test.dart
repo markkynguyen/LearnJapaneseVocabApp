@@ -225,6 +225,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'たべる'));
     await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOneWidget);
     expect(find.byType(PitchAccentText), findsOneWidget);
     expect(find.text('たべる'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -382,6 +383,7 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, '食べる'));
     await tester.pumpAndSettle();
     expect(audio.spokenVocabIds, ['vocab-1']);
+    expect(find.byType(Dialog), findsOneWidget);
     expect(find.byType(PitchAccentText), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Tiếp tục'));
@@ -526,6 +528,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Đã viết xong'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(Dialog), findsOneWidget);
     expect(find.text('Đáp án'), findsOneWidget);
     expect(find.text('Đáp án đúng'), findsOneWidget);
     expect(find.text('Lượt luyện tập không tính điểm'), findsNothing);
@@ -581,6 +584,7 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, '食べる'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(Dialog), findsOneWidget);
     expect(find.text('Xem kết quả'), findsNothing);
     expect(controller.finishCalled, isFalse);
 
