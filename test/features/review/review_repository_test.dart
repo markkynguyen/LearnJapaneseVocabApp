@@ -108,6 +108,56 @@ void main() {
     expect(update.intervalDays, 3);
     expectReviewTime(update.nextReviewAt, before, after, intervalDays: 3);
   });
+
+  test('global review session only loads active folders', () async {
+    final active = _item(
+      vocabId: 'active-vocab',
+      folderId: 'active-folder',
+      level: 1,
+      intervalDays: 1,
+      nextReviewAt: 1,
+    );
+    final paused = _item(
+      vocabId: 'paused-vocab',
+      folderId: 'paused-folder',
+      level: 1,
+      intervalDays: 1,
+      nextReviewAt: 1,
+    );
+    final store = _FakeReviewStore(
+      settings: const AppSettings(sessionSize: 10),
+      activeVocab: [active],
+      allVocab: [active, paused],
+    );
+    final repository = ReviewRepository(store: store);
+
+    final session = await repository.createSession();
+
+    expect(store.lastGetAllVocabActiveOnly, isTrue);
+    expect(session.resultsByVocabId.keys, ['active-vocab']);
+  });
+
+  test('folder review session still loads a paused folder directly', () async {
+    final paused = _item(
+      vocabId: 'paused-vocab',
+      folderId: 'paused-folder',
+      level: 1,
+      intervalDays: 1,
+      nextReviewAt: 1,
+    );
+    final store = _FakeReviewStore(
+      settings: const AppSettings(sessionSize: 10),
+      folderVocab: {
+        'paused-folder': [paused],
+      },
+    );
+    final repository = ReviewRepository(store: store);
+
+    final session = await repository.createSession(folderId: 'paused-folder');
+
+    expect(store.lastFolderId, 'paused-folder');
+    expect(session.resultsByVocabId.keys, ['paused-vocab']);
+  });
 }
 
 void expectReviewTime(
@@ -126,8 +176,12 @@ void expectReviewTime(
 }
 
 class _FakeReviewStore extends CloudStore {
-  _FakeReviewStore({required this.settings})
-      : super(
+  _FakeReviewStore({
+    required this.settings,
+    this.activeVocab = const [],
+    this.allVocab = const [],
+    this.folderVocab = const {},
+  }) : super(
           SupabaseClient(
             'https://example.supabase.co',
             'test-key',
@@ -136,7 +190,12 @@ class _FakeReviewStore extends CloudStore {
         );
 
   final AppSettings settings;
+  final List<VocabWithProgress> activeVocab;
+  final List<VocabWithProgress> allVocab;
+  final Map<String, List<VocabWithProgress>> folderVocab;
   List<SrsProgressEntry> updates = const [];
+  bool? lastGetAllVocabActiveOnly;
+  String? lastFolderId;
 
   SrsProgressEntry get singleUpdate {
     expect(updates, hasLength(1));
@@ -145,6 +204,25 @@ class _FakeReviewStore extends CloudStore {
 
   @override
   Future<AppSettings> getLearningSettings() async => settings;
+
+  @override
+  Future<List<VocabWithProgress>> getAllVocab({
+    bool activeOnly = true,
+  }) async {
+    lastGetAllVocabActiveOnly = activeOnly;
+    return activeOnly ? activeVocab : allVocab;
+  }
+
+  @override
+  Future<List<VocabWithProgress>> getVocabByFolder(
+    String folderId, {
+    VocabSortMode sortMode = VocabSortMode.newest,
+    String searchQuery = '',
+    bool favoritesOnly = false,
+  }) async {
+    lastFolderId = folderId;
+    return folderVocab[folderId] ?? const [];
+  }
 
   @override
   Future<void> applySrsUpdates(List<SrsProgressEntry> updates) async {
@@ -180,14 +258,16 @@ ReviewWordResult _result(
 }
 
 VocabWithProgress _item({
+  String vocabId = 'vocab-1',
+  String folderId = 'folder-1',
   required int level,
   required double intervalDays,
   required int nextReviewAt,
 }) {
   return VocabWithProgress(
-    vocab: const VocabularyEntry(
-      id: 'vocab-1',
-      folderId: 'folder-1',
+    vocab: VocabularyEntry(
+      id: vocabId,
+      folderId: folderId,
       kanji: '食べる',
       kana: 'たべる',
       romaji: 'taberu',

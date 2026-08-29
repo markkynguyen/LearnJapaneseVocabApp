@@ -113,6 +113,8 @@ class _FolderListScreenState extends ConsumerState<FolderListScreen> {
                         AppRoutes.editFolder(item.folder.id),
                         extra: item.folder,
                       ),
+                      onToggleStudyPause: (item) =>
+                          _toggleStudyPause(context, ref, item),
                       onDeleteFolder: (item) =>
                           _confirmDelete(context, ref, item),
                     ),
@@ -185,6 +187,32 @@ class _FolderListScreenState extends ConsumerState<FolderListScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Đã lưu thứ tự bộ từ.')),
+    );
+  }
+
+  Future<void> _toggleStudyPause(
+    BuildContext context,
+    WidgetRef ref,
+    FolderWithCount item,
+  ) async {
+    final isPaused = !item.folder.isStudyPaused;
+    await ref.read(folderControllerProvider.notifier).setFolderStudyPaused(
+          item.folder,
+          isPaused,
+        );
+    if (!context.mounted) return;
+
+    final state = ref.read(folderControllerProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          state.hasError
+              ? 'Không thể cập nhật: ${state.error}'
+              : isPaused
+                  ? 'Đã tắt học/ôn tập cho bộ từ'
+                  : 'Đã bật học/ôn tập cho bộ từ',
+        ),
+      ),
     );
   }
 

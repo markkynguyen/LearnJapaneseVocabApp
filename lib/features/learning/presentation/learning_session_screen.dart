@@ -192,7 +192,7 @@ class _LearningQuestionView extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(
                   question.prompt,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
                 ),
@@ -200,7 +200,10 @@ class _LearningQuestionView extends ConsumerWidget {
                   const SizedBox(height: 10),
                   Text(
                     question.item.vocab.note!.trim(),
-                    style: TextStyle(color: colors.onSurfaceVariant),
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
                 if (showHint) ...[
@@ -208,8 +211,8 @@ class _LearningQuestionView extends ConsumerWidget {
                   Text('Gợi ý', style: TextStyle(color: colors.primary)),
                   Text(
                     question.japaneseText,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w400,
                         ),
                   ),
                 ],
@@ -239,7 +242,7 @@ class _LearningQuestionView extends ConsumerWidget {
                     horizontal: 18,
                     vertical: 16,
                   ),
-                  textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  textStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -247,7 +250,7 @@ class _LearningQuestionView extends ConsumerWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     choice,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                   ),
@@ -327,7 +330,7 @@ class _LearningFeedbackSheet extends ConsumerWidget {
                 const SizedBox(width: 10),
                 Text(
                   message,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: statusColor,
                         fontWeight: FontWeight.w900,
                       ),
@@ -344,8 +347,8 @@ class _LearningFeedbackSheet extends ConsumerWidget {
             if (vocab.kanji?.trim().isNotEmpty == true) ...[
               Text(
                 vocab.kanji!.trim(),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w400,
                     ),
               ),
               const SizedBox(height: 6),
@@ -354,7 +357,7 @@ class _LearningFeedbackSheet extends ConsumerWidget {
               kana: vocab.kana,
               pattern: vocab.pitchAccent,
               romaji: vocab.romaji,
-              fontSize: vocab.kanji?.trim().isNotEmpty == true ? 18 : 24,
+              fontSize: vocab.kanji?.trim().isNotEmpty == true ? 22 : 30,
               textColor: colors.onSurfaceVariant,
             ),
             const SizedBox(height: 14),
@@ -416,10 +419,11 @@ class _LearningFeedbackDetail extends StatelessWidget {
             style: TextStyle(
               color: colors.onSurfaceVariant,
               fontWeight: FontWeight.w700,
+              fontSize: 15,
             ),
           ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(height: 1.35)),
+          Text(value, style: const TextStyle(height: 1.35, fontSize: 17)),
         ],
       ),
     );

@@ -10,6 +10,7 @@ class FolderProgressList extends StatelessWidget {
     required this.onOpenFolder,
     required this.onEditFolder,
     required this.onDeleteFolder,
+    this.onToggleStudyPause,
     this.reorderEnabled = false,
     this.onReorder,
     super.key,
@@ -19,6 +20,7 @@ class FolderProgressList extends StatelessWidget {
   final ValueChanged<String> onOpenFolder;
   final ValueChanged<FolderWithCount> onEditFolder;
   final ValueChanged<FolderWithCount> onDeleteFolder;
+  final ValueChanged<FolderWithCount>? onToggleStudyPause;
   final bool reorderEnabled;
   final ReorderCallback? onReorder;
 
@@ -70,6 +72,9 @@ class FolderProgressList extends StatelessWidget {
           onTap: () => onOpenFolder(item.folder.id),
           onEdit: () => onEditFolder(item),
           onDelete: () => onDeleteFolder(item),
+          onToggleStudyPause: onToggleStudyPause == null
+              ? null
+              : () => onToggleStudyPause!(item),
         );
       },
     );
@@ -89,6 +94,7 @@ class _FolderProgressCard extends StatelessWidget {
     this.onTap,
     this.onEdit,
     this.onDelete,
+    this.onToggleStudyPause,
     this.dragHandle,
     super.key,
   });
@@ -97,6 +103,7 @@ class _FolderProgressCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onToggleStudyPause;
   final Widget? dragHandle;
 
   @override
@@ -130,7 +137,10 @@ class _FolderProgressCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (item.dueCount > 0) _DueBadge(count: item.dueCount),
+                  if (item.folder.isStudyPaused)
+                    const _PausedBadge()
+                  else if (item.dueCount > 0)
+                    _DueBadge(count: item.dueCount),
                   if (dragHandle != null)
                     dragHandle!
                   else
@@ -140,12 +150,14 @@ class _FolderProgressCard extends StatelessWidget {
                         switch (action) {
                           case _FolderAction.edit:
                             onEdit?.call();
+                          case _FolderAction.toggleStudyPause:
+                            onToggleStudyPause?.call();
                           case _FolderAction.delete:
                             onDelete?.call();
                         }
                       },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
                           value: _FolderAction.edit,
                           child: Row(
                             children: [
@@ -155,7 +167,26 @@ class _FolderProgressCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        PopupMenuItem(
+                        if (onToggleStudyPause != null)
+                          PopupMenuItem(
+                            value: _FolderAction.toggleStudyPause,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  item.folder.isStudyPaused
+                                      ? Icons.play_circle_outline_rounded
+                                      : Icons.pause_circle_outline_rounded,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  item.folder.isStudyPaused
+                                      ? 'Bật học/ôn tập'
+                                      : 'Tắt học/ôn tập',
+                                ),
+                              ],
+                            ),
+                          ),
+                        const PopupMenuItem(
                           value: _FolderAction.delete,
                           child: Row(
                             children: [
@@ -216,6 +247,31 @@ class _FolderProgressCard extends StatelessWidget {
   }
 }
 
+class _PausedBadge extends StatelessWidget {
+  const _PausedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.outline.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Đã tắt học/ôn',
+        style: TextStyle(
+          color: colors.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _DueBadge extends StatelessWidget {
   const _DueBadge({required this.count});
 
@@ -270,4 +326,4 @@ class _EmptyFolderState extends StatelessWidget {
   }
 }
 
-enum _FolderAction { edit, delete }
+enum _FolderAction { edit, toggleStudyPause, delete }

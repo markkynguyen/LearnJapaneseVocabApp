@@ -185,7 +185,7 @@ class _FolderByIdProviderElement
   String get id => (origin as FolderByIdProvider).id;
 }
 
-String _$folderControllerHash() => r'f8665f5085490c2184eebbc95bbc6c371190fc14';
+String _$folderControllerHash() => r'eea7d6c939f84a9c033a27d9597f8d0822123c42';
 
 /// See also [FolderController].
 @ProviderFor(FolderController)

@@ -19,6 +19,7 @@ class Folder {
     required this.color,
     required this.createdAt,
     this.description,
+    this.isStudyPaused = false,
     this.sortOrder = 0,
     this.updatedAt = 0,
   });
@@ -28,6 +29,7 @@ class Folder {
         name: json['name'] as String,
         description: json['description'] as String?,
         color: json['color'] as String? ?? '#6366F1',
+        isStudyPaused: json['is_study_paused'] as bool? ?? false,
         sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
         createdAt: _seconds(json['created_at']),
         updatedAt: _seconds(json['updated_at']),
@@ -37,6 +39,7 @@ class Folder {
   final String name;
   final String? description;
   final String color;
+  final bool isStudyPaused;
   final int sortOrder;
   final int createdAt;
   final int updatedAt;

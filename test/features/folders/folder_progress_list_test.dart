@@ -17,6 +17,7 @@ void main() {
 
     String? openedId;
     FolderWithCount? edited;
+    FolderWithCount? toggled;
     FolderWithCount? deleted;
     const item = FolderWithCount(
       folder: Folder(
@@ -39,6 +40,7 @@ void main() {
             folders: const [item],
             onOpenFolder: (id) => openedId = id,
             onEditFolder: (value) => edited = value,
+            onToggleStudyPause: (value) => toggled = value,
             onDeleteFolder: (value) => deleted = value,
           ),
         ),
@@ -57,6 +59,13 @@ void main() {
 
     await tester.tap(find.byTooltip('Tùy chọn bộ từ'));
     await tester.pumpAndSettle();
+    expect(find.text('Tắt học/ôn tập'), findsOneWidget);
+    await tester.tap(find.text('Tắt học/ôn tập'));
+    await tester.pumpAndSettle();
+    expect(toggled, item);
+
+    await tester.tap(find.byTooltip('Tùy chọn bộ từ'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Xóa bộ từ'));
     await tester.pumpAndSettle();
     expect(deleted, item);
@@ -65,6 +74,55 @@ void main() {
     await tester.pump();
     expect(openedId, 'folder-7');
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('paused folder card shows paused status and enable action',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    FolderWithCount? toggled;
+    const item = FolderWithCount(
+      folder: Folder(
+        id: 'folder-paused',
+        name: 'Tạm nghỉ',
+        description: null,
+        color: '#6366F1',
+        isStudyPaused: true,
+        createdAt: 0,
+      ),
+      totalWords: 12,
+      unlearnedCount: 5,
+      dueCount: 3,
+      lv6Count: 2,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FolderProgressList(
+            folders: const [item],
+            onOpenFolder: (_) {},
+            onEditFolder: (_) {},
+            onToggleStudyPause: (value) => toggled = value,
+            onDeleteFolder: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Đã tắt học/ôn'), findsOneWidget);
+    expect(find.text('3 cần ôn'), findsNothing);
+
+    await tester.tap(find.byTooltip('Tùy chọn bộ từ'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bật học/ôn tập'), findsOneWidget);
+    await tester.tap(find.text('Bật học/ôn tập'));
+    await tester.pumpAndSettle();
+
+    expect(toggled, item);
   });
 
   testWidgets('reorder mode exposes drag handles and reports the new position',
@@ -167,6 +225,32 @@ void main() {
     expect(store.lastOrderedIds, ['folder-2', 'folder-1']);
     expect(find.text('Đã lưu thứ tự bộ từ.'), findsOneWidget);
   });
+
+  testWidgets('library menu toggles study pause through the controller',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final store = _FakeFolderStore(List.of(_reorderItems));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [cloudStoreProvider.overrideWithValue(store)],
+        child: const MaterialApp(home: FolderListScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Tùy chọn bộ từ').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tắt học/ôn tập'));
+    await tester.pumpAndSettle();
+
+    expect(store.pausedFolderId, 'folder-1');
+    expect(store.pausedValue, isTrue);
+    expect(find.text('Đã tắt học/ôn tập cho bộ từ'), findsOneWidget);
+  });
 }
 
 const _reorderItems = [
@@ -211,6 +295,8 @@ class _FakeFolderStore extends CloudStore {
   List<FolderWithCount> items;
   int reorderCallCount = 0;
   List<String>? lastOrderedIds;
+  String? pausedFolderId;
+  bool? pausedValue;
 
   @override
   Future<List<FolderWithCount>> getFolderSummaries() async => List.of(items);
@@ -221,5 +307,36 @@ class _FakeFolderStore extends CloudStore {
     lastOrderedIds = List.of(orderedIds);
     final byId = {for (final item in items) item.folder.id: item};
     items = [for (final id in orderedIds) byId[id]!];
+  }
+
+  @override
+  Future<void> setFolderStudyPaused({
+    required String id,
+    required bool isPaused,
+  }) async {
+    pausedFolderId = id;
+    pausedValue = isPaused;
+    items = [
+      for (final item in items)
+        if (item.folder.id == id)
+          FolderWithCount(
+            folder: Folder(
+              id: item.folder.id,
+              name: item.folder.name,
+              description: item.folder.description,
+              color: item.folder.color,
+              isStudyPaused: isPaused,
+              sortOrder: item.folder.sortOrder,
+              createdAt: item.folder.createdAt,
+              updatedAt: item.folder.updatedAt,
+            ),
+            totalWords: item.totalWords,
+            unlearnedCount: item.unlearnedCount,
+            dueCount: item.dueCount,
+            lv6Count: item.lv6Count,
+          )
+        else
+          item,
+    ];
   }
 }

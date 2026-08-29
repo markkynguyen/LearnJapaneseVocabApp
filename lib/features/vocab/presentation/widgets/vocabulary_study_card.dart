@@ -52,8 +52,8 @@ class VocabularyStudyCard extends StatelessWidget {
                 child: Text(
                   vocab.kanji!.trim(),
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        fontWeight: FontWeight.w400,
                         height: 1.12,
                       ),
                 ),
@@ -64,7 +64,7 @@ class VocabularyStudyCard extends StatelessWidget {
               child: PitchAccentText(
                 kana: vocab.kana,
                 pattern: vocab.pitchAccent,
-                fontSize: hasKanji ? 24 : 36,
+                fontSize: hasKanji ? 30 : 44,
               ),
             ),
             const SizedBox(height: 8),
@@ -72,7 +72,7 @@ class VocabularyStudyCard extends StatelessWidget {
               child: Text(
                 vocab.romaji,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
               ),
@@ -111,7 +111,7 @@ class VocabularyStudyCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     vocab.meaning,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
                   ),
@@ -188,12 +188,13 @@ class _DetailSection extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: colors.onSurfaceVariant,
                       fontWeight: FontWeight.w800,
+                      fontSize: 15,
                     ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(height: 1.45)),
+          Text(value, style: const TextStyle(height: 1.45, fontSize: 17)),
         ],
       ),
     );

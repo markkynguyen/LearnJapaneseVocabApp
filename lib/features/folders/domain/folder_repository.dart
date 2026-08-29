@@ -32,6 +32,12 @@ class FolderRepository {
         description: _emptyToNull(description),
       );
 
+  Future<void> setFolderStudyPaused({
+    required String id,
+    required bool isPaused,
+  }) =>
+      _store.setFolderStudyPaused(id: id, isPaused: isPaused);
+
   Future<void> deleteFolder(String id) => _store.deleteFolder(id);
 
   Future<void> reorderFolders(List<String> orderedIds) =>

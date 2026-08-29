@@ -830,7 +830,7 @@ class _VocabSortProviderElement
 }
 
 String _$vocabListControllerHash() =>
-    r'c68a09edbc755b0c8722b3ab54b5ece0d7c2ad33';
+    r'9b4666dc9a0e3d5f4127ab22243329bfd42e8189';
 
 /// See also [VocabListController].
 @ProviderFor(VocabListController)

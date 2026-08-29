@@ -1,11 +1,12 @@
 begin;
 
-select plan(12);
+select plan(13);
 select has_table('public', 'folders', 'folders exists');
 select has_table('public', 'vocabulary', 'vocabulary exists');
 select has_table('public', 'srs_progress', 'srs_progress exists');
 select has_table('public', 'user_learning_settings', 'settings exists');
 select has_column('public', 'folders', 'sort_order', 'folder order exists');
+select has_column('public', 'folders', 'is_study_paused', 'folder study pause exists');
 select has_function(
   'public',
   'assign_folder_sort_order',

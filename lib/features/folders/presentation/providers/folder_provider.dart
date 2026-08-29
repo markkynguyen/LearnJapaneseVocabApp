@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/cloud/cloud_store.dart';
 import '../../../../core/models/app_models.dart';
+import '../../../home/presentation/providers/home_provider.dart';
+import '../../../vocab/presentation/providers/vocab_list_provider.dart';
 import '../../domain/folder_repository.dart';
 
 part 'folder_provider.g.dart';
@@ -58,6 +60,26 @@ class FolderController extends _$FolderController {
       ref
         ..invalidate(foldersProvider)
         ..invalidate(folderByIdProvider(id));
+    }
+  }
+
+  Future<void> setFolderStudyPaused(Folder folder, bool isPaused) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(folderRepositoryProvider).setFolderStudyPaused(
+            id: folder.id,
+            isPaused: isPaused,
+          ),
+    );
+    if (!state.hasError) {
+      ref
+        ..invalidate(foldersProvider)
+        ..invalidate(folderByIdProvider(folder.id))
+        ..invalidate(totalDueCountProvider)
+        ..invalidate(totalLevelStatsProvider)
+        ..invalidate(folderDueCountProvider(folder.id))
+        ..invalidate(folderUnlearnedCountProvider(folder.id))
+        ..invalidate(folderLevelStatsProvider(folder.id));
     }
   }
 

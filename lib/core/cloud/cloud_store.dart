@@ -103,6 +103,14 @@ class CloudStore {
         'color': color,
       }).eq('id', id);
 
+  Future<void> setFolderStudyPaused({
+    required String id,
+    required bool isPaused,
+  }) =>
+      _client.from('folders').update({
+        'is_study_paused': isPaused,
+      }).eq('id', id);
+
   Future<void> deleteFolder(String id) =>
       _client.from('folders').delete().eq('id', id);
 
@@ -257,9 +265,12 @@ class CloudStore {
     return results;
   }
 
-  Future<LevelStats> getLevelStats({String? folderId}) async {
+  Future<LevelStats> getLevelStats({
+    String? folderId,
+    bool activeOnly = true,
+  }) async {
     final items = folderId == null
-        ? await getAllVocab()
+        ? await getAllVocab(activeOnly: activeOnly)
         : await getVocabByFolder(folderId);
     final counts = <int, int>{};
     for (final item in items) {
@@ -272,18 +283,26 @@ class CloudStore {
     return LevelStats(totalWords: items.length, levelCounts: counts);
   }
 
-  Future<List<VocabWithProgress>> getAllVocab() async {
-    final rows = await _client.from('vocabulary').select('*, srs_progress(*)');
+  Future<List<VocabWithProgress>> getAllVocab({
+    bool activeOnly = true,
+  }) async {
+    final rows = await (activeOnly
+        ? _client
+            .from('vocabulary')
+            .select('*, folders!inner(is_study_paused), srs_progress(*)')
+            .eq('folders.is_study_paused', false)
+        : _client.from('vocabulary').select('*, srs_progress(*)'));
     return rows.map(_vocabWithProgress).toList();
   }
 
   Future<int> getDueCount({
     String? folderId,
     bool favoritesOnly = false,
+    bool activeOnly = true,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final items = folderId == null
-        ? await getAllVocab()
+        ? await getAllVocab(activeOnly: activeOnly)
         : await getVocabByFolder(folderId, favoritesOnly: favoritesOnly);
     return items
         .where(
