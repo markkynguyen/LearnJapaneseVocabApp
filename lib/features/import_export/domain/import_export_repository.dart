@@ -165,6 +165,7 @@ class ImportExportRepository {
             'pitch_accent': row.pitchAccent,
             'example': row.example,
             'note': row.note,
+            if (row.hasTtsTextColumn) 'tts_text': row.ttsText,
             if (row.level != null) 'level': row.level,
             if (row.level != null)
               'interval_days': SrsConstants.defaultIntervalForLevel(row.level!),

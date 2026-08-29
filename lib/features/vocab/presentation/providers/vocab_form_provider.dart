@@ -31,6 +31,7 @@ class VocabFormController extends _$VocabFormController {
     required String meaning,
     String? kanji,
     String? pitchAccent,
+    String? ttsText,
     String? example,
     String? note,
   }) async {
@@ -43,6 +44,7 @@ class VocabFormController extends _$VocabFormController {
             meaning: meaning,
             kanji: kanji,
             pitchAccent: pitchAccent,
+            ttsText: ttsText,
             example: example,
             note: note,
           ),
@@ -56,6 +58,7 @@ class VocabFormController extends _$VocabFormController {
     required String meaning,
     String? kanji,
     String? pitchAccent,
+    String? ttsText,
     String? example,
     String? note,
   }) async {
@@ -68,6 +71,7 @@ class VocabFormController extends _$VocabFormController {
             meaning: meaning,
             kanji: kanji,
             pitchAccent: pitchAccent,
+            ttsText: ttsText,
             example: example,
             note: note,
           ),

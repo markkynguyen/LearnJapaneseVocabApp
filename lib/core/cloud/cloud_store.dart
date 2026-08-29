@@ -175,6 +175,7 @@ class CloudStore {
     required String meaning,
     String? kanji,
     String? pitchAccent,
+    String? ttsText,
     String? example,
     String? note,
   }) async {
@@ -188,6 +189,7 @@ class CloudStore {
           'romaji': romaji,
           'meaning': meaning,
           'pitch_accent': pitchAccent,
+          'tts_text': ttsText,
           'example': example,
           'note': note,
         })
@@ -203,6 +205,7 @@ class CloudStore {
     required String meaning,
     String? kanji,
     String? pitchAccent,
+    String? ttsText,
     String? example,
     String? note,
   }) =>
@@ -212,6 +215,7 @@ class CloudStore {
         'romaji': romaji,
         'meaning': meaning,
         'pitch_accent': pitchAccent,
+        'tts_text': ttsText,
         'example': example,
         'note': note,
       }).eq('id', id);

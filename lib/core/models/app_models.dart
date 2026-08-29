@@ -56,6 +56,7 @@ class VocabularyEntry {
     required this.createdAt,
     this.kanji,
     this.pitchAccent,
+    this.ttsText,
     this.example,
     this.note,
     this.updatedAt = 0,
@@ -70,6 +71,7 @@ class VocabularyEntry {
         romaji: json['romaji'] as String,
         meaning: json['meaning'] as String,
         pitchAccent: json['pitch_accent'] as String?,
+        ttsText: json['tts_text'] as String?,
         example: json['example'] as String?,
         note: json['note'] as String?,
         isFavorite: json['is_favorite'] as bool? ?? false,
@@ -84,6 +86,7 @@ class VocabularyEntry {
   final String romaji;
   final String meaning;
   final String? pitchAccent;
+  final String? ttsText;
   final String? example;
   final String? note;
   final bool isFavorite;

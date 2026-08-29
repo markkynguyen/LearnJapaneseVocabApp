@@ -33,8 +33,8 @@ class _ExcelExportScreenState extends ConsumerState<ExcelExportScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     'Export dùng các cột: kanji, kana, romaji, meaning, '
-                    'pitch_accent, example, note, level, next_review, '
-                    'last_review.',
+                    'pitch_accent, tts_text, example, note, level, '
+                    'next_review, last_review.',
                     style: TextStyle(color: colors.onSurfaceVariant),
                   ),
                 ),

@@ -6,6 +6,7 @@ const excelVocabHeaders = [
   'romaji',
   'meaning',
   'pitch_accent',
+  'tts_text',
   'example',
   'note',
   'level',
@@ -31,8 +32,10 @@ class ExcelVocabRow {
     required this.meaning,
     this.kanji,
     this.pitchAccent,
+    this.ttsText,
     this.example,
     this.note,
+    this.hasTtsTextColumn = false,
     this.level,
     this.nextReview,
     this.lastReview,
@@ -48,8 +51,10 @@ class ExcelVocabRow {
   final String meaning;
   final String? kanji;
   final String? pitchAccent;
+  final String? ttsText;
   final String? example;
   final String? note;
+  final bool hasTtsTextColumn;
   final int? level;
   final int? nextReview;
   final int? lastReview;
@@ -71,8 +76,10 @@ class ExcelVocabRow {
       meaning: meaning,
       kanji: kanji,
       pitchAccent: pitchAccent,
+      ttsText: ttsText,
       example: example,
       note: note,
+      hasTtsTextColumn: hasTtsTextColumn,
       level: level,
       nextReview: nextReview,
       lastReview: lastReview,

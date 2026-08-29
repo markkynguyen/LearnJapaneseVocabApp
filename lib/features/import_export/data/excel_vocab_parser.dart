@@ -45,10 +45,11 @@ class ExcelVocabParser {
     }
 
     final headers = _readHeaders(sheet.rows.first);
-    // last_review được thêm sau định dạng Excel ban đầu. Vẫn hỗ trợ các file
-    // backup cũ; file export và template mới luôn có cột này.
+    // Các cột bổ sung được thêm sau định dạng Excel ban đầu. Vẫn hỗ trợ các
+    // file backup cũ; file export và template mới luôn có các cột này.
     final requiredHeaders = [
-      ...excelVocabHeaders.where((header) => header != 'last_review'),
+      ...excelVocabHeaders
+          .where((header) => header != 'last_review' && header != 'tts_text'),
       if (requireFolder) 'folder',
     ];
     final missingHeaders = requiredHeaders
@@ -167,8 +168,10 @@ class ExcelVocabParser {
       romaji: romaji,
       meaning: meaning,
       pitchAccent: pitchAccent,
+      ttsText: _emptyToNull(_value(row, headers, 'tts_text')),
       example: _emptyToNull(_value(row, headers, 'example')),
       note: _emptyToNull(_value(row, headers, 'note')),
+      hasTtsTextColumn: headers.containsKey('tts_text'),
       level: level,
       nextReview: nextReview,
       lastReview: lastReview,

@@ -1,3 +1,4 @@
+import 'package:excel/excel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/features/import_export/data/excel_vocab_exporter.dart';
@@ -20,9 +21,11 @@ void main() {
             vocab: VocabularyEntry(
               id: 'vocab-1',
               folderId: 'folder-1',
-              kana: 'たべる',
-              romaji: 'taberu',
-              meaning: 'ăn',
+              kanji: '何時',
+              kana: 'なんじ',
+              romaji: 'nanji',
+              meaning: 'mấy giờ',
+              ttsText: 'なんじ',
               isFavorite: false,
               createdAt: 1,
             ),
@@ -47,7 +50,23 @@ void main() {
     );
 
     expect(preview.validCount, 1);
+    expect(preview.rows.single.ttsText, 'なんじ');
     expect(preview.rows.single.lastReview, lastReview);
     expect(preview.rows.single.folderName, 'N5');
+  });
+
+  test('export template includes tts_text after pitch_accent', () {
+    final bytes = const ExcelVocabExporter().exportTemplate();
+    final excel = Excel.decodeBytes(bytes);
+    final sheet = excel.tables['jvocab']!;
+    final headers = sheet.rows.first
+        .map((cell) => (cell?.value as TextCellValue).value.text)
+        .toList();
+
+    expect(headers, excelVocabHeaders);
+    expect(
+      headers.indexOf('tts_text'),
+      headers.indexOf('pitch_accent') + 1,
+    );
   });
 }

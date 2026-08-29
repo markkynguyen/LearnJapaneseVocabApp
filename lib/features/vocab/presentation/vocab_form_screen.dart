@@ -27,6 +27,7 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
   late final TextEditingController _romajiController;
   late final TextEditingController _meaningController;
   late final TextEditingController _pitchAccentController;
+  late final TextEditingController _ttsTextController;
   late final TextEditingController _exampleController;
   late final TextEditingController _noteController;
 
@@ -42,6 +43,7 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
     _romajiController = TextEditingController();
     _meaningController = TextEditingController();
     _pitchAccentController = TextEditingController();
+    _ttsTextController = TextEditingController();
     _exampleController = TextEditingController();
     _noteController = TextEditingController();
   }
@@ -53,6 +55,7 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
     _romajiController.dispose();
     _meaningController.dispose();
     _pitchAccentController.dispose();
+    _ttsTextController.dispose();
     _exampleController.dispose();
     _noteController.dispose();
     super.dispose();
@@ -93,6 +96,7 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
           romajiController: _romajiController,
           meaningController: _meaningController,
           pitchAccentController: _pitchAccentController,
+          ttsTextController: _ttsTextController,
           exampleController: _exampleController,
           noteController: _noteController,
           onSubmit: () => _submit(item?.vocab),
@@ -128,6 +132,7 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
     _romajiController.text = vocab.romaji;
     _meaningController.text = vocab.meaning;
     _pitchAccentController.text = vocab.pitchAccent ?? '';
+    _ttsTextController.text = vocab.ttsText ?? '';
     _exampleController.text = vocab.example ?? '';
     _noteController.text = vocab.note ?? '';
     _didFillInitialValues = true;
@@ -147,6 +152,7 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
         romaji: _romajiController.text,
         meaning: _meaningController.text,
         pitchAccent: _pitchAccentController.text,
+        ttsText: _ttsTextController.text,
         example: _exampleController.text,
         note: _noteController.text,
       );
@@ -158,6 +164,7 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
         romaji: _romajiController.text,
         meaning: _meaningController.text,
         pitchAccent: _pitchAccentController.text,
+        ttsText: _ttsTextController.text,
         example: _exampleController.text,
         note: _noteController.text,
       );
@@ -194,6 +201,7 @@ class _VocabFormBody extends ConsumerWidget {
     required this.romajiController,
     required this.meaningController,
     required this.pitchAccentController,
+    required this.ttsTextController,
     required this.exampleController,
     required this.noteController,
     required this.onSubmit,
@@ -207,6 +215,7 @@ class _VocabFormBody extends ConsumerWidget {
   final TextEditingController romajiController;
   final TextEditingController meaningController;
   final TextEditingController pitchAccentController;
+  final TextEditingController ttsTextController;
   final TextEditingController exampleController;
   final TextEditingController noteController;
   final VoidCallback onSubmit;
@@ -299,6 +308,19 @@ class _VocabFormBody extends ConsumerWidget {
               PitchAccentPicker(
                 kanaController: kanaController,
                 pitchAccentController: pitchAccentController,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: ttsTextController,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: 'Cách đọc TTS',
+                  hintText:
+                      'Để trống để app tự dùng kanji/kana. VD: なんじ hoặc 何時ですか',
+                  helperText: 'Dùng khi kanji dễ bị đọc sai, ví dụ 何時.',
+                  helperStyle: TextStyle(color: colors.onSurfaceVariant),
+                  prefixIcon: const Icon(Icons.record_voice_over_rounded),
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(

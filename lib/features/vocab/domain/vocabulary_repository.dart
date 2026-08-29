@@ -14,6 +14,7 @@ class VocabularyRepository {
     required String meaning,
     String? kanji,
     String? pitchAccent,
+    String? ttsText,
     String? example,
     String? note,
   }) =>
@@ -24,6 +25,7 @@ class VocabularyRepository {
         meaning: meaning.trim(),
         kanji: _emptyToNull(kanji),
         pitchAccent: _emptyToNull(pitchAccent),
+        ttsText: _emptyToNull(ttsText),
         example: _emptyToNull(example),
         note: _emptyToNull(note),
       );
@@ -35,6 +37,7 @@ class VocabularyRepository {
     required String meaning,
     String? kanji,
     String? pitchAccent,
+    String? ttsText,
     String? example,
     String? note,
   }) =>
@@ -45,6 +48,7 @@ class VocabularyRepository {
         meaning: meaning.trim(),
         kanji: _emptyToNull(kanji),
         pitchAccent: _emptyToNull(pitchAccent),
+        ttsText: _emptyToNull(ttsText),
         example: _emptyToNull(example),
         note: _emptyToNull(note),
       );

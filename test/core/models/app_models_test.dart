@@ -39,4 +39,24 @@ void main() {
     expect(progress.lastReviewedAt, 1783123200);
     expect(progress.toCloudJson()['next_review_at'], contains('2026-07-05'));
   });
+
+  test('vocabulary model reads optional tts text from cloud json', () {
+    final vocab = VocabularyEntry.fromJson({
+      'id': 'vocab-1',
+      'folder_id': 'folder-1',
+      'kanji': '何時',
+      'kana': 'なんじ',
+      'romaji': 'nanji',
+      'meaning': 'mấy giờ',
+      'pitch_accent': null,
+      'tts_text': 'なんじ',
+      'example': null,
+      'note': null,
+      'is_favorite': false,
+      'created_at': '2026-07-05T00:00:00Z',
+      'updated_at': '2026-07-05T00:00:00Z',
+    });
+
+    expect(vocab.ttsText, 'なんじ');
+  });
 }

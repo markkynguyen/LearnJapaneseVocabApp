@@ -15,6 +15,7 @@ void main() {
       TextCellValue('taberu'),
       TextCellValue('ăn'),
       null,
+      TextCellValue('たべます'),
       TextCellValue('朝ご飯を食べます。'),
       TextCellValue('Đồng nghĩa: 食う'),
       const IntCellValue(3),
@@ -28,6 +29,8 @@ void main() {
     );
 
     expect(preview.validCount, 1);
+    expect(preview.rows.single.ttsText, 'たべます');
+    expect(preview.rows.single.hasTtsTextColumn, isTrue);
     expect(preview.rows.single.note, 'Đồng nghĩa: 食う');
     expect(preview.rows.single.level, 3);
     expect(preview.rows.single.nextReview, 1780000000);
@@ -45,6 +48,7 @@ void main() {
       TextCellValue('あたらしい'),
       TextCellValue('atarashii'),
       TextCellValue('new'),
+      null,
       null,
       null,
       null,
@@ -71,6 +75,7 @@ void main() {
       TextCellValue('ねこ'),
       TextCellValue('neko'),
       TextCellValue('cat'),
+      null,
       null,
       null,
       null,
@@ -103,6 +108,7 @@ void main() {
       TextCellValue('LHL'),
       null,
       null,
+      null,
       const IntCellValue(0),
       null,
     ]);
@@ -127,6 +133,7 @@ void main() {
       TextCellValue('tamago'),
       TextCellValue('egg'),
       TextCellValue('LH'),
+      null,
       null,
       null,
       const IntCellValue(0),
@@ -155,6 +162,7 @@ void main() {
       TextCellValue('ã­ã“'),
       TextCellValue('neko'),
       TextCellValue('cat'),
+      null,
       null,
       null,
       null,
@@ -187,6 +195,7 @@ void main() {
       null,
       null,
       null,
+      null,
       const IntCellValue(1),
       null,
     ]);
@@ -214,6 +223,7 @@ void main() {
       null,
       null,
       null,
+      null,
       const IntCellValue(1),
       null,
       null,
@@ -229,12 +239,13 @@ void main() {
     expect(preview.rows.single.folderName, isNull);
   });
 
-  test('accepts legacy files without last_review column', () {
+  test('accepts legacy files without optional tts_text and last_review columns',
+      () {
     final excel = Excel.createExcel();
     final sheet = excel['jvocab'];
     excel.delete('Sheet1');
-    final legacyHeaders =
-        excelVocabHeaders.where((header) => header != 'last_review');
+    final legacyHeaders = excelVocabHeaders
+        .where((header) => header != 'tts_text' && header != 'last_review');
     sheet.appendRow(legacyHeaders.map(TextCellValue.new).toList());
     sheet.appendRow([
       null,
@@ -254,6 +265,8 @@ void main() {
     );
 
     expect(preview.validCount, 1);
+    expect(preview.rows.single.ttsText, isNull);
+    expect(preview.rows.single.hasTtsTextColumn, isFalse);
     expect(preview.rows.single.lastReview, isNull);
     expect(preview.rows.single.hasLastReviewColumn, isFalse);
   });

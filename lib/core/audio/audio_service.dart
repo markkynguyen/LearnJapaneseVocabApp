@@ -77,9 +77,13 @@ class AudioService {
   }
 
   Future<void> speak(VocabularyEntry vocab) {
+    final ttsText = vocab.ttsText?.trim();
     final kanji = vocab.kanji?.trim();
-    final textToSpeak =
-        kanji != null && kanji.isNotEmpty ? kanji : vocab.kana.trim();
+    final textToSpeak = ttsText != null && ttsText.isNotEmpty
+        ? ttsText
+        : kanji != null && kanji.isNotEmpty
+            ? kanji
+            : vocab.kana.trim();
     return speakText(textToSpeak);
   }
 

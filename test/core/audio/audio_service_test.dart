@@ -96,7 +96,29 @@ void main() {
     expect(tts.spokenTexts, ['猫']);
   });
 
-  test('speaks kanji when kanji is available', () async {
+  test('speaks tts text before kanji or kana', () async {
+    final tts = _FakeFlutterTts(voiceResponses: const []);
+    final service = AudioService(tts: tts, isWeb: false);
+    addTearDown(service.dispose);
+
+    await service.speak(
+      const VocabularyEntry(
+        id: 'vocab-1',
+        folderId: 'folder-1',
+        kanji: '食べる',
+        ttsText: ' たべます ',
+        kana: 'たべる',
+        romaji: 'taberu',
+        meaning: 'ăn',
+        isFavorite: false,
+        createdAt: 0,
+      ),
+    );
+
+    expect(tts.spokenTexts, ['たべます']);
+  });
+
+  test('speaks kanji when tts text is missing', () async {
     final tts = _FakeFlutterTts(voiceResponses: const []);
     final service = AudioService(tts: tts, isWeb: false);
     addTearDown(service.dispose);
