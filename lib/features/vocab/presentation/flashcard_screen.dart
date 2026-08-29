@@ -303,14 +303,7 @@ class _FlashcardSurface extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colors.primary.withValues(alpha: 0.08),
-                colors.surface,
-              ],
-            ),
+            color: colors.surface,
           ),
           child: child,
         ),

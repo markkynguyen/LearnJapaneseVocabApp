@@ -25,14 +25,7 @@ class VocabularyStudyCard extends StatelessWidget {
     final content = Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colors.primary.withValues(alpha: 0.08),
-            colors.surface,
-          ],
-        ),
+        color: colors.surface,
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
