@@ -26,4 +26,4 @@ Future<List<VocabSearchResult>> homeVocabSuggestions(
   HomeVocabSuggestionsRef ref,
   String query,
 ) =>
-    ref.watch(cloudStoreProvider).searchAllVocab(query, limit: 4);
+    ref.watch(cloudStoreProvider).searchAllVocab(query, limit: 100);

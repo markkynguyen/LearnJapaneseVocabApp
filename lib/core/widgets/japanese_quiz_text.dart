@@ -21,7 +21,8 @@ class JapaneseQuizText extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final basePrimary = primaryStyle ??
         Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w400,
+              fontSize: 36,
               height: 1.18,
             );
     final baseSecondary = secondaryStyle ??

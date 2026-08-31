@@ -198,7 +198,8 @@ class _LearningQuestionView extends ConsumerWidget {
                     question.prompt,
                     style:
                         Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 36,
                             ),
                   ),
                 if (question.item.vocab.note?.trim().isNotEmpty == true) ...[
@@ -218,7 +219,8 @@ class _LearningQuestionView extends ConsumerWidget {
                     text: question.japaneseDisplay,
                     primaryStyle:
                         Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 32,
                             ),
                   ),
                 ],
@@ -301,6 +303,7 @@ class _LearningChoiceLabel extends StatelessWidget {
         choice.value,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w400,
+              fontSize: 22,
             ),
       );
     }
@@ -309,7 +312,8 @@ class _LearningChoiceLabel extends StatelessWidget {
     return JapaneseQuizText(
       text: display,
       primaryStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w400,
+            fontSize: 26,
           ),
       secondaryStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: colors.onSurfaceVariant,
@@ -470,8 +474,8 @@ class _LearningJapaneseFeedbackDetail extends StatelessWidget {
             text: value,
             primaryStyle: const TextStyle(
               height: 1.35,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+              fontSize: 26,
+              fontWeight: FontWeight.w400,
             ),
             secondaryStyle: TextStyle(
               color: colors.onSurfaceVariant,

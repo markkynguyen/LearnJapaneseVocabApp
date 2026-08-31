@@ -349,22 +349,25 @@ class _SuggestionPanel extends StatelessWidget {
       color: colors.surfaceContainerLow,
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (var index = 0; index < items.length; index++) ...[
-            _SuggestionTile(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 350),
+        child: Scrollbar(
+          child: ListView.separated(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            itemCount: items.length,
+            separatorBuilder: (context, index) => Divider(
+              height: 1,
+              indent: 16,
+              endIndent: 16,
+              color: colors.outlineVariant,
+            ),
+            itemBuilder: (context, index) => _SuggestionTile(
               result: items[index],
               onTap: () => onSelected(items[index]),
             ),
-            if (index < items.length - 1)
-              Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 16,
-                color: colors.outlineVariant,
-              ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
