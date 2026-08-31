@@ -80,6 +80,8 @@ void main() {
 
     await tester.tap(find.byTooltip('Tăng').first);
     await tester.pump();
+    await tester.tap(find.text('Cả hai'));
+    await tester.pump();
 
     expect(store.saveCallCount, 0);
     expect(tester.widget<FilledButton>(saveButton).onPressed, isNotNull);
@@ -89,6 +91,7 @@ void main() {
 
     expect(store.saveCallCount, 1);
     expect(store.lastSavedSettings?.newWordSessionSize, 6);
+    expect(store.lastSavedSettings?.quizJapaneseScript, quizScriptBothValue);
     expect(find.text('Đã lưu cài đặt lên cloud.'), findsOneWidget);
   });
 
@@ -199,11 +202,13 @@ class _FakeCloudStore extends CloudStore {
   AppSettings? lastSavedSettings;
   String _themeMode = lightThemeModeValue;
   int _sessionSize = 10;
+  String _quizJapaneseScript = quizScriptKanjiValue;
 
   @override
   Future<AppSettings> getSettings(String deviceId) async => AppSettings(
         themeMode: _themeMode,
         sessionSize: _sessionSize,
+        quizJapaneseScript: _quizJapaneseScript,
       );
 
   @override
@@ -216,5 +221,6 @@ class _FakeCloudStore extends CloudStore {
     await saveGate?.future;
     _themeMode = settings.themeMode;
     _sessionSize = settings.sessionSize;
+    _quizJapaneseScript = settings.quizJapaneseScript;
   }
 }
