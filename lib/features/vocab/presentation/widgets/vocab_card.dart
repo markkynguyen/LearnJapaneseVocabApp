@@ -63,6 +63,7 @@ class VocabCard extends ConsumerWidget {
                         (vocab.kanji?.trim().isNotEmpty ?? false)
                             ? vocab.kanji!.trim()
                             : vocab.kana,
+                        locale: const Locale('ja', 'JP'),
                         style: TextStyle(
                           color: colors.onSurface,
                           fontSize: 26,

@@ -335,6 +335,7 @@ class _FlashcardFront extends StatelessWidget {
           Text(
             vocab.kanji!.trim(),
             textAlign: TextAlign.center,
+            locale: const Locale('ja', 'JP'),
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.w400,
                   height: 1.12,

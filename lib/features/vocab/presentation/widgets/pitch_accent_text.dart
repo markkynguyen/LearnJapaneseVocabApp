@@ -36,6 +36,7 @@ class PitchAccentText extends StatelessWidget {
     if (normalized == null) {
       return Text(
         kana,
+        locale: const Locale('ja', 'JP'),
         style: TextStyle(
           color: textColor ?? Theme.of(context).colorScheme.onSurface,
           fontSize: fontSize,
@@ -230,6 +231,7 @@ class _PitchAccentRow extends StatelessWidget {
               softWrap: false,
               overflow: TextOverflow.visible,
               textAlign: TextAlign.center,
+              locale: const Locale('ja', 'JP'),
               style: textStyle,
             ),
           ),
@@ -413,7 +415,7 @@ double _measureMoraWidth(
 ) {
   final fontSize = style.fontSize ?? 18;
   final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
+    text: TextSpan(text: text, style: style, locale: const Locale('ja', 'JP')),
     textDirection: Directionality.of(context),
     maxLines: 1,
     textScaler: MediaQuery.textScalerOf(context),
