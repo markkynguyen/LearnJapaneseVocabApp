@@ -5,6 +5,7 @@ import '../../../../core/audio/audio_service.dart';
 import '../../../../core/constants/srs_constants.dart';
 import '../../../../core/models/app_models.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/time_utils.dart';
 import 'pitch_accent_text.dart';
 import 'srs_level_badge.dart';
@@ -63,11 +64,12 @@ class VocabCard extends ConsumerWidget {
                         (vocab.kanji?.trim().isNotEmpty ?? false)
                             ? vocab.kanji!.trim()
                             : vocab.kana,
-                        locale: const Locale('ja', 'JP'),
-                        style: TextStyle(
+                        locale: AppTypography.japaneseLocale,
+                        style: AppTypography.japanese(
+                          null,
                           color: colors.onSurface,
                           fontSize: 26,
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w500,
                           height: 1.15,
                         ),
                       ),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/quiz_utils.dart';
 import '../../../core/widgets/japanese_quiz_text.dart';
 import '../../vocab/presentation/widgets/pitch_accent_text.dart';
@@ -196,11 +197,10 @@ class _LearningQuestionView extends ConsumerWidget {
                 else
                   Text(
                     question.prompt,
-                    style:
-                        Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 36,
-                            ),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 36,
+                        ),
                   ),
                 if (question.item.vocab.note?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 10),
@@ -219,7 +219,7 @@ class _LearningQuestionView extends ConsumerWidget {
                     text: question.japaneseDisplay,
                     primaryStyle:
                         Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w400,
+                              fontWeight: FontWeight.w500,
                               fontSize: 32,
                             ),
                   ),
@@ -312,7 +312,7 @@ class _LearningChoiceLabel extends StatelessWidget {
     return JapaneseQuizText(
       text: display,
       primaryStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
             fontSize: 26,
           ),
       secondaryStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -386,9 +386,11 @@ class _LearningFeedbackDialog extends ConsumerWidget {
                 if (vocab.kanji?.trim().isNotEmpty == true) ...[
                   Text(
                     vocab.kanji!.trim(),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w400,
-                        ),
+                    locale: AppTypography.japaneseLocale,
+                    style: AppTypography.japanese(
+                      Theme.of(context).textTheme.headlineMedium,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 6),
                 ],
@@ -400,7 +402,8 @@ class _LearningFeedbackDialog extends ConsumerWidget {
                   textColor: colors.onSurfaceVariant,
                 ),
                 const SizedBox(height: 14),
-                if (feedback.question.expectedJapaneseDisplay case final answer?)
+                if (feedback.question.expectedJapaneseDisplay
+                    case final answer?)
                   _LearningJapaneseFeedbackDetail(
                     label: 'Đáp án đúng',
                     value: answer,
@@ -475,7 +478,7 @@ class _LearningJapaneseFeedbackDetail extends StatelessWidget {
             primaryStyle: const TextStyle(
               height: 1.35,
               fontSize: 26,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
             ),
             secondaryStyle: TextStyle(
               color: colors.onSurfaceVariant,

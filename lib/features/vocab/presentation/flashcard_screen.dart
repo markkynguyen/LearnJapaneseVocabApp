@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/models/app_models.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../settings/presentation/providers/settings_provider.dart';
 import 'providers/flashcard_provider.dart';
 import 'widgets/pitch_accent_text.dart';
@@ -335,11 +336,12 @@ class _FlashcardFront extends StatelessWidget {
           Text(
             vocab.kanji!.trim(),
             textAlign: TextAlign.center,
-            locale: const Locale('ja', 'JP'),
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontWeight: FontWeight.w400,
-                  height: 1.12,
-                ),
+            locale: AppTypography.japaneseLocale,
+            style: AppTypography.japanese(
+              Theme.of(context).textTheme.displayMedium,
+              fontWeight: FontWeight.w500,
+              height: 1.12,
+            ),
           )
         else
           Center(

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../core/pitch_accent/pitch_accent_utils.dart';
+import '../../../../core/theme/app_typography.dart';
 
 const _pitchAccentLineHeight = 1.5;
 const _pitchAccentLineOpacity = 0.5;
@@ -13,7 +14,7 @@ class PitchAccentText extends StatelessWidget {
     required this.kana,
     required this.pattern,
     this.fontSize = 18,
-    this.fontWeight = FontWeight.w800,
+    this.fontWeight = FontWeight.w600,
     this.textColor,
     this.accentColor,
     this.showPattern = false,
@@ -36,8 +37,9 @@ class PitchAccentText extends StatelessWidget {
     if (normalized == null) {
       return Text(
         kana,
-        locale: const Locale('ja', 'JP'),
-        style: TextStyle(
+        locale: AppTypography.japaneseLocale,
+        style: AppTypography.japanese(
+          null,
           color: textColor ?? Theme.of(context).colorScheme.onSurface,
           fontSize: fontSize,
           fontWeight: fontWeight,
@@ -93,7 +95,7 @@ class PitchAccentReading extends StatelessWidget {
     required this.pattern,
     this.romaji,
     this.fontSize = 18,
-    this.fontWeight = FontWeight.w800,
+    this.fontWeight = FontWeight.w600,
     this.textColor,
     this.accentColor,
     this.overlayAccent = true,
@@ -165,7 +167,8 @@ class _PitchAccentLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = TextStyle(
+    final textStyle = AppTypography.japanese(
+      null,
       color: textColor,
       fontSize: fontSize,
       fontWeight: fontWeight,
@@ -231,7 +234,7 @@ class _PitchAccentRow extends StatelessWidget {
               softWrap: false,
               overflow: TextOverflow.visible,
               textAlign: TextAlign.center,
-              locale: const Locale('ja', 'JP'),
+              locale: AppTypography.japaneseLocale,
               style: textStyle,
             ),
           ),
@@ -415,7 +418,11 @@ double _measureMoraWidth(
 ) {
   final fontSize = style.fontSize ?? 18;
   final painter = TextPainter(
-    text: TextSpan(text: text, style: style, locale: const Locale('ja', 'JP')),
+    text: TextSpan(
+      text: text,
+      style: style,
+      locale: AppTypography.japaneseLocale,
+    ),
     textDirection: Directionality.of(context),
     maxLines: 1,
     textScaler: MediaQuery.textScalerOf(context),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/app_models.dart';
+import '../../../../core/theme/app_typography.dart';
 import 'pitch_accent_text.dart';
 
 class VocabularyStudyCard extends StatelessWidget {
@@ -45,11 +46,12 @@ class VocabularyStudyCard extends StatelessWidget {
                 child: Text(
                   vocab.kanji!.trim(),
                   textAlign: TextAlign.center,
-                  locale: const Locale('ja', 'JP'),
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontWeight: FontWeight.w400,
-                        height: 1.12,
-                      ),
+                  locale: AppTypography.japaneseLocale,
+                  style: AppTypography.japanese(
+                    Theme.of(context).textTheme.displayMedium,
+                    fontWeight: FontWeight.w500,
+                    height: 1.12,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),

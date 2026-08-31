@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
+import 'app_typography.dart';
 
 abstract final class AppTheme {
   static ThemeData light() {
@@ -54,6 +55,7 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      fontFamilyFallback: AppTypography.japaneseFontFamilyFallback,
       colorScheme: scheme,
       scaffoldBackgroundColor: background,
       appBarTheme: AppBarTheme(
@@ -61,6 +63,11 @@ abstract final class AppTheme {
         foregroundColor: onSurface,
         centerTitle: false,
         elevation: 0,
+        titleTextStyle: TextStyle(
+          color: onSurface,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       cardTheme: CardThemeData(
         color: surface,
@@ -74,15 +81,42 @@ abstract final class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: onSurfaceVariant, width: 2),
+          side: BorderSide(color: primary.withValues(alpha: 0.5), width: 1.33),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
+      ),
+      chipTheme: ChipThemeData(
+        labelStyle: TextStyle(
+          color: onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+        secondaryLabelStyle: TextStyle(
+          color: onSurface,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+          return TextStyle(
+            color: isSelected ? onSurface : onSurfaceVariant,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          );
+        }),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

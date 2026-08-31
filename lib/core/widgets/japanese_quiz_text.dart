@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_typography.dart';
 import '../utils/quiz_utils.dart';
 
 class JapaneseQuizText extends StatelessWidget {
@@ -21,7 +22,7 @@ class JapaneseQuizText extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final basePrimary = primaryStyle ??
         Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
               fontSize: 36,
               height: 1.18,
             );
@@ -35,8 +36,9 @@ class JapaneseQuizText extends StatelessWidget {
     if (!text.hasSecondary) {
       return Text(
         text.primary,
+        locale: AppTypography.japaneseLocale,
         textAlign: textAlign,
-        style: basePrimary,
+        style: AppTypography.japanese(basePrimary),
       );
     }
 
@@ -46,14 +48,16 @@ class JapaneseQuizText extends StatelessWidget {
       children: [
         Text(
           text.primary,
+          locale: AppTypography.japaneseLocale,
           textAlign: textAlign,
-          style: basePrimary,
+          style: AppTypography.japanese(basePrimary),
         ),
         const SizedBox(height: 4),
         Text(
           text.secondary!.trim(),
+          locale: AppTypography.japaneseLocale,
           textAlign: textAlign,
-          style: baseSecondary,
+          style: AppTypography.japanese(baseSecondary),
         ),
       ],
     );

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/quiz_utils.dart';
 import '../../../core/widgets/japanese_quiz_text.dart';
 import '../../vocab/presentation/vocab_form_screen.dart';
@@ -513,7 +514,7 @@ class _ChoiceLabel extends StatelessWidget {
     return JapaneseQuizText(
       text: display,
       primaryStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
             fontSize: 26,
           ),
       secondaryStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -591,9 +592,11 @@ class _AnswerFeedbackDialog extends ConsumerWidget {
                 if (vocab.kanji?.trim().isNotEmpty == true) ...[
                   Text(
                     vocab.kanji!.trim(),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w400,
-                        ),
+                    locale: AppTypography.japaneseLocale,
+                    style: AppTypography.japanese(
+                      Theme.of(context).textTheme.headlineMedium,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 6),
                 ],
@@ -685,7 +688,7 @@ class _JapaneseDetailLine extends StatelessWidget {
             primaryStyle: const TextStyle(
               height: 1.35,
               fontSize: 26,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
             ),
             secondaryStyle: TextStyle(
               color: colors.onSurfaceVariant,
