@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/audio/audio_service.dart';
+import '../../../../core/constants/srs_constants.dart';
 import '../../../../core/models/app_models.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../../../vocab/presentation/widgets/vocabulary_study_card.dart';
+import '../../../vocab/presentation/providers/vocab_list_provider.dart';
 import '../providers/home_provider.dart';
 
 class HomeVocabSearch extends ConsumerStatefulWidget {
@@ -102,73 +106,225 @@ class _HomeVocabSearchState extends ConsumerState<HomeVocabSearch> {
 
   Future<void> _showDetails(VocabSearchResult result) {
     FocusScope.of(context).unfocus();
+    final pageContext = context;
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        clipBehavior: Clip.antiAlias,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: SizedBox(
-            width: double.maxFinite,
-            height: MediaQuery.sizeOf(context).height * 0.82,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.folder_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          result.folder.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                        ),
-                      ),
-                      IconButton.filledTonal(
-                        tooltip: 'Phát âm',
-                        onPressed: () => ref
-                            .read(audioServiceProvider)
-                            .speak(result.item.vocab),
-                        icon: const Icon(Icons.volume_up_rounded),
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        tooltip: 'Đóng',
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: VocabularyStudyCard(
-                      vocab: result.item.vocab,
-                      emptyDetailsMessage: null,
-                      framed: false,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      builder: (context) => _HomeVocabDetailDialog(
+        result: result,
+        onEdit: () => pageContext.push(
+          AppRoutes.editVocab(
+            result.item.vocab.id,
+            folderId: result.item.vocab.folderId,
           ),
         ),
       ),
     );
   }
 }
+
+class _HomeVocabDetailDialog extends ConsumerStatefulWidget {
+  const _HomeVocabDetailDialog({
+    required this.result,
+    required this.onEdit,
+  });
+
+  final VocabSearchResult result;
+  final VoidCallback onEdit;
+
+  @override
+  ConsumerState<_HomeVocabDetailDialog> createState() =>
+      _HomeVocabDetailDialogState();
+}
+
+class _HomeVocabDetailDialogState
+    extends ConsumerState<_HomeVocabDetailDialog> {
+  late int _level;
+  bool _isApplyingSrs = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _level = widget.result.item.progress.level;
+  }
+
+  bool get _canAdjustSrs => _level >= SrsConstants.minLevel + 1;
+
+  VocabWithProgress get _currentItem => VocabWithProgress(
+        vocab: widget.result.item.vocab,
+        progress: widget.result.item.progress.copyWith(level: _level),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final result = widget.result;
+    final colors = Theme.of(context).colorScheme;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: SizedBox(
+          width: double.maxFinite,
+          height: MediaQuery.sizeOf(context).height * 0.82,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.folder_rounded, color: colors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        result.folder.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      tooltip: 'Phát âm',
+                      onPressed: () => ref
+                          .read(audioServiceProvider)
+                          .speak(result.item.vocab),
+                      icon: const Icon(Icons.volume_up_rounded),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: 'Đóng',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: VocabularyStudyCard(
+                    vocab: result.item.vocab,
+                    emptyDetailsMessage: null,
+                    framed: false,
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: colors.outlineVariant),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        onPressed: _isApplyingSrs ? null : _openEdit,
+                        icon: const Icon(Icons.edit_rounded),
+                        label: const Text('Sửa từ vựng'),
+                      ),
+                    ),
+                    if (_canAdjustSrs) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _isApplyingSrs
+                                  ? null
+                                  : () => _confirmAndApply(_SrsAction.minusOne),
+                              icon: const Icon(Icons.trending_down_rounded),
+                              label: const Text('Giảm 1 level'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _isApplyingSrs
+                                  ? null
+                                  : () => _confirmAndApply(_SrsAction.reset),
+                              icon: const Icon(Icons.restart_alt_rounded),
+                              label: const Text('Reset về level 1'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEdit() {
+    Navigator.of(context).pop();
+    widget.onEdit();
+  }
+
+  Future<void> _confirmAndApply(_SrsAction action) async {
+    final targetLevel =
+        action == _SrsAction.minusOne ? _level - 1 : SrsConstants.minLevel;
+    final actionLabel =
+        action == _SrsAction.minusOne ? 'Giảm 1 level' : 'Reset về level 1';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$actionLabel?'),
+        content: Text(
+          'Từ "${widget.result.item.vocab.kana}" sẽ chuyển từ Lv $_level '
+          'về Lv $targetLevel. Lịch ôn sẽ được tính lại.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() => _isApplyingSrs = true);
+    final controller = ref.read(vocabListControllerProvider.notifier);
+    if (action == _SrsAction.minusOne) {
+      await controller.manualMinus1(_currentItem);
+    } else {
+      await controller.manualReset(_currentItem);
+    }
+
+    if (!mounted) {
+      return;
+    }
+    final update = ref.read(vocabListControllerProvider);
+    setState(() => _isApplyingSrs = false);
+    if (update.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể cập nhật level. Hãy thử lại.')),
+      );
+      return;
+    }
+
+    setState(() => _level = targetLevel);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Đã $actionLabel'.replaceFirst('Reset', 'reset'))),
+    );
+  }
+}
+
+enum _SrsAction { minusOne, reset }
 
 class _SuggestionPanel extends StatelessWidget {
   const _SuggestionPanel({

@@ -67,6 +67,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Hiển thị trong quiz'), findsOneWidget);
+    expect(find.text('Kanji'), findsOneWidget);
+    expect(find.text('Kana'), findsOneWidget);
+    expect(find.text('Cả hai'), findsOneWidget);
+
     final saveButton = find.ancestor(
       of: find.text('Lưu'),
       matching: find.byType(FilledButton),

@@ -122,13 +122,14 @@ class LearningRepository {
         settings.newWordChooseWordCount > 0 ||
         settings.newWordChooseMeaningCount > 0;
     for (final item in words) {
-      final japanese = japaneseForQuiz(item.vocab, settings.quizJapaneseScript);
+      final japanese =
+          japaneseDisplayForQuiz(item.vocab, settings.quizJapaneseScript);
       if (settings.newWordWriteCount > 0) {
         guided.add(
           LearningQuestion(
             item: item,
             type: LearningQuestionType.guidedWrite,
-            japaneseText: japanese,
+            japaneseDisplay: japanese,
             choices: const [],
           ),
         );
@@ -139,7 +140,7 @@ class LearningRepository {
             LearningQuestion(
               item: item,
               type: type,
-              japaneseText: japanese,
+              japaneseDisplay: japanese,
               choices: _choices(item, type, pool, settings),
               requirementId: '${item.vocab.id}-${type.name}-$index',
             ),
@@ -163,7 +164,7 @@ class LearningRepository {
     return [...guided, ...graded];
   }
 
-  List<String> _choices(
+  List<QuizChoice> _choices(
     VocabWithProgress item,
     LearningQuestionType type,
     List<VocabWithProgress> pool,
@@ -174,19 +175,43 @@ class LearningRepository {
         type != LearningQuestionType.chooseMeaning) {
       return const [];
     }
-    final expected = type == LearningQuestionType.chooseWord
-        ? japaneseForQuiz(item.vocab, settings.quizJapaneseScript)
-        : item.vocab.meaning;
+    if (type == LearningQuestionType.chooseWord) {
+      final expectedDisplay =
+          japaneseDisplayForQuiz(item.vocab, settings.quizJapaneseScript);
+      final displaysByValue = <String, QuizJapaneseText>{
+        expectedDisplay.primary: expectedDisplay,
+      };
+      for (final candidate in pool.where(
+        (candidate) => candidate.vocab.id != item.vocab.id,
+      )) {
+        final display =
+            japaneseDisplayForQuiz(candidate.vocab, settings.quizJapaneseScript);
+        if (display.primary.trim().isNotEmpty) {
+          displaysByValue.putIfAbsent(display.primary, () => display);
+        }
+      }
+      return buildPrioritizedLearningChoices(
+        expected: expectedDisplay.primary,
+        candidateValues: displaysByValue.keys.where(
+          (value) => value != expectedDisplay.primary,
+        ),
+      )
+          .map(
+            (value) => QuizChoice(
+              value: value,
+              japaneseDisplay: displaysByValue[value],
+            ),
+          )
+          .toList();
+    }
+
+    final expected = item.vocab.meaning;
     return buildPrioritizedLearningChoices(
       expected: expected,
       candidateValues: pool
           .where((candidate) => candidate.vocab.id != item.vocab.id)
-          .map(
-            (candidate) => type == LearningQuestionType.chooseWord
-                ? japaneseForQuiz(candidate.vocab, settings.quizJapaneseScript)
-                : candidate.vocab.meaning,
-          ),
-    );
+          .map((candidate) => candidate.vocab.meaning),
+    ).map((value) => QuizChoice(value: value)).toList();
   }
 }
 

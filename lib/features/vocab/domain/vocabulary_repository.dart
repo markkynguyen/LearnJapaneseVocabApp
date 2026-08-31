@@ -53,6 +53,15 @@ class VocabularyRepository {
         note: _emptyToNull(note),
       );
 
+  Future<void> updateNote({
+    required String vocabId,
+    String? note,
+  }) =>
+      _store.updateVocabNote(
+        id: vocabId,
+        note: _emptyToNull(note),
+      );
+
   String? _emptyToNull(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;

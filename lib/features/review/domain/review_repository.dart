@@ -85,8 +85,7 @@ class ReviewRepository {
       final item = result.item;
       final progress = item.progress;
       SrsResult? srsResult;
-      if (result.wrongAnswers >= 3 &&
-          progress.level != SrsConstants.unlearnedLevel) {
+      if (result.requiresSrsDecision) {
         srsResult = switch (result.srsDecision) {
           ReviewSrsDecision.minusOne => engine.processMinus1(progress),
           ReviewSrsDecision.reset => engine.processReset(progress),
@@ -185,8 +184,8 @@ class ReviewRepository {
           ReviewQuestion(
             item: item,
             type: type,
-            japaneseText:
-                japaneseForQuiz(item.vocab, settings.quizJapaneseScript),
+            japaneseDisplay:
+                japaneseDisplayForQuiz(item.vocab, settings.quizJapaneseScript),
             choices: _choices(item, type, words, settings),
             retryCount: 0,
           ),
@@ -207,7 +206,7 @@ class ReviewRepository {
     return [...writeQuestions, ...otherQuestions];
   }
 
-  List<String> _choices(
+  List<QuizChoice> _choices(
     VocabWithProgress item,
     ReviewQuestionType type,
     List<VocabWithProgress> words,
@@ -218,20 +217,53 @@ class ReviewRepository {
         type != ReviewQuestionType.listen) {
       return const [];
     }
-    final expected = type == ReviewQuestionType.chooseWord
-        ? japaneseForQuiz(item.vocab, settings.quizJapaneseScript)
-        : item.vocab.meaning;
+    if (type == ReviewQuestionType.chooseWord) {
+      final expectedDisplay =
+          japaneseDisplayForQuiz(item.vocab, settings.quizJapaneseScript);
+      final candidateDisplays = words
+          .where((word) => word.vocab.id != item.vocab.id)
+          .map(
+            (word) =>
+                japaneseDisplayForQuiz(word.vocab, settings.quizJapaneseScript),
+          )
+          .where((display) => display.primary != expectedDisplay.primary);
+      return _buildJapaneseChoices(expectedDisplay, candidateDisplays);
+    }
+
+    final expected = item.vocab.meaning;
     final distractors = words
         .where((word) => word.vocab.id != item.vocab.id)
-        .map(
-          (word) => type == ReviewQuestionType.chooseWord
-              ? japaneseForQuiz(word.vocab, settings.quizJapaneseScript)
-              : word.vocab.meaning,
-        )
+        .map((word) => word.vocab.meaning)
         .where((value) => value.trim().isNotEmpty && value != expected)
         .toSet()
         .toList()
       ..shuffle(Random());
-    return [expected, ...distractors.take(3)]..shuffle(Random());
+    final choices = [expected, ...distractors.take(3)]..shuffle(Random());
+    return choices.map((value) => QuizChoice(value: value)).toList();
+  }
+
+  List<QuizChoice> _buildJapaneseChoices(
+    QuizJapaneseText expected,
+    Iterable<QuizJapaneseText> candidateDisplays,
+  ) {
+    final byValue = <String, QuizJapaneseText>{expected.primary: expected};
+    for (final display in candidateDisplays) {
+      if (display.primary.trim().isNotEmpty) {
+        byValue.putIfAbsent(display.primary, () => display);
+      }
+    }
+    final distractors = byValue.keys
+        .where((value) => value != expected.primary)
+        .toList()
+      ..shuffle(Random());
+    final values = [expected.primary, ...distractors.take(3)]..shuffle(Random());
+    return values
+        .map(
+          (value) => QuizChoice(
+            value: value,
+            japaneseDisplay: byValue[value],
+          ),
+        )
+        .toList();
   }
 }

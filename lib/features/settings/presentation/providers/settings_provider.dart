@@ -12,6 +12,7 @@ const lightThemeModeValue = 'light';
 const darkThemeModeValue = 'dark';
 const quizScriptKanjiValue = 'kanji';
 const quizScriptKanaValue = 'kana';
+const quizScriptBothValue = 'both';
 
 @riverpod
 Future<AppSettings> appSettings(AppSettingsRef ref) async {

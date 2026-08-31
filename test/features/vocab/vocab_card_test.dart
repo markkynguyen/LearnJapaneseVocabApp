@@ -44,7 +44,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('high pitch lines use kana color and fill each mora cell',
+  testWidgets('consecutive high pitch mora render as one muted line',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -65,11 +65,10 @@ void main() {
         matching: find.byType(Positioned),
       ),
     );
-    expect(positioned, hasLength(3));
-    expect(
-      positioned.every((line) => line.left == 0 && line.right == 0),
-      isTrue,
-    );
+    expect(positioned, hasLength(1));
+    expect(positioned.single.left, 0);
+    expect(positioned.single.right, isNull);
+    expect(positioned.single.width, greaterThan(0));
 
     final lines = tester.widgetList<AnimatedContainer>(
       find.descendant(
@@ -79,7 +78,57 @@ void main() {
     );
     final colors =
         lines.map((line) => (line.decoration! as BoxDecoration).color).toList();
-    expect(colors, [Colors.green, Colors.green, Colors.transparent]);
+    expect(
+      colors,
+      [
+        Colors.green.withValues(alpha: 0.5),
+      ],
+    );
+    expect(
+      tester
+          .getSize(
+            find
+                .descendant(
+                  of: find.byType(PitchAccentText),
+                  matching: find.byType(AnimatedContainer),
+                )
+                .first,
+          )
+          .height,
+      1.5,
+    );
+  });
+
+  testWidgets('large compound kana keep spacing while pitch line stays joined',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: PitchAccentText(
+                kana: 'べんきょうします',
+                pattern: 'LHHHHLL',
+                fontSize: 44,
+                overlayAccent: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final lineFinder = find.descendant(
+      of: find.byType(PitchAccentText),
+      matching: find.byType(AnimatedContainer),
+    );
+    expect(lineFinder, findsOneWidget);
+
+    final kyoRect = tester.getRect(find.text('きょ'));
+    final uRect = tester.getRect(find.text('う'));
+    expect(kyoRect.right <= uRect.left, isTrue);
+    expect(tester.getSize(find.text('きょ')).width, greaterThan(40));
   });
 
   testWidgets('kana-only flashcard renders pitch accent as its title',
@@ -101,12 +150,55 @@ void main() {
 
     final pitch = tester.widget<PitchAccentText>(
       find.byWidgetPredicate(
-        (widget) => widget is PitchAccentText && widget.fontSize == 36,
+        (widget) => widget is PitchAccentText && widget.fontSize == 44,
       ),
     );
     expect(pitch.kana, 'たべる');
     expect(pitch.pattern, 'HHL');
+    expect(
+      tester.widget<Text>(find.text('taberu')).style?.fontSize,
+      Theme.of(tester.element(find.text('taberu')))
+          .textTheme
+          .titleLarge
+          ?.fontSize,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(Card),
+        matching: find.byIcon(Icons.style_rounded),
+      ),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('flashcard matches detail typography when a kanji is present',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          flashcardVocabularyProvider('folder-1').overrideWith(
+            (ref) => [_item()],
+          ),
+        ],
+        child: const MaterialApp(
+          home: FlashcardScreen(folderId: 'folder-1', folderName: 'N5'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final kanjiFinder = find.text('食べる');
+    expect(
+      tester.widget<Text>(kanjiFinder).style?.fontSize,
+      Theme.of(tester.element(kanjiFinder)).textTheme.displayMedium?.fontSize,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is PitchAccentText && widget.fontSize == 30,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('missing pitch pattern falls back to plain kana', (tester) async {

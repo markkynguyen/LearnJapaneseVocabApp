@@ -320,10 +320,10 @@ class _ResultWordTile extends StatelessWidget {
                   child: hasKanji
                       ? Text(
                           vocab.kanji!.trim(),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                  ),
                         )
                       : PitchAccentReading(
                           kana: vocab.kana,

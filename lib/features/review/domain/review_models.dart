@@ -1,5 +1,6 @@
 import '../../../core/constants/srs_constants.dart';
 import '../../../core/models/app_models.dart';
+import '../../../core/utils/quiz_utils.dart';
 
 enum ReviewQuestionType {
   listen,
@@ -22,19 +23,24 @@ enum ReviewQuestionType {
 }
 
 class ReviewQuestion {
-  const ReviewQuestion({
+  ReviewQuestion({
     required this.item,
     required this.type,
-    required this.japaneseText,
-    required this.choices,
+    String? japaneseText,
+    QuizJapaneseText? japaneseDisplay,
+    required Iterable<Object> choices,
     required this.retryCount,
-  });
+  })  : japaneseDisplay =
+            japaneseDisplay ?? quizJapaneseTextFromPlain(japaneseText!),
+        choices = quizChoicesFromObjects(choices);
 
   final VocabWithProgress item;
   final ReviewQuestionType type;
-  final String japaneseText;
-  final List<String> choices;
+  final QuizJapaneseText japaneseDisplay;
+  final List<QuizChoice> choices;
   final int retryCount;
+
+  String get japaneseText => japaneseDisplay.primary;
 
   String get expectedAnswer {
     final vocab = item.vocab;
@@ -47,6 +53,20 @@ class ReviewQuestion {
         return japaneseText;
     }
   }
+
+  QuizJapaneseText? get expectedJapaneseDisplay {
+    switch (type) {
+      case ReviewQuestionType.write:
+      case ReviewQuestionType.chooseWord:
+        return japaneseDisplay;
+      case ReviewQuestionType.listen:
+      case ReviewQuestionType.chooseMeaning:
+        return null;
+    }
+  }
+
+  QuizJapaneseText? get promptJapaneseDisplay =>
+      type == ReviewQuestionType.chooseMeaning ? japaneseDisplay : null;
 
   String get prompt {
     final vocab = item.vocab;
@@ -65,7 +85,7 @@ class ReviewQuestion {
     return ReviewQuestion(
       item: item,
       type: type,
-      japaneseText: japaneseText,
+      japaneseDisplay: japaneseDisplay,
       choices: choices,
       retryCount: retryCount + 1,
     );
@@ -79,6 +99,7 @@ class ReviewWordResult {
     this.correctAnswers = 0,
     this.wrongAnswers = 0,
     this.srsDecision,
+    this.forceSrsDecision = false,
   });
 
   final VocabWithProgress item;
@@ -86,16 +107,19 @@ class ReviewWordResult {
   final int correctAnswers;
   final int wrongAnswers;
   final ReviewSrsDecision? srsDecision;
+  final bool forceSrsDecision;
 
   bool get isMarkedForReview => wrongAnswers > 0;
   bool get requiresSrsDecision =>
-      wrongAnswers >= 3 && item.progress.level != SrsConstants.unlearnedLevel;
+      (wrongAnswers >= 3 || forceSrsDecision) &&
+      item.progress.level != SrsConstants.unlearnedLevel;
   bool get needsSrsDecision => requiresSrsDecision && srsDecision == null;
 
   ReviewWordResult copyWith({
     int? correctAnswers,
     int? wrongAnswers,
     ReviewSrsDecision? srsDecision,
+    bool? forceSrsDecision,
   }) {
     return ReviewWordResult(
       item: item,
@@ -103,6 +127,7 @@ class ReviewWordResult {
       correctAnswers: correctAnswers ?? this.correctAnswers,
       wrongAnswers: wrongAnswers ?? this.wrongAnswers,
       srsDecision: srsDecision ?? this.srsDecision,
+      forceSrsDecision: forceSrsDecision ?? this.forceSrsDecision,
     );
   }
 }

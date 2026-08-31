@@ -1,12 +1,14 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jvocab/core/cloud/cloud_store.dart';
 import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/core/utils/quiz_utils.dart';
 import 'package:jvocab/features/folders/presentation/widgets/folder_progress_list.dart';
 import 'package:jvocab/features/learning/domain/learning_models.dart';
 import 'package:jvocab/features/learning/domain/learning_repository.dart';
 import 'package:jvocab/features/learning/domain/learning_session_engine.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   test('guided write advances without counting an answer', () {
@@ -80,10 +82,88 @@ void main() {
   test('quiz script uses kana or kanji with kana fallback', () {
     final item = _item();
     final kanaOnly = _item(id: 'vocab-2', kanji: null);
+    final matchingKanji = _item(id: 'vocab-3', kanji: 'たべる');
 
     expect(japaneseForQuiz(item.vocab, quizScriptKanji), '食べる');
     expect(japaneseForQuiz(item.vocab, quizScriptKana), 'たべる');
     expect(japaneseForQuiz(kanaOnly.vocab, quizScriptKanji), 'たべる');
+
+    final both = japaneseDisplayForQuiz(item.vocab, quizScriptBoth);
+    expect(both.primary, '食べる');
+    expect(both.secondary, 'たべる');
+    expect(both.acceptedAnswers, ['食べる', 'たべる']);
+    expect(matchesJapaneseAnswer(item.vocab, quizScriptBoth, '食べる'), isTrue);
+    expect(matchesJapaneseAnswer(item.vocab, quizScriptBoth, 'たべる'), isTrue);
+
+    final kanaOnlyBoth = japaneseDisplayForQuiz(kanaOnly.vocab, quizScriptBoth);
+    expect(kanaOnlyBoth.primary, 'たべる');
+    expect(kanaOnlyBoth.secondary, isNull);
+
+    final matchingBoth =
+        japaneseDisplayForQuiz(matchingKanji.vocab, quizScriptBoth);
+    expect(matchingBoth.primary, 'たべる');
+    expect(matchingBoth.secondary, isNull);
+  });
+
+  test('both-script writing accepts either kanji or kana', () {
+    final item = _item();
+    final question = LearningQuestion(
+      item: item,
+      type: LearningQuestionType.write,
+      japaneseDisplay: japaneseDisplayForQuiz(item.vocab, quizScriptBoth),
+      choices: const [],
+      requirementId: 'write-1',
+    );
+    final state = _session(item, [question]);
+
+    final kanjiSubmission = submitLearningAnswer(state, '食べる')!;
+    final kanaSubmission = submitLearningAnswer(state, 'たべる')!;
+
+    expect(kanjiSubmission.feedback.isCorrect, isTrue);
+    expect(kanaSubmission.feedback.isCorrect, isTrue);
+  });
+
+  test('both-script learning repository keeps paired japanese display',
+      () async {
+    final item = _item();
+    final distractor = _item(
+      id: 'vocab-2',
+      kanji: '飲む',
+      kana: 'のむ',
+      meaning: 'uống',
+      level: 1,
+    );
+    final store = _FakeLearningStore(
+      settings: const AppSettings(
+        newWordListenCount: 0,
+        newWordWriteCount: 1,
+        newWordChooseWordCount: 1,
+        newWordChooseMeaningCount: 1,
+        quizJapaneseScript: quizScriptBoth,
+      ),
+      folderWords: [item, distractor],
+    );
+    final repository = LearningRepository(store: store);
+
+    final session = await repository.createSessionFromWords(
+      folderId: 'folder-1',
+      words: [item],
+    );
+
+    final chooseMeaning = session.questions.firstWhere(
+      (question) => question.type == LearningQuestionType.chooseMeaning,
+    );
+    expect(chooseMeaning.promptJapaneseDisplay?.primary, '食べる');
+    expect(chooseMeaning.promptJapaneseDisplay?.secondary, 'たべる');
+
+    final chooseWord = session.questions.firstWhere(
+      (question) => question.type == LearningQuestionType.chooseWord,
+    );
+    final correctChoice = chooseWord.choices.singleWhere(
+      (choice) => choice.value == '食べる',
+    );
+    expect(correctChoice.japaneseDisplay?.primary, '食べる');
+    expect(correctChoice.japaneseDisplay?.secondary, 'たべる');
   });
 
   test('distractors keep priority and remove duplicates', () {
@@ -125,22 +205,62 @@ void main() {
   });
 }
 
-VocabWithProgress _item({String id = 'vocab-1', String? kanji = '食べる'}) {
+class _FakeLearningStore extends CloudStore {
+  _FakeLearningStore({
+    required this.settings,
+    this.folderWords = const [],
+  }) : super(
+          SupabaseClient(
+            'https://example.supabase.co',
+            'test-key',
+            authOptions: const AuthClientOptions(autoRefreshToken: false),
+          ),
+        );
+
+  final AppSettings settings;
+  final List<VocabWithProgress> folderWords;
+
+  @override
+  Future<AppSettings> getLearningSettings() async => settings;
+
+  @override
+  Future<List<VocabWithProgress>> getVocabByFolder(
+    String folderId, {
+    VocabSortMode sortMode = VocabSortMode.newest,
+    String searchQuery = '',
+    bool favoritesOnly = false,
+  }) async =>
+      folderWords;
+
+  @override
+  Future<List<VocabWithProgress>> getAllVocab({
+    bool activeOnly = true,
+  }) async =>
+      const [];
+}
+
+VocabWithProgress _item({
+  String id = 'vocab-1',
+  String? kanji = '食べる',
+  String kana = 'たべる',
+  String meaning = 'ăn',
+  int level = 0,
+}) {
   return VocabWithProgress(
     vocab: VocabularyEntry(
       id: id,
       folderId: 'folder-1',
       kanji: kanji,
-      kana: 'たべる',
+      kana: kana,
       romaji: 'taberu',
-      meaning: 'ăn',
+      meaning: meaning,
       note: 'động từ',
       isFavorite: false,
       createdAt: 0,
     ),
     progress: SrsProgressEntry(
       vocabId: id,
-      level: 0,
+      level: level,
       intervalDays: 0,
       nextReviewAt: 0,
       correctCount: 0,

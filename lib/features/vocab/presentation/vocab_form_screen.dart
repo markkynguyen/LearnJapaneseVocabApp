@@ -6,6 +6,16 @@ import '../../../core/theme/app_theme.dart';
 import 'providers/vocab_form_provider.dart';
 import 'widgets/pitch_accent_picker.dart';
 
+class VocabEditResult {
+  const VocabEditResult({
+    required this.vocabId,
+    required this.changed,
+  });
+
+  final String vocabId;
+  final bool changed;
+}
+
 class VocabFormScreen extends ConsumerStatefulWidget {
   const VocabFormScreen({
     required this.folderId,
@@ -156,6 +166,11 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
         example: _exampleController.text,
         note: _noteController.text,
       );
+    } else if (!_hasChanges(existing)) {
+      Navigator.of(context).pop(
+        VocabEditResult(vocabId: existing.id, changed: false),
+      );
+      return;
     } else {
       await controller.updateExisting(
         existing: existing,
@@ -187,7 +202,36 @@ class _VocabFormScreenState extends ConsumerState<VocabFormScreen> {
         content: Text(existing == null ? 'Đã thêm từ mới' : 'Đã cập nhật từ'),
       ),
     );
-    Navigator.of(context).maybePop();
+    if (existing == null) {
+      Navigator.of(context).maybePop();
+    } else {
+      Navigator.of(context).pop(
+        VocabEditResult(vocabId: existing.id, changed: true),
+      );
+    }
+  }
+
+  bool _hasChanges(VocabularyEntry existing) {
+    return _optionalValue(_kanjiController) != _optionalText(existing.kanji) ||
+        _requiredValue(_kanaController) != existing.kana.trim() ||
+        _requiredValue(_romajiController) != existing.romaji.trim() ||
+        _requiredValue(_meaningController) != existing.meaning.trim() ||
+        _optionalValue(_pitchAccentController) !=
+            _optionalText(existing.pitchAccent) ||
+        _optionalValue(_ttsTextController) != _optionalText(existing.ttsText) ||
+        _optionalValue(_exampleController) != _optionalText(existing.example) ||
+        _optionalValue(_noteController) != _optionalText(existing.note);
+  }
+
+  String _requiredValue(TextEditingController controller) =>
+      controller.text.trim();
+
+  String? _optionalValue(TextEditingController controller) =>
+      _optionalText(controller.text);
+
+  String? _optionalText(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 }
 
@@ -239,7 +283,7 @@ class _VocabFormBody extends ConsumerWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.save_rounded),
-                label: const Text('Save'),
+                label: const Text('Lưu'),
               ),
             ),
         ],

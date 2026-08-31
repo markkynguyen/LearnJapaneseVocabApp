@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jvocab/core/cloud/cloud_store.dart';
 import 'package:jvocab/core/models/app_models.dart';
+import 'package:jvocab/core/utils/quiz_utils.dart';
 import 'package:jvocab/features/review/domain/review_models.dart';
 import 'package:jvocab/features/review/domain/review_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -105,6 +106,32 @@ void main() {
     final after = _nowSeconds();
     final update = store.singleUpdate;
     expect(update.level, 2);
+    expect(update.intervalDays, 3);
+    expectReviewTime(update.nextReviewAt, before, after, intervalDays: 3);
+  });
+
+  test('forgotten writing answer uses the selected srs decision', () async {
+    final store = _FakeReviewStore(
+      settings: const AppSettings(srsLevel2IntervalDays: 3),
+    );
+    final repository = ReviewRepository(store: store);
+    final session = _session(
+      _result(
+        _item(level: 3, intervalDays: 2, nextReviewAt: 1),
+        wasDueAtStart: true,
+        wrongAnswers: 1,
+        srsDecision: ReviewSrsDecision.minusOne,
+        forceSrsDecision: true,
+      ),
+    );
+    final before = _nowSeconds();
+
+    await repository.applyEndSessionSrs(session);
+
+    final after = _nowSeconds();
+    final update = store.singleUpdate;
+    expect(update.level, 2);
+    expect(update.wrongCount, 1);
     expect(update.intervalDays, 3);
     expectReviewTime(update.nextReviewAt, before, after, intervalDays: 3);
   });
@@ -222,6 +249,51 @@ void main() {
       hasLength(words.length),
     );
   });
+
+  test('both-script review questions keep paired japanese display', () async {
+    final words = [
+      _item(
+        vocabId: 'vocab-1',
+        level: 1,
+        intervalDays: 1,
+        nextReviewAt: 1,
+      ),
+    ];
+    final store = _FakeReviewStore(
+      settings: const AppSettings(
+        quizListenCount: 0,
+        quizWriteCount: 1,
+        quizChooseWordCount: 1,
+        quizChooseMeaningCount: 1,
+        quizJapaneseScript: quizScriptBoth,
+      ),
+    );
+    final repository = ReviewRepository(store: store);
+
+    final session = await repository.createSessionFromWords(words);
+
+    final write = session.questions.firstWhere(
+      (question) => question.type == ReviewQuestionType.write,
+    );
+    expect(write.japaneseDisplay.primary, '食べる');
+    expect(write.japaneseDisplay.secondary, 'たべる');
+    expect(write.expectedJapaneseDisplay?.acceptedAnswers, ['食べる', 'たべる']);
+
+    final chooseMeaning = session.questions.firstWhere(
+      (question) => question.type == ReviewQuestionType.chooseMeaning,
+    );
+    expect(chooseMeaning.promptJapaneseDisplay?.primary, '食べる');
+    expect(chooseMeaning.promptJapaneseDisplay?.secondary, 'たべる');
+
+    final chooseWord = session.questions.firstWhere(
+      (question) => question.type == ReviewQuestionType.chooseWord,
+    );
+    final correctChoice = chooseWord.choices.singleWhere(
+      (choice) => choice.value == '食べる',
+    );
+    expect(correctChoice.japaneseDisplay?.primary, '食べる');
+    expect(correctChoice.japaneseDisplay?.secondary, 'たべる');
+  });
 }
 
 void expectReviewTime(
@@ -311,6 +383,7 @@ ReviewWordResult _result(
   int correctAnswers = 0,
   int wrongAnswers = 0,
   ReviewSrsDecision? srsDecision,
+  bool forceSrsDecision = false,
 }) {
   return ReviewWordResult(
     item: item,
@@ -318,6 +391,7 @@ ReviewWordResult _result(
     correctAnswers: correctAnswers,
     wrongAnswers: wrongAnswers,
     srsDecision: srsDecision,
+    forceSrsDecision: forceSrsDecision,
   );
 }
 

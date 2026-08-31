@@ -37,6 +37,18 @@ void main() {
     expect(store.createdTtsText, 'なんじ');
     expect(store.updatedTtsText, isNull);
   });
+
+  test('updateNote only sends a normalized note value', () async {
+    final store = _FakeVocabularyStore();
+    final repository = VocabularyRepository(store);
+
+    await repository.updateNote(vocabId: 'vocab-1', note: '  Mẹo nhớ  ');
+    expect(store.updatedNoteId, 'vocab-1');
+    expect(store.updatedNote, 'Mẹo nhớ');
+
+    await repository.updateNote(vocabId: 'vocab-1', note: '   ');
+    expect(store.updatedNote, isNull);
+  });
 }
 
 class _FakeVocabularyStore extends CloudStore {
@@ -51,6 +63,8 @@ class _FakeVocabularyStore extends CloudStore {
 
   String? createdTtsText;
   String? updatedTtsText;
+  String? updatedNoteId;
+  String? updatedNote;
 
   @override
   Future<String> createVocab({
@@ -81,5 +95,14 @@ class _FakeVocabularyStore extends CloudStore {
     String? note,
   }) async {
     updatedTtsText = ttsText;
+  }
+
+  @override
+  Future<void> updateVocabNote({
+    required String id,
+    required String? note,
+  }) async {
+    updatedNoteId = id;
+    updatedNote = note;
   }
 }

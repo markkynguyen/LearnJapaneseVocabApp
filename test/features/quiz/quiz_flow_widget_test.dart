@@ -5,6 +5,7 @@ import 'package:jvocab/core/audio/audio_service.dart';
 import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/core/router/app_router.dart';
 import 'package:jvocab/core/router/app_routes.dart';
+import 'package:jvocab/core/utils/quiz_utils.dart';
 import 'package:jvocab/features/learning/domain/learning_models.dart';
 import 'package:jvocab/features/learning/presentation/learning_preview_screen.dart';
 import 'package:jvocab/features/learning/presentation/learning_session_screen.dart';
@@ -13,6 +14,7 @@ import 'package:jvocab/features/review/domain/review_models.dart';
 import 'package:jvocab/features/review/presentation/providers/review_session_provider.dart';
 import 'package:jvocab/features/review/presentation/review_result_screen.dart';
 import 'package:jvocab/features/review/presentation/review_session_screen.dart';
+import 'package:jvocab/features/vocab/presentation/providers/vocab_form_provider.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/pitch_accent_text.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/vocabulary_study_card.dart';
 
@@ -203,6 +205,7 @@ void main() {
         reviewSessionControllerProvider.overrideWith(
           () => _FakeReviewController(session),
         ),
+        vocabFormItemProvider(item.vocab.id).overrideWith((ref) async => item),
         audioServiceProvider.overrideWith((ref) => audio),
       ],
     );
@@ -228,6 +231,16 @@ void main() {
     expect(find.byType(Dialog), findsOneWidget);
     expect(find.byType(PitchAccentText), findsOneWidget);
     expect(find.text('たべる'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Thêm ghi chú'), findsNothing);
+    expect(find.widgetWithText(OutlinedButton, 'Sửa từ vựng'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Tiếp tục'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Sửa từ vựng'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.text('Sửa từ vựng'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Lưu'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -280,6 +293,211 @@ void main() {
       expect(tester.takeException(), isNull, reason: type.name);
       await tester.pumpWidget(const SizedBox.shrink());
     }
+  });
+
+  testWidgets('both-script quiz renders paired japanese text', (tester) async {
+    final learningItem = _item(level: 0);
+    await _pumpLearningQuestion(
+      tester,
+      LearningQuestion(
+        item: learningItem,
+        type: LearningQuestionType.chooseMeaning,
+        japaneseDisplay:
+            japaneseDisplayForQuiz(learningItem.vocab, quizScriptBoth),
+        choices: const ['ăn', 'uống', 'đi', 'ngủ'],
+        requirementId: 'choose-meaning-1',
+      ),
+    );
+
+    expect(find.text('食べる'), findsOneWidget);
+    expect(find.text('たべる'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    final reviewItem = _item(level: 1);
+    await _pumpReviewQuestion(
+      tester,
+      ReviewQuestion(
+        item: reviewItem,
+        type: ReviewQuestionType.chooseWord,
+        japaneseDisplay:
+            japaneseDisplayForQuiz(reviewItem.vocab, quizScriptBoth),
+        choices: [
+          QuizChoice(
+            value: '食べる',
+            japaneseDisplay:
+                japaneseDisplayForQuiz(reviewItem.vocab, quizScriptBoth),
+          ),
+        ],
+        retryCount: 0,
+      ),
+    );
+
+    expect(find.text('食べる'), findsOneWidget);
+    expect(find.text('たべる'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('review forget button is only available for writing questions',
+      (tester) async {
+    for (final type in ReviewQuestionType.values) {
+      final item = _item(level: 1);
+      await _pumpReviewQuestion(
+        tester,
+        ReviewQuestion(
+          item: item,
+          type: type,
+          japaneseText: 'たべる',
+          choices: _reviewChoices(type),
+          retryCount: 0,
+        ),
+      );
+
+      expect(
+        find.widgetWithText(TextButton, 'Đã quên'),
+        type == ReviewQuestionType.write ? findsOneWidget : findsNothing,
+        reason: '${type.name} should have the correct forgot affordance',
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+
+    final learningItem = _item(level: 0);
+    await _pumpLearningQuestion(
+      tester,
+      LearningQuestion(
+        item: learningItem,
+        type: LearningQuestionType.write,
+        japaneseText: '食べる',
+        choices: const [],
+        requirementId: 'write-1',
+      ),
+    );
+    expect(find.widgetWithText(TextButton, 'Đã quên'), findsNothing);
+  });
+
+  testWidgets('review writing quiz confirms forgotten answer and queues retry',
+      (tester) async {
+    final item = _item(level: 3, pitchAccent: 'HHL');
+    final question = ReviewQuestion(
+      item: item,
+      type: ReviewQuestionType.write,
+      japaneseText: 'たべる',
+      choices: const [],
+      retryCount: 0,
+    );
+    final session = ReviewSessionState(
+      questions: [question],
+      currentIndex: 0,
+      resultsByVocabId: {
+        item.vocab.id: ReviewWordResult(
+          item: item,
+          wasDueAtStart: true,
+        ),
+      },
+      sessionStartTime: 0,
+      retryLimit: 2,
+      isFinished: false,
+      folderId: 'folder-1',
+    );
+    final controller = _FakeReviewController(session);
+    final audio = _FakeAudioService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          reviewSessionControllerProvider.overrideWith(() => controller),
+          audioServiceProvider.overrideWith((ref) => audio),
+        ],
+        child: const MaterialApp(
+          home: ReviewSessionScreen(folderId: 'folder-1'),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.widgetWithText(TextButton, 'Đã quên'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Đã quên'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đánh dấu đã quên?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Hủy'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+    expect(controller.state.valueOrNull?.currentIndex, 0);
+    expect(
+      controller
+          .state.valueOrNull?.resultsByVocabId[item.vocab.id]?.wrongAnswers,
+      0,
+    );
+
+    await tester.tap(find.widgetWithText(TextButton, 'Đã quên'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Xác nhận'));
+    await tester.pumpAndSettle();
+
+    final next = controller.state.valueOrNull!;
+    final result = next.resultsByVocabId[item.vocab.id]!;
+    expect(find.widgetWithText(Dialog, 'Đã quên'), findsOneWidget);
+    expect(find.text('Đáp án đúng'), findsOneWidget);
+    expect(find.text('Bạn trả lời'), findsNothing);
+    expect(audio.spokenVocabIds, ['vocab-1']);
+    expect(next.currentIndex, 1);
+    expect(next.questions, hasLength(2));
+    expect(next.currentQuestion?.retryCount, 1);
+    expect(result.wrongAnswers, 1);
+    expect(result.forceSrsDecision, isTrue);
+  });
+
+  testWidgets('forgotten review word appears in end-session srs decisions',
+      (tester) async {
+    final item = _item(level: 3, pitchAccent: 'HHL');
+    final question = ReviewQuestion(
+      item: item,
+      type: ReviewQuestionType.write,
+      japaneseText: 'たべる',
+      choices: const [],
+      retryCount: 0,
+    );
+    final session = ReviewSessionState(
+      questions: [question],
+      currentIndex: 1,
+      resultsByVocabId: {
+        item.vocab.id: ReviewWordResult(
+          item: item,
+          wasDueAtStart: true,
+          wrongAnswers: 1,
+          forceSrsDecision: true,
+          srsDecision: ReviewSrsDecision.minusOne,
+        ),
+      },
+      sessionStartTime: 0,
+      retryLimit: 2,
+      isFinished: true,
+      folderId: 'folder-1',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          reviewSessionControllerProvider.overrideWith(
+            () => _FakeReviewController(session),
+          ),
+        ],
+        child: const MaterialApp(
+          home: ReviewSessionScreen(folderId: 'folder-1'),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Cần xử lý SRS'), findsOneWidget);
+    expect(
+      find.text('Sai 1 lần. Chọn cách điều chỉnh level.'),
+      findsOneWidget,
+    );
+    expect(find.text('Giảm 1 level'), findsOneWidget);
   });
 
   testWidgets('quiz questions hide missing or blank notes', (tester) async {
@@ -648,6 +866,9 @@ class _FakeAudioService extends AudioService {
   Future<void> speak(VocabularyEntry vocab) async {
     spokenVocabIds.add(vocab.id);
   }
+
+  @override
+  Future<void> stop() async {}
 
   @override
   Future<void> dispose() async {}

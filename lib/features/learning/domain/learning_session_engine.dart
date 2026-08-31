@@ -38,10 +38,13 @@ LearningSubmissionResult? submitLearningAnswer(
     session.resultsByVocabId,
   );
   final result = results[question.item.vocab.id]!;
+  final japaneseDisplay = question.expectedJapaneseDisplay;
   final isCorrect = question.isGuided ||
       question.hintUsed ||
-      normalizeQuizAnswer(answer) ==
-          normalizeQuizAnswer(question.expectedAnswer);
+      (japaneseDisplay != null
+          ? matchesQuizJapaneseText(japaneseDisplay, answer)
+          : normalizeQuizAnswer(answer) ==
+              normalizeQuizAnswer(question.expectedAnswer));
 
   if (question.hintUsed) {
     questions.add(question.copyWith(hintUsed: false));

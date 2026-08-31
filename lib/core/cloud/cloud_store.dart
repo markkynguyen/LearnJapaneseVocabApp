@@ -220,6 +220,12 @@ class CloudStore {
         'note': note,
       }).eq('id', id);
 
+  Future<void> updateVocabNote({
+    required String id,
+    required String? note,
+  }) =>
+      _client.from('vocabulary').update({'note': note}).eq('id', id);
+
   Future<void> deleteVocab(String id) =>
       _client.from('vocabulary').delete().eq('id', id);
 

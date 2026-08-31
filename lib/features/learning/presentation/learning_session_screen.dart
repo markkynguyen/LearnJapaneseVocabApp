@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/quiz_utils.dart';
+import '../../../core/widgets/japanese_quiz_text.dart';
 import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/learning_models.dart';
 import 'providers/learning_provider.dart';
@@ -189,12 +191,16 @@ class _LearningQuestionView extends ConsumerWidget {
               children: [
                 Chip(label: Text(question.type.label)),
                 const SizedBox(height: 14),
-                Text(
-                  question.prompt,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
+                if (question.promptJapaneseDisplay case final display?)
+                  JapaneseQuizText(text: display)
+                else
+                  Text(
+                    question.prompt,
+                    style:
+                        Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                  ),
                 if (question.item.vocab.note?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 10),
                   Text(
@@ -208,11 +214,12 @@ class _LearningQuestionView extends ConsumerWidget {
                 if (showHint) ...[
                   const SizedBox(height: 14),
                   Text('Gợi ý', style: TextStyle(color: colors.primary)),
-                  Text(
-                    question.japaneseText,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w400,
-                        ),
+                  JapaneseQuizText(
+                    text: question.japaneseDisplay,
+                    primaryStyle:
+                        Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                   ),
                 ],
                 if (question.type == LearningQuestionType.listen) ...[
@@ -235,7 +242,7 @@ class _LearningQuestionView extends ConsumerWidget {
             (choice) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: OutlinedButton(
-                onPressed: () => onSubmitChoice(choice),
+                onPressed: () => onSubmitChoice(choice.value),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
@@ -247,12 +254,7 @@ class _LearningQuestionView extends ConsumerWidget {
                 ),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    choice,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w400,
-                        ),
-                  ),
+                  child: _LearningChoiceLabel(choice: choice),
                 ),
               ),
             ),
@@ -282,6 +284,37 @@ class _LearningQuestionView extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _LearningChoiceLabel extends StatelessWidget {
+  const _LearningChoiceLabel({required this.choice});
+
+  final QuizChoice choice;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = choice.japaneseDisplay;
+    if (display == null) {
+      return Text(
+        choice.value,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w400,
+            ),
+      );
+    }
+
+    final colors = Theme.of(context).colorScheme;
+    return JapaneseQuizText(
+      text: display,
+      primaryStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+      secondaryStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: colors.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
     );
   }
 }
@@ -363,10 +396,16 @@ class _LearningFeedbackDialog extends ConsumerWidget {
                   textColor: colors.onSurfaceVariant,
                 ),
                 const SizedBox(height: 14),
-                _LearningFeedbackDetail(
-                  label: 'Đáp án đúng',
-                  value: feedback.question.expectedAnswer,
-                ),
+                if (feedback.question.expectedJapaneseDisplay case final answer?)
+                  _LearningJapaneseFeedbackDetail(
+                    label: 'Đáp án đúng',
+                    value: answer,
+                  )
+                else
+                  _LearningFeedbackDetail(
+                    label: 'Đáp án đúng',
+                    value: feedback.question.expectedAnswer,
+                  ),
                 if (feedback.wasGraded &&
                     !feedback.isCorrect &&
                     feedback.answer.trim().isNotEmpty)
@@ -396,6 +435,52 @@ class _LearningFeedbackDialog extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LearningJapaneseFeedbackDetail extends StatelessWidget {
+  const _LearningJapaneseFeedbackDetail({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final QuizJapaneseText value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 2),
+          JapaneseQuizText(
+            text: value,
+            primaryStyle: const TextStyle(
+              height: 1.35,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+            secondaryStyle: TextStyle(
+              color: colors.onSurfaceVariant,
+              height: 1.3,
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

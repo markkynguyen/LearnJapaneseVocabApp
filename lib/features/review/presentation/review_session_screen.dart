@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/quiz_utils.dart';
+import '../../../core/widgets/japanese_quiz_text.dart';
+import '../../vocab/presentation/vocab_form_screen.dart';
 import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/review_models.dart';
 import 'providers/review_session_provider.dart';
@@ -62,7 +65,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
         body: SafeArea(
           child: session.when(
             data: (state) {
-              if (state == null || state.questions.isEmpty) {
+              if (state == null) {
                 return const _NoReviewState();
               }
               if (state.isFinished) {
@@ -76,12 +79,16 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
                   onFinish: _finishSession,
                 );
               }
+              if (state.questions.isEmpty) {
+                return const _NoReviewState();
+              }
               _scheduleListen(state);
               return _QuestionView(
                 state: state,
                 answerController: _answerController,
                 onSubmitText: () => _submitAnswer(_answerController.text),
                 onSubmitChoice: _submitAnswer,
+                onForgetWriting: _forgetCurrentWritingQuestion,
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -121,7 +128,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
     if (!mounted) {
       return;
     }
-    await showDialog<void>(
+    final action = await showDialog<_AnswerFeedbackAction>(
       context: context,
       builder: (_) => _AnswerFeedbackDialog(feedback: feedback),
     );
@@ -129,10 +136,104 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
     if (!mounted) {
       return;
     }
+    if (action == _AnswerFeedbackAction.editVocabulary) {
+      await _openVocabEditor(feedback);
+      if (!mounted) {
+        return;
+      }
+    }
     final next = ref.read(reviewSessionControllerProvider).valueOrNull;
     if (next != null) {
       _scheduleListen(next);
     }
+  }
+
+  Future<void> _forgetCurrentWritingQuestion() async {
+    final current = ref.read(reviewSessionControllerProvider).valueOrNull;
+    final question = current?.currentQuestion;
+    if (question == null || question.type != ReviewQuestionType.write) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Đánh dấu đã quên?'),
+        content: const Text(
+          'Bạn muốn xem đáp án và đưa từ này vào danh sách cần hạ cấp SRS?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    _feedbackOpen = true;
+    final feedback = ref
+        .read(reviewSessionControllerProvider.notifier)
+        .forgetCurrentWritingQuestion();
+    _answerController.clear();
+    if (feedback == null || !mounted) {
+      _feedbackOpen = false;
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    await ref.read(audioServiceProvider).speak(question.item.vocab);
+    if (!mounted) {
+      return;
+    }
+    final action = await showDialog<_AnswerFeedbackAction>(
+      context: context,
+      builder: (_) => _AnswerFeedbackDialog(feedback: feedback),
+    );
+    _feedbackOpen = false;
+    if (!mounted) {
+      return;
+    }
+    if (action == _AnswerFeedbackAction.editVocabulary) {
+      await _openVocabEditor(feedback);
+      if (!mounted) {
+        return;
+      }
+    }
+    final next = ref.read(reviewSessionControllerProvider).valueOrNull;
+    if (next != null) {
+      _scheduleListen(next);
+    }
+  }
+
+  Future<void> _openVocabEditor(ReviewAnswerFeedback feedback) async {
+    final vocab = feedback.question.item.vocab;
+    await ref.read(audioServiceProvider).stop();
+    if (!mounted) {
+      return;
+    }
+    final result = await context.push<VocabEditResult>(
+      AppRoutes.editVocab(vocab.id, folderId: vocab.folderId),
+    );
+    if (!mounted || result?.changed != true || result?.vocabId != vocab.id) {
+      return;
+    }
+
+    ref
+        .read(reviewSessionControllerProvider.notifier)
+        .removeVocabFromCurrentSession(vocab.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã cập nhật và bỏ từ này khỏi phiên ôn hiện tại.'),
+      ),
+    );
   }
 
   void _scheduleListen(ReviewSessionState state) {
@@ -211,12 +312,14 @@ class _QuestionView extends ConsumerWidget {
     required this.answerController,
     required this.onSubmitText,
     required this.onSubmitChoice,
+    required this.onForgetWriting,
   });
 
   final ReviewSessionState state;
   final TextEditingController answerController;
   final VoidCallback onSubmitText;
   final ValueChanged<String> onSubmitChoice;
+  final VoidCallback onForgetWriting;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -261,13 +364,16 @@ class _QuestionView extends ConsumerWidget {
                   label: Text(question.type.label),
                 ),
                 const SizedBox(height: 18),
-                Text(
-                  question.prompt,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        height: 1.18,
-                      ),
-                ),
+                if (question.promptJapaneseDisplay case final display?)
+                  JapaneseQuizText(text: display)
+                else
+                  Text(
+                    question.prompt,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          height: 1.18,
+                        ),
+                  ),
                 if (question.item.vocab.note?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 10),
                   Text(
@@ -306,7 +412,7 @@ class _QuestionView extends ConsumerWidget {
             (choice) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: OutlinedButton(
-                onPressed: () => onSubmitChoice(choice),
+                onPressed: () => onSubmitChoice(choice.value),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
@@ -318,12 +424,7 @@ class _QuestionView extends ConsumerWidget {
                 ),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    choice,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w400,
-                        ),
-                  ),
+                  child: _ChoiceLabel(choice: choice),
                 ),
               ),
             ),
@@ -349,6 +450,14 @@ class _QuestionView extends ConsumerWidget {
             icon: const Icon(Icons.check_rounded),
             label: const Text('Trả lời'),
           ),
+          if (question.type == ReviewQuestionType.write) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: onForgetWriting,
+              icon: const Icon(Icons.visibility_rounded),
+              label: const Text('Đã quên'),
+            ),
+          ],
         ],
       ],
     );
@@ -381,6 +490,39 @@ class _QuestionView extends ConsumerWidget {
   }
 }
 
+class _ChoiceLabel extends StatelessWidget {
+  const _ChoiceLabel({required this.choice});
+
+  final QuizChoice choice;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = choice.japaneseDisplay;
+    if (display == null) {
+      return Text(
+        choice.value,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w400,
+            ),
+      );
+    }
+
+    final colors = Theme.of(context).colorScheme;
+    return JapaneseQuizText(
+      text: display,
+      primaryStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+      secondaryStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: colors.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+    );
+  }
+}
+
+enum _AnswerFeedbackAction { editVocabulary }
+
 class _AnswerFeedbackDialog extends ConsumerWidget {
   const _AnswerFeedbackDialog({required this.feedback});
 
@@ -389,9 +531,23 @@ class _AnswerFeedbackDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final feedback = this.feedback;
     final vocab = feedback.question.item.vocab;
-    final statusColor =
-        feedback.isCorrect ? context.appSuccess : context.appDanger;
+    final statusColor = feedback.wasForgotten
+        ? colors.primary
+        : feedback.isCorrect
+            ? context.appSuccess
+            : context.appDanger;
+    final statusIcon = feedback.wasForgotten
+        ? Icons.visibility_rounded
+        : feedback.isCorrect
+            ? Icons.check_circle_rounded
+            : Icons.cancel_rounded;
+    final statusText = feedback.wasForgotten
+        ? 'Đã quên'
+        : feedback.isCorrect
+            ? 'Chính xác'
+            : 'Chưa đúng';
 
     return SafeArea(
       child: Dialog(
@@ -410,15 +566,10 @@ class _AnswerFeedbackDialog extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      feedback.isCorrect
-                          ? Icons.check_circle_rounded
-                          : Icons.cancel_rounded,
-                      color: statusColor,
-                    ),
+                    Icon(statusIcon, color: statusColor),
                     const SizedBox(width: 10),
                     Text(
-                      feedback.isCorrect ? 'Chính xác' : 'Chưa đúng',
+                      statusText,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: statusColor,
                             fontWeight: FontWeight.w900,
@@ -451,11 +602,17 @@ class _AnswerFeedbackDialog extends ConsumerWidget {
                   textColor: colors.onSurfaceVariant,
                 ),
                 const SizedBox(height: 14),
-                _DetailLine(
-                  label: 'Đáp án đúng',
-                  value: feedback.question.expectedAnswer,
-                ),
-                if (!feedback.isCorrect && feedback.answer.trim().isNotEmpty)
+                if (feedback.question.expectedJapaneseDisplay
+                    case final answer?)
+                  _JapaneseDetailLine(label: 'Đáp án đúng', value: answer)
+                else
+                  _DetailLine(
+                    label: 'Đáp án đúng',
+                    value: feedback.question.expectedAnswer,
+                  ),
+                if (!feedback.wasForgotten &&
+                    !feedback.isCorrect &&
+                    feedback.answer.trim().isNotEmpty)
                   _DetailLine(
                     label: 'Bạn trả lời',
                     value: feedback.answer.trim(),
@@ -465,17 +622,76 @@ class _AnswerFeedbackDialog extends ConsumerWidget {
                 if (vocab.note?.trim().isNotEmpty ?? false)
                   _DetailLine(label: 'Ghi chú', value: vocab.note!.trim()),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Tiếp tục'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context)
+                            .pop(_AnswerFeedbackAction.editVocabulary),
+                        icon: const Icon(Icons.edit_rounded),
+                        label: const Text('Sửa từ vựng'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_forward_rounded),
+                        label: const Text('Tiếp tục'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _JapaneseDetailLine extends StatelessWidget {
+  const _JapaneseDetailLine({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final QuizJapaneseText value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 2),
+          JapaneseQuizText(
+            text: value,
+            primaryStyle: const TextStyle(
+              height: 1.35,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+            secondaryStyle: TextStyle(
+              color: colors.onSurfaceVariant,
+              height: 1.3,
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

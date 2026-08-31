@@ -1,4 +1,5 @@
 import '../../../core/models/app_models.dart';
+import '../../../core/utils/quiz_utils.dart';
 
 enum LearningQuestionType {
   listen,
@@ -17,26 +18,30 @@ enum LearningQuestionType {
 }
 
 class LearningQuestion {
-  const LearningQuestion({
+  LearningQuestion({
     required this.item,
     required this.type,
-    required this.japaneseText,
-    required this.choices,
+    String? japaneseText,
+    QuizJapaneseText? japaneseDisplay,
+    required Iterable<Object> choices,
     this.requirementId,
     this.retryCount = 0,
     this.hintUsed = false,
-  });
+  })  : japaneseDisplay =
+            japaneseDisplay ?? quizJapaneseTextFromPlain(japaneseText!),
+        choices = quizChoicesFromObjects(choices);
 
   final VocabWithProgress item;
   final LearningQuestionType type;
-  final String japaneseText;
-  final List<String> choices;
+  final QuizJapaneseText japaneseDisplay;
+  final List<QuizChoice> choices;
   final String? requirementId;
   final int retryCount;
   final bool hintUsed;
 
   bool get isGuided => type == LearningQuestionType.guidedWrite;
   bool get isGraded => !isGuided && !hintUsed;
+  String get japaneseText => japaneseDisplay.primary;
 
   String get expectedAnswer => switch (type) {
         LearningQuestionType.listen ||
@@ -47,6 +52,19 @@ class LearningQuestion {
         LearningQuestionType.chooseWord =>
           japaneseText,
       };
+
+  QuizJapaneseText? get expectedJapaneseDisplay => switch (type) {
+        LearningQuestionType.guidedWrite ||
+        LearningQuestionType.write ||
+        LearningQuestionType.chooseWord =>
+          japaneseDisplay,
+        LearningQuestionType.listen ||
+        LearningQuestionType.chooseMeaning =>
+          null,
+      };
+
+  QuizJapaneseText? get promptJapaneseDisplay =>
+      type == LearningQuestionType.chooseMeaning ? japaneseDisplay : null;
 
   String get prompt => switch (type) {
         LearningQuestionType.listen => 'Nghe phát âm và chọn nghĩa đúng',
@@ -65,7 +83,7 @@ class LearningQuestion {
     return LearningQuestion(
       item: item,
       type: type,
-      japaneseText: japaneseText,
+      japaneseDisplay: japaneseDisplay,
       choices: choices,
       requirementId: requirementId,
       retryCount: retryCount ?? this.retryCount,

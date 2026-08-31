@@ -13,11 +13,13 @@ class ReviewAnswerFeedback {
     required this.question,
     required this.answer,
     required this.isCorrect,
+    this.wasForgotten = false,
   });
 
   final ReviewQuestion question;
   final String answer;
   final bool isCorrect;
+  final bool wasForgotten;
 }
 
 @riverpod
@@ -105,6 +107,52 @@ class ReviewSessionController extends _$ReviewSessionController {
     );
   }
 
+  ReviewAnswerFeedback? forgetCurrentWritingQuestion() {
+    final current = state.valueOrNull;
+    final question = current?.currentQuestion;
+    if (current == null ||
+        question == null ||
+        current.isFinished ||
+        question.type != ReviewQuestionType.write) {
+      return null;
+    }
+
+    final nextQuestions = [...current.questions];
+    final results =
+        Map<String, ReviewWordResult>.from(current.resultsByVocabId);
+    final vocabId = question.item.vocab.id;
+    final previousResult = results[vocabId]!;
+
+    results[vocabId] = previousResult.copyWith(
+      wrongAnswers: previousResult.wrongAnswers + 1,
+      forceSrsDecision: true,
+    );
+
+    if (question.retryCount < current.retryLimit) {
+      nextQuestions.add(question.retry());
+    }
+
+    final nextIndex = current.currentIndex + 1;
+    final isFinished = nextIndex >= nextQuestions.length;
+    final nextResults =
+        isFinished ? _withDefaultSrsDecisions(results) : results;
+    state = AsyncData(
+      current.copyWith(
+        questions: nextQuestions,
+        currentIndex: nextIndex,
+        resultsByVocabId: nextResults,
+        isFinished: isFinished,
+      ),
+    );
+
+    return ReviewAnswerFeedback(
+      question: question,
+      answer: '',
+      isCorrect: false,
+      wasForgotten: true,
+    );
+  }
+
   void setSrsDecision(String vocabId, ReviewSrsDecision decision) {
     final current = state.valueOrNull;
     if (current == null) {
@@ -120,6 +168,43 @@ class ReviewSessionController extends _$ReviewSessionController {
 
     results[vocabId] = result.copyWith(srsDecision: decision);
     state = AsyncData(current.copyWith(resultsByVocabId: results));
+  }
+
+  void removeVocabFromCurrentSession(String vocabId) {
+    final current = state.valueOrNull;
+    if (current == null) {
+      return;
+    }
+
+    final removedBeforeCurrent = current.questions
+        .take(current.currentIndex)
+        .where((question) => question.item.vocab.id == vocabId)
+        .length;
+    final nextQuestions = current.questions
+        .where((question) => question.item.vocab.id != vocabId)
+        .toList();
+    final nextResults =
+        Map<String, ReviewWordResult>.from(current.resultsByVocabId)
+          ..remove(vocabId);
+
+    if (nextQuestions.length == current.questions.length &&
+        nextResults.length == current.resultsByVocabId.length) {
+      return;
+    }
+
+    final nextIndex = (current.currentIndex - removedBeforeCurrent)
+        .clamp(0, nextQuestions.length)
+        .toInt();
+    final isFinished = nextIndex >= nextQuestions.length;
+    state = AsyncData(
+      current.copyWith(
+        questions: nextQuestions,
+        currentIndex: nextIndex,
+        resultsByVocabId:
+            isFinished ? _withDefaultSrsDecisions(nextResults) : nextResults,
+        isFinished: isFinished,
+      ),
+    );
   }
 
   Future<ReviewResultSummary?> finish() async {
@@ -143,6 +228,10 @@ class ReviewSessionController extends _$ReviewSessionController {
   }
 
   bool _isCorrect(ReviewQuestion question, String answer) {
+    final japaneseDisplay = question.expectedJapaneseDisplay;
+    if (japaneseDisplay != null) {
+      return matchesQuizJapaneseText(japaneseDisplay, answer);
+    }
     return normalizeQuizAnswer(answer) ==
         normalizeQuizAnswer(question.expectedAnswer);
   }

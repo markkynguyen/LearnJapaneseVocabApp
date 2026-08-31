@@ -113,7 +113,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       message: 'Folder không hợp lệ.',
                     );
                   }
-                  return VocabListScreen(folderId: id);
+                  return _VocabListRoute(folderId: id);
                 },
                 routes: [
                   GoRoute(
@@ -377,6 +377,21 @@ class _FolderFormRoute extends ConsumerWidget {
       error: (error, _) => _RouteErrorScreen(
         message: 'Không thể tải bộ từ: $error',
       ),
+    );
+  }
+}
+
+class _VocabListRoute extends ConsumerWidget {
+  const _VocabListRoute({required this.folderId});
+
+  final String folderId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final folder = ref.watch(folderByIdProvider(folderId)).valueOrNull;
+    return VocabListScreen(
+      folderId: folderId,
+      folderName: folder?.name,
     );
   }
 }

@@ -331,17 +331,11 @@ class _FlashcardFront extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.style_rounded,
-          color: colors.primary,
-          size: 36,
-        ),
-        const SizedBox(height: 22),
         if (hasKanji)
           Text(
             vocab.kanji!.trim(),
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+            style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.w400,
                   height: 1.12,
                 ),
@@ -351,7 +345,7 @@ class _FlashcardFront extends StatelessWidget {
             child: PitchAccentText(
               kana: vocab.kana,
               pattern: vocab.pitchAccent,
-              fontSize: 36,
+              fontSize: 44,
             ),
           ),
         if (showKana && hasKanji) ...[
@@ -360,7 +354,7 @@ class _FlashcardFront extends StatelessWidget {
             child: PitchAccentText(
               kana: vocab.kana,
               pattern: vocab.pitchAccent,
-              fontSize: 22,
+              fontSize: 30,
             ),
           ),
         ],
@@ -369,7 +363,7 @@ class _FlashcardFront extends StatelessWidget {
           Text(
             vocab.romaji,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
           ),

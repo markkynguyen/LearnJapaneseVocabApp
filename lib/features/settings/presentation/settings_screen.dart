@@ -891,9 +891,11 @@ class _QuizScriptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final normalized = selected == quizScriptKanaValue
-        ? quizScriptKanaValue
-        : quizScriptKanjiValue;
+    final normalized = switch (selected) {
+      quizScriptKanaValue => quizScriptKanaValue,
+      quizScriptBothValue => quizScriptBothValue,
+      _ => quizScriptKanjiValue,
+    };
 
     return Card(
       child: Padding(
@@ -926,6 +928,10 @@ class _QuizScriptCard extends StatelessWidget {
                     value: quizScriptKanaValue,
                     label: Text('Kana'),
                   ),
+                  ButtonSegment(
+                    value: quizScriptBothValue,
+                    label: Text('Cả hai'),
+                  ),
                 ],
                 selected: {normalized},
                 onSelectionChanged: (value) => onChanged(value.single),
@@ -933,9 +939,12 @@ class _QuizScriptCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              normalized == quizScriptKanjiValue
-                  ? 'Ưu tiên kanji; từ không có kanji sẽ dùng kana.'
-                  : 'Mọi câu hỏi và lựa chọn sẽ dùng kana.',
+              switch (normalized) {
+                quizScriptKanaValue => 'Mọi câu hỏi và lựa chọn sẽ dùng kana.',
+                quizScriptBothValue =>
+                  'Kanji hiển thị chính, kana hiển thị phụ; từ thiếu hoặc trùng kanji chỉ hiện một lần.',
+                _ => 'Ưu tiên kanji; từ không có kanji sẽ dùng kana.',
+              },
               style: TextStyle(color: colors.onSurfaceVariant),
             ),
           ],
