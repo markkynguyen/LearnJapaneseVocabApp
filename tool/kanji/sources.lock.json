@@ -1,0 +1,10 @@
+{
+  "kanjidic2.xml.gz": {
+    "url": "https://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
+    "sha256": "197a43edb227f0fa66de4f460a780b4f3711512d0ac8be6296b873fee4b1c890"
+  },
+  "kanjivg.zip": {
+    "url": "https://codeload.github.com/KanjiVG/kanjivg/zip/55b5ba92a7cad78a62ef04db4be6f9562d949b7f",
+    "sha256": "73cad4ad44586999941427e3f2377b763ad761c5c9a70b4e11e14c3ea965cde4"
+  }
+}

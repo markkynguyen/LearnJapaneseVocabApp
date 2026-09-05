@@ -10,6 +10,7 @@ import '../../features/folders/presentation/folder_form_screen.dart';
 import '../../features/folders/presentation/folder_list_screen.dart';
 import '../../features/folders/presentation/providers/folder_provider.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/kanji/presentation/kanji_home_screen.dart';
 import '../../features/import_export/presentation/excel_export_screen.dart';
 import '../../features/import_export/presentation/excel_import_screen.dart';
 import '../../features/learning/domain/learning_models.dart';
@@ -84,6 +85,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.home,
             builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.kanji,
+            builder: (context, state) => const KanjiHomeScreen(),
           ),
           GoRoute(
             path: AppRoutes.folders,
@@ -250,10 +255,16 @@ class _AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final network = ref.watch(hasNetworkProvider);
-    if (network.valueOrNull == false) {
-      return OfflineScreen(onRetry: () => ref.invalidate(hasNetworkProvider));
+    final location = GoRouterState.of(context).uri.path;
+    final offlineKanji =
+        network.valueOrNull == false && location == AppRoutes.kanji;
+    if (network.valueOrNull == false && !offlineKanji) {
+      return OfflineScreen(
+        onRetry: () => ref.invalidate(hasNetworkProvider),
+        onOpenKanji: () => context.go(AppRoutes.kanji),
+      );
     }
-    final bootstrap = ref.watch(routerGuardEnabledProvider)
+    final bootstrap = ref.watch(routerGuardEnabledProvider) && !offlineKanji
         ? ref.watch(cloudBootstrapProvider)
         : const AsyncData<void>(null);
     if (bootstrap.isLoading) {
@@ -285,7 +296,6 @@ class _AppShell extends ConsumerWidget {
         ),
       );
     }
-    final location = GoRouterState.of(context).uri.path;
     if (_hideNavigation(location)) {
       return child;
     }
@@ -299,8 +309,10 @@ class _AppShell extends ConsumerWidget {
             case 0:
               context.go(AppRoutes.home);
             case 1:
-              context.go(AppRoutes.folders);
+              context.go(AppRoutes.kanji);
             case 2:
+              context.go(AppRoutes.folders);
+            case 3:
               context.go(AppRoutes.settings);
           }
         },
@@ -309,6 +321,11 @@ class _AppShell extends ConsumerWidget {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Trang chủ',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.auto_stories_outlined),
+            selectedIcon: Icon(Icons.auto_stories),
+            label: 'Hán tự',
           ),
           NavigationDestination(
             icon: Icon(Icons.folder_outlined),
@@ -332,11 +349,12 @@ class _AppShell extends ConsumerWidget {
 
   int _selectedIndex(String location) {
     if (location.startsWith(AppRoutes.settings)) {
-      return 2;
+      return 3;
     }
+    if (location.startsWith(AppRoutes.kanji)) return 1;
     if (location.startsWith(AppRoutes.folders) ||
         location.startsWith('/vocab')) {
-      return 1;
+      return 2;
     }
     return 0;
   }

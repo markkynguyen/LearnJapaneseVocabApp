@@ -1,0 +1,14 @@
+{
+  "𠮟": {"han_viet":"Sất", "review_status":"draft"},
+  "剝": {"han_viet":"Bác", "review_status":"draft"},
+  "休": {"han_viet":"Hưu", "meaning_vi":"Nghỉ ngơi", "review_status":"draft"},
+  "先": {"han_viet":"Tiên", "meaning_vi":"Trước; đi trước; đầu tiên", "review_status":"draft"},
+  "生": {"han_viet":"Sinh", "meaning_vi":"Sống; sinh ra; sự sống; tươi, sống (chưa nấu)", "review_status":"draft"},
+  "日": {"han_viet":"Nhật", "meaning_vi":"Mặt trời; ngày", "review_status":"draft"},
+  "本": {"han_viet":"Bản", "meaning_vi":"Gốc; sách; chính", "review_status":"draft"},
+  "人": {"han_viet":"Nhân", "meaning_vi":"Người", "review_status":"draft"},
+  "木": {"han_viet":"Mộc", "meaning_vi":"Cây; gỗ", "review_status":"draft"},
+  "食": {"han_viet":"Thực", "meaning_vi":"Ăn; thức ăn", "review_status":"draft"},
+  "学": {"han_viet":"Học", "meaning_vi":"Học; việc học; học thuật", "review_status":"draft"},
+  "校": {"han_viet":"Hiệu", "meaning_vi":"Trường học; kiểm tra, đối chiếu", "review_status":"draft"}
+}

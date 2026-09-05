@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/japanese_mixed_text.dart';
 import '../../settings/presentation/providers/settings_provider.dart';
+import '../../kanji/presentation/widgets/kanji_detail_dialog.dart';
 import 'providers/flashcard_provider.dart';
 import 'widgets/pitch_accent_text.dart';
 
@@ -30,6 +31,15 @@ class FlashcardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Flashcards'),
         actions: [
+          if (deck.valueOrNull?.current?.vocab.kanji?.trim().isNotEmpty == true)
+            IconButton(
+              tooltip: 'Phân tích Hán tự',
+              onPressed: () => showKanjiAnalysis(
+                context,
+                deck.valueOrNull?.current?.vocab.kanji,
+              ),
+              icon: const Icon(Icons.auto_stories_outlined),
+            ),
           IconButton(
             tooltip: 'Đảo thứ tự',
             onPressed: () {

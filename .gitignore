@@ -23,3 +23,4 @@ ios/Flutter/Flutter.podspec
 **/linux/flutter/ephemeral/
 **/macos/Flutter/ephemeral/
 AGENTS.md
+tool/kanji/.cache/

@@ -1,0 +1,30 @@
+{
+  "engine": "PGlite 0.3.14 (local PostgreSQL WASM, NOT Supabase production latency)",
+  "node": "v24.19.0",
+  "measurements": [
+    {
+      "vocabulary_rows": 1000,
+      "elapsed_ms": [
+        121,
+        133.7,
+        120.4
+      ]
+    },
+    {
+      "vocabulary_rows": 10000,
+      "elapsed_ms": [
+        1310.8,
+        1520.8,
+        1515.8
+      ]
+    },
+    {
+      "vocabulary_rows": 50000,
+      "elapsed_ms": [
+        7380.7,
+        5065.3,
+        4953.5
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ abstract final class AppRoutes {
   static const resetPassword = '/reset-password';
   static const configuration = '/configuration';
   static const folders = '/folders';
+  static const kanji = '/kanji';
   static const newFolder = '/folders/new';
   static const settings = '/settings';
   static const settingsImport = '/settings/import';

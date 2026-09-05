@@ -597,6 +597,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const _SectionTitle(title: 'Thông tin'),
                   const SizedBox(height: 12),
                   Card(
+                      child: ListTile(
+                    leading: const Icon(Icons.source_outlined),
+                    title: const Text('Nguồn dữ liệu & giấy phép'),
+                    subtitle:
+                        const Text('KANJIDIC2 · KanjiVG · thư viện mã nguồn'),
+                    onTap: () => showLicensePage(
+                        context: context, applicationName: 'Nana App',),
+                  ),),
+                  Card(
                     child: ListTile(
                       leading: const Icon(Icons.info_outline_rounded),
                       title: const Text('Nana App'),

@@ -13,6 +13,7 @@ import '../../../../core/widgets/japanese_mixed_text.dart';
 import '../../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../../../vocab/presentation/widgets/vocabulary_study_card.dart';
 import '../../../vocab/presentation/providers/vocab_list_provider.dart';
+import '../../../kanji/presentation/widgets/kanji_detail_dialog.dart';
 import '../providers/home_provider.dart';
 
 class HomeVocabSearch extends ConsumerStatefulWidget {
@@ -220,6 +221,22 @@ class _HomeVocabDetailDialogState
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 child: Column(
                   children: [
+                    if (result.item.vocab.kanji?.trim().isNotEmpty == true) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _isApplyingSrs
+                              ? null
+                              : () => showKanjiAnalysis(
+                                    context,
+                                    result.item.vocab.kanji,
+                                  ),
+                          icon: const Icon(Icons.auto_stories_outlined),
+                          label: const Text('Phân tích Hán tự'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.tonalIcon(

@@ -1,0 +1,11 @@
+{
+  "kanji_count": 2136,
+  "radical_count": 214,
+  "component_count": 7820,
+  "kanjidic_date": "2026-09-05",
+  "missing_meaning_vi": [],
+  "missing_han_viet": [],
+  "dictionary_radical_fallback": [],
+  "approved_translations": 0,
+  "review_note": "Machine validation only. Human linguistic approval is tracked per character in curated_vi.json."
+}

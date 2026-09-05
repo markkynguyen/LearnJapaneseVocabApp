@@ -1,0 +1,215 @@
+# id	character	name_vi	meaning_vi	stroke_count	variants
+1	一	Nhất	Một	1	
+2	丨	Cổn	Nét sổ	1	
+3	丶	Chủ	Nét chấm	1	
+4	丿	Phiệt	Nét phẩy	1	
+5	乙	Ất	Thứ hai; nét móc	1	乚乛
+6	亅	Quyết	Nét sổ móc	1	
+7	二	Nhị	Hai	2	
+8	亠	Đầu	Phần đầu	2	
+9	人	Nhân	Người	2	亻𠆢
+10	儿	Nhi	Chân người	2	
+11	入	Nhập	Vào	2	
+12	八	Bát	Tám	2	丷
+13	冂	Quynh	Vùng bao quanh	2	
+14	冖	Mịch	Che phủ	2	
+15	冫	Băng	Băng giá	2	
+16	几	Kỷ	Bàn nhỏ	2	
+17	凵	Khảm	Hõm; vật chứa	2	
+18	刀	Đao	Dao	2	刂
+19	力	Lực	Sức lực	2	
+20	勹	Bao	Bao bọc	2	
+21	匕	Chủy	Thìa	2	
+22	匚	Phương	Hộp vuông	2	
+23	匸	Hệ	Che giấu	2	
+24	十	Thập	Mười	2	
+25	卜	Bốc	Bói	2	
+26	卩	Tiết	Đốt; dấu ấn	2	㔾
+27	厂	Hán	Vách đá	2	
+28	厶	Tư	Riêng tư	2	
+29	又	Hựu	Lại; bàn tay phải	2	
+30	口	Khẩu	Miệng	3	
+31	囗	Vi	Bao quanh	3	
+32	土	Thổ	Đất	3	
+33	士	Sĩ	Kẻ sĩ	3	
+34	夂	Trĩ	Đi đến	3	
+35	夊	Tuy	Đi chậm	3	
+36	夕	Tịch	Chiều tối	3	
+37	大	Đại	Lớn	3	
+38	女	Nữ	Phụ nữ	3	
+39	子	Tử	Con	3	
+40	宀	Miên	Mái nhà	3	
+41	寸	Thốn	Tấc	3	
+42	小	Tiểu	Nhỏ	3	⺌⺍
+43	尢	Uông	Què	3	尣
+44	尸	Thi	Thân thể; thi thể	3	
+45	屮	Triệt	Mầm cây	3	
+46	山	Sơn	Núi	3	
+47	巛	Xuyên	Sông	3	川
+48	工	Công	Công việc	3	
+49	己	Kỷ	Bản thân	3	已巳
+50	巾	Cân	Khăn	3	
+51	干	Can	Cái khiên	3	
+52	幺	Yêu	Nhỏ; sợi tơ nhỏ	3	
+53	广	Nghiễm	Mái nhà rộng	3	
+54	廴	Dẫn	Bước dài	3	
+55	廾	Củng	Hai tay nâng	3	
+56	弋	Dặc	Bắn bằng tên có dây	3	
+57	弓	Cung	Cây cung	3	
+58	彐	Kệ	Đầu heo	3	彑
+59	彡	Sam	Lông; nét trang trí	3	
+60	彳	Xích	Bước chân ngắn	3	
+61	心	Tâm	Tim; lòng	4	忄㣺
+62	戈	Qua	Giáo mác	4	
+63	戶	Hộ	Cửa một cánh	4	戸户
+64	手	Thủ	Tay	4	扌龵
+65	支	Chi	Cành; chống đỡ	4	
+66	攴	Phộc	Đánh nhẹ	4	攵
+67	文	Văn	Văn chương	4	
+68	斗	Đẩu	Cái đấu đong	4	
+69	斤	Cân	Rìu; đơn vị cân	4	
+70	方	Phương	Vuông; phương hướng	4	
+71	无	Vô	Không	4	旡
+72	日	Nhật	Mặt trời; ngày	4	
+73	曰	Viết	Nói rằng	4	
+74	月	Nguyệt	Mặt trăng; tháng	4	
+75	木	Mộc	Cây; gỗ	4	
+76	欠	Khiếm	Thiếu; ngáp	4	
+77	止	Chỉ	Dừng	4	
+78	歹	Đãi	Chết; xấu	4	歺
+79	殳	Thù	Binh khí dài	4	
+80	毋	Vô	Chớ; đừng	4	母
+81	比	Tỷ	So sánh	4	
+82	毛	Mao	Lông	4	
+83	氏	Thị	Họ	4	
+84	气	Khí	Hơi	4	
+85	水	Thủy	Nước	4	氵氺
+86	火	Hỏa	Lửa	4	灬
+87	爪	Trảo	Móng vuốt	4	爫
+88	父	Phụ	Cha	4	
+89	爻	Hào	Vạch giao nhau	4	
+90	爿	Tường	Mảnh gỗ chẻ	4	丬
+91	片	Phiến	Mảnh; lát	4	
+92	牙	Nha	Răng nanh	4	
+93	牛	Ngưu	Trâu; bò	4	牜
+94	犬	Khuyển	Chó	4	犭
+95	玄	Huyền	Sâu xa; đen huyền	5	
+96	玉	Ngọc	Ngọc	5	王玊
+97	瓜	Qua	Dưa	5	
+98	瓦	Ngõa	Ngói	5	
+99	甘	Cam	Ngọt	5	
+100	生	Sinh	Sinh ra; sống	5	
+101	用	Dụng	Dùng	5	
+102	田	Điền	Ruộng	5	
+103	疋	Sơ	Chân; tấm vải	5	𤴔
+104	疒	Nạch	Bệnh tật	5	
+105	癶	Bát	Hai chân dang	5	
+106	白	Bạch	Trắng	5	
+107	皮	Bì	Da	5	
+108	皿	Mãnh	Đĩa; đồ đựng	5	
+109	目	Mục	Mắt	5	
+110	矛	Mâu	Giáo	5	
+111	矢	Thỉ	Mũi tên	5	
+112	石	Thạch	Đá	5	
+113	示	Thị	Chỉ bảo; tế lễ	5	礻
+114	禸	Nhựu	Dấu chân thú	5	
+115	禾	Hòa	Lúa	5	
+116	穴	Huyệt	Hang; lỗ	5	
+117	立	Lập	Đứng	5	
+118	竹	Trúc	Tre	6	⺮
+119	米	Mễ	Gạo	6	
+120	糸	Mịch	Tơ	6	糹纟
+121	缶	Phẫu	Vò; chum	6	
+122	网	Võng	Lưới	6	罒罓
+123	羊	Dương	Dê; cừu	6	⺶⺷
+124	羽	Vũ	Lông vũ	6	
+125	老	Lão	Già	6	耂
+126	而	Nhi	Mà; râu	6	
+127	耒	Lỗi	Cày	6	
+128	耳	Nhĩ	Tai	6	
+129	聿	Duật	Bút	6	肀
+130	肉	Nhục	Thịt	6	⺼
+131	臣	Thần	Bề tôi	6	
+132	自	Tự	Tự mình	6	
+133	至	Chí	Đến	6	
+134	臼	Cữu	Cối giã	6	
+135	舌	Thiệt	Lưỡi	6	
+136	舛	Suyễn	Trái nhau	6	
+137	舟	Chu	Thuyền	6	
+138	艮	Cấn	Dừng; quẻ Cấn	6	
+139	色	Sắc	Màu sắc	6	
+140	艸	Thảo	Cỏ	6	艹
+141	虍	Hô	Vằn hổ	6	
+142	虫	Trùng	Sâu bọ	6	
+143	血	Huyết	Máu	6	
+144	行	Hành	Đi	6	
+145	衣	Y	Áo	6	衤
+146	襾	Á	Che đậy	6	西覀
+147	見	Kiến	Nhìn thấy	7	见
+148	角	Giác	Sừng; góc	7	
+149	言	Ngôn	Lời nói	7	訁讠
+150	谷	Cốc	Thung lũng	7	
+151	豆	Đậu	Đậu; đồ tế	7	
+152	豕	Thỉ	Heo	7	
+153	豸	Trãi	Loài thú không chân	7	
+154	貝	Bối	Vỏ sò; tiền	7	贝
+155	赤	Xích	Đỏ	7	
+156	走	Tẩu	Chạy	7	
+157	足	Túc	Chân	7	𧾷
+158	身	Thân	Thân thể	7	
+159	車	Xa	Xe	7	车
+160	辛	Tân	Cay; vất vả	7	
+161	辰	Thần	Thìn; thời gian	7	
+162	辵	Sước	Đi rồi dừng	7	辶辶
+163	邑	Ấp	Làng; thành	7	
+164	酉	Dậu	Bình rượu; chi Dậu	7	
+165	釆	Biện	Phân biệt	7	
+166	里	Lý	Dặm; làng	7	
+167	金	Kim	Kim loại; vàng	8	釒钅
+168	長	Trường	Dài	8	镸长
+169	門	Môn	Cửa	8	门
+170	阜	Phụ	Gò đất	8	阝
+171	隶	Đãi	Bắt kịp	8	
+172	隹	Chuy	Chim đuôi ngắn	8	
+173	雨	Vũ	Mưa	8	
+174	靑	Thanh	Xanh	8	青
+175	非	Phi	Sai; không phải	8	
+176	面	Diện	Mặt	9	靣
+177	革	Cách	Da thuộc	9	
+178	韋	Vi	Da mềm	9	韦
+179	韭	Cửu	Rau hẹ	9	
+180	音	Âm	Âm thanh	9	
+181	頁	Hiệt	Đầu; trang	9	页
+182	風	Phong	Gió	9	风
+183	飛	Phi	Bay	9	飞
+184	食	Thực	Ăn	9	飠饣
+185	首	Thủ	Đầu	9	
+186	香	Hương	Thơm	9	
+187	馬	Mã	Ngựa	10	马
+188	骨	Cốt	Xương	10	
+189	高	Cao	Cao	10	髙
+190	髟	Bưu	Tóc dài	10	
+191	鬥	Đấu	Đánh nhau	10	
+192	鬯	Sưởng	Rượu cúng	10	
+193	鬲	Cách	Nồi ba chân	10	
+194	鬼	Quỷ	Ma quỷ	10	
+195	魚	Ngư	Cá	11	鱼
+196	鳥	Điểu	Chim	11	鸟
+197	鹵	Lỗ	Muối mỏ	11	卤
+198	鹿	Lộc	Hươu	11	
+199	麥	Mạch	Lúa mạch	11	麦
+200	麻	Ma	Cây gai	11	
+201	黃	Hoàng	Vàng	12	黄
+202	黍	Thử	Kê nếp	12	
+203	黑	Hắc	Đen	12	黒
+204	黹	Chỉ	May thêu	12	
+205	黽	Mãnh	Ếch; nhái	13	黾
+206	鼎	Đỉnh	Vạc ba chân	13	
+207	鼓	Cổ	Trống	13	
+208	鼠	Thử	Chuột	13	
+209	鼻	Tỵ	Mũi	14	
+210	齊	Tề	Đều; ngang bằng	14	斉齐
+211	齒	Xỉ	Răng	15	歯齿
+212	龍	Long	Rồng	16	竜龙
+213	龜	Quy	Rùa	16	亀龟
+214	龠	Dược	Sáo	17	

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 class OfflineScreen extends StatelessWidget {
-  const OfflineScreen({required this.onRetry, super.key});
+  const OfflineScreen({required this.onRetry, this.onOpenKanji, super.key});
   final VoidCallback onRetry;
+  final VoidCallback? onOpenKanji;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -35,6 +36,10 @@ class OfflineScreen extends StatelessWidget {
                   icon: const Icon(Icons.refresh_rounded),
                   label: const Text('Thử lại'),
                 ),
+                if (onOpenKanji != null)
+                  TextButton(
+                      onPressed: onOpenKanji,
+                      child: const Text('Xem Hán tự đã lưu'),),
               ],
             ),
           ),

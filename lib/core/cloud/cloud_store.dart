@@ -44,6 +44,36 @@ class CloudStore {
     await _client.rpc<void>('bootstrap_current_user');
   }
 
+  Future<Map<String, dynamic>> getKanjiSnapshot() =>
+      _client.rpc<Map<String, dynamic>>('get_user_kanji_snapshot');
+
+  Future<void> recalculateKanjiStats() =>
+      _client.rpc<void>('recalculate_user_kanji_and_radical_stats');
+
+  Future<Map<String, dynamic>?> getKanji(String character) =>
+      _client.from('kanji').select().eq('character', character).maybeSingle();
+
+  Future<List<Map<String, dynamic>>> getKanjiComponents(int id) => _client
+      .from('kanji_components')
+      .select('*, radicals(*)')
+      .eq('kanji_id', id)
+      .order('sort_order');
+
+  Future<Set<int>> getKanjiIdsForRadical(int radicalId) async {
+    final ids = <int>{};
+    for (var offset = 0;; offset += 500) {
+      final rows = await _client
+          .from('kanji_components')
+          .select('kanji_id')
+          .eq('radical_id', radicalId)
+          .order('kanji_id')
+          .order('component_form')
+          .range(offset, offset + 499);
+      ids.addAll(rows.map((r) => (r['kanji_id'] as num).toInt()));
+      if (rows.length < 500) return ids;
+    }
+  }
+
   Future<List<FolderWithCount>> getFolderSummaries() async {
     final rows = await _client.rpc<List<dynamic>>('get_folder_summaries');
     return rows.map((raw) {

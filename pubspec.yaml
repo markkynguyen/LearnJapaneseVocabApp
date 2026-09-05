@@ -31,8 +31,13 @@ dependencies:
   permission_handler: ^11.3.1
   flutter_tts: ^4.0.2
   google_fonts: ^8.2.1
+  http: ^1.6.0
+  xml: ^6.5.0
+  path_drawing: ^1.0.1
+  flutter_svg: ^2.2.4
 
 dev_dependencies:
+  archive: ^3.6.1
   flutter_test:
     sdk: flutter
   build_runner: ^2.4.9
@@ -45,6 +50,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/google_g.png
+    - assets/kanji/sources.json
+    - assets/kanji/ATTRIBUTION.md
   fonts:
     - family: BizUDPGothic
       fonts:
