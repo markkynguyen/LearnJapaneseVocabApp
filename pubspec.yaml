@@ -30,6 +30,7 @@ dependencies:
   intl: ^0.20.2
   permission_handler: ^11.3.1
   flutter_tts: ^4.0.2
+  google_fonts: ^8.2.1
 
 dev_dependencies:
   flutter_test:
@@ -44,3 +45,16 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/google_g.png
+  fonts:
+    - family: BizUDPGothic
+      fonts:
+        - asset: assets/fonts/BIZUDPGothic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/BIZUDPGothic-Bold.ttf
+          weight: 700
+    - family: KleeOne
+      fonts:
+        - asset: assets/fonts/KleeOne-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/KleeOne-SemiBold.ttf
+          weight: 600

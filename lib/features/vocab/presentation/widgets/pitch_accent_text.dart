@@ -39,6 +39,7 @@ class PitchAccentText extends StatelessWidget {
         kana,
         locale: AppTypography.japaneseLocale,
         style: AppTypography.japanese(
+          context,
           null,
           color: textColor ?? Theme.of(context).colorScheme.onSurface,
           fontSize: fontSize,
@@ -168,6 +169,7 @@ class _PitchAccentLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textStyle = AppTypography.japanese(
+      context,
       null,
       color: textColor,
       fontSize: fontSize,

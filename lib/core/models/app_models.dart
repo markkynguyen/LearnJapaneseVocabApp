@@ -198,6 +198,22 @@ class LevelStats {
           );
 }
 
+enum JapaneseFontChoice {
+  textbook('klee_one', 'KleeOne'),
+  clearModern('biz_udpgothic', 'BizUDPGothic');
+
+  const JapaneseFontChoice(this.storageValue, this.fontFamily);
+
+  final String storageValue;
+  final String fontFamily;
+
+  static JapaneseFontChoice fromStorage(String? value) =>
+      JapaneseFontChoice.values.firstWhere(
+        (choice) => choice.storageValue == value,
+        orElse: () => JapaneseFontChoice.textbook,
+      );
+}
+
 class AppSettings {
   const AppSettings({
     this.notifyEnabled = false,
@@ -218,6 +234,7 @@ class AppSettings {
     this.newWordChooseMeaningCount = 1,
     this.quizJapaneseScript = 'kanji',
     this.themeMode = 'light',
+    this.japaneseFont = JapaneseFontChoice.textbook,
     this.srsLevel1IntervalDays = 2 / 24,
     this.srsLevel2IntervalDays = 1,
     this.srsLevel3IntervalDays = 2,
@@ -237,6 +254,9 @@ class AppSettings {
         notifyHour: (device?['notify_hour'] as num?)?.toInt() ?? 8,
         notifyMinute: (device?['notify_minute'] as num?)?.toInt() ?? 0,
         themeMode: device?['theme_mode'] as String? ?? 'light',
+        japaneseFont: JapaneseFontChoice.fromStorage(
+          device?['japanese_font'] as String?,
+        ),
         sessionSize: (learning['session_size'] as num?)?.toInt() ?? 10,
         quizDirection: learning['quiz_direction'] as String? ?? 'ja_to_vi',
         quizListenCount: (learning['quiz_listen_count'] as num?)?.toInt() ?? 1,
@@ -294,6 +314,7 @@ class AppSettings {
   final int newWordChooseMeaningCount;
   final String quizJapaneseScript;
   final String themeMode;
+  final JapaneseFontChoice japaneseFont;
   final double srsLevel1IntervalDays;
   final double srsLevel2IntervalDays;
   final double srsLevel3IntervalDays;
@@ -322,6 +343,7 @@ class AppSettings {
     int? newWordChooseMeaningCount,
     String? quizJapaneseScript,
     String? themeMode,
+    JapaneseFontChoice? japaneseFont,
     double? srsLevel1IntervalDays,
     double? srsLevel2IntervalDays,
     double? srsLevel3IntervalDays,
@@ -353,6 +375,7 @@ class AppSettings {
             newWordChooseMeaningCount ?? this.newWordChooseMeaningCount,
         quizJapaneseScript: quizJapaneseScript ?? this.quizJapaneseScript,
         themeMode: themeMode ?? this.themeMode,
+        japaneseFont: japaneseFont ?? this.japaneseFont,
         srsLevel1IntervalDays:
             srsLevel1IntervalDays ?? this.srsLevel1IntervalDays,
         srsLevel2IntervalDays:

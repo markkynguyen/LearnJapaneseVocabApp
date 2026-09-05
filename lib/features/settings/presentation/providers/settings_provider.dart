@@ -29,6 +29,13 @@ ThemeMode themeMode(ThemeModeRef ref) =>
             ? ThemeMode.dark
             : ThemeMode.light;
 
+final japaneseFontChoiceProvider = Provider<JapaneseFontChoice>(
+  (ref) => ref.watch(currentSessionProvider) == null
+      ? JapaneseFontChoice.textbook
+      : ref.watch(appSettingsProvider).valueOrNull?.japaneseFont ??
+          JapaneseFontChoice.textbook,
+);
+
 class SettingsDraftState {
   const SettingsDraftState({
     this.cloudSettings,

@@ -8,6 +8,8 @@ import '../../../../core/audio/audio_service.dart';
 import '../../../../core/constants/srs_constants.dart';
 import '../../../../core/models/app_models.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/japanese_mixed_text.dart';
 import '../../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../../../vocab/presentation/widgets/vocabulary_study_card.dart';
 import '../../../vocab/presentation/providers/vocab_list_provider.dart';
@@ -276,7 +278,7 @@ class _HomeVocabDetailDialogState
       context: context,
       builder: (context) => AlertDialog(
         title: Text('$actionLabel?'),
-        content: Text(
+        content: JapaneseMixedText(
           'Từ "${widget.result.item.vocab.kana}" sẽ chuyển từ Lv $_level '
           'về Lv $targetLevel. Lịch ôn sẽ được tính lại.',
         ),
@@ -401,10 +403,12 @@ class _SuggestionTile extends StatelessWidget {
                       ? Text(
                           vocab.kanji!.trim(),
                           overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                          locale: AppTypography.japaneseLocale,
+                          style: AppTypography.kanji(
+                            context,
+                            Theme.of(context).textTheme.titleLarge,
+                            fontWeight: FontWeight.w700,
+                          ),
                         )
                       : PitchAccentText(
                           kana: vocab.kana,

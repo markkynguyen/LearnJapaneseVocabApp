@@ -9,11 +9,13 @@ class QuizJapaneseText {
     required this.primary,
     this.secondary,
     required this.acceptedAnswers,
+    this.usesKanji = false,
   });
 
   final String primary;
   final String? secondary;
   final List<String> acceptedAnswers;
+  final bool usesKanji;
 
   bool get hasSecondary => secondary?.trim().isNotEmpty == true;
   String get plainText => hasSecondary ? '$primary\n$secondary' : primary;
@@ -68,10 +70,15 @@ QuizJapaneseText japaneseDisplayForQuiz(VocabularyEntry vocab, String script) {
       primary: kanji,
       secondary: kana,
       acceptedAnswers: [kanji, kana],
+      usesKanji: true,
     );
   }
 
-  return QuizJapaneseText(primary: kanji, acceptedAnswers: [kanji]);
+  return QuizJapaneseText(
+    primary: kanji,
+    acceptedAnswers: [kanji],
+    usesKanji: true,
+  );
 }
 
 List<String> acceptedJapaneseAnswersForQuiz(

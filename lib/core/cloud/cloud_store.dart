@@ -406,6 +406,7 @@ class CloudStore {
       }),
       updateDevicePreferences(deviceId, {
         'theme_mode': settings.themeMode,
+        'japanese_font': settings.japaneseFont.storageValue,
         'notify_enabled': settings.notifyEnabled,
         'notify_hour': settings.notifyHour,
         'notify_minute': settings.notifyMinute,

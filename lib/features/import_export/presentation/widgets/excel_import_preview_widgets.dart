@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../domain/excel_vocab_models.dart';
 
 class ExcelImportPreviewSummary extends StatelessWidget {
@@ -69,7 +70,14 @@ class ExcelImportPreviewRowTile extends StatelessWidget {
             style: TextStyle(color: statusColor, fontWeight: FontWeight.w800),
           ),
         ),
-        title: Text(row.kana.isEmpty ? '(thiếu kana)' : row.kana),
+        title: Text(
+          row.kana.isEmpty ? '(thiếu kana)' : row.kana,
+          locale: AppTypography.japaneseLocale,
+          style: AppTypography.japanese(
+            context,
+            Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
         subtitle: Text(
           row.error ?? details,
           style: TextStyle(color: colors.onSurfaceVariant),

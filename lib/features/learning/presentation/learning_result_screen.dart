@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/learning_models.dart';
 
@@ -62,8 +63,12 @@ class LearningResultScreen extends ConsumerWidget {
                           if (hasKanji) ...[
                             Text(
                               vocab.kanji!.trim(),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800),
+                              locale: AppTypography.japaneseLocale,
+                              style: AppTypography.kanji(
+                                context,
+                                null,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             const SizedBox(height: 4),
                           ],

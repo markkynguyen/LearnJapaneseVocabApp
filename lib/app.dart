@@ -41,6 +41,7 @@ class JVocabApp extends ConsumerWidget {
       });
     }
     final themeMode = ref.watch(themeModeProvider);
+    final japaneseFont = ref.watch(japaneseFontChoiceProvider);
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
@@ -57,8 +58,8 @@ class JVocabApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      theme: AppTheme.light(japaneseFont: japaneseFont),
+      darkTheme: AppTheme.dark(japaneseFont: japaneseFont),
       themeMode: themeMode,
       routerConfig: router,
     );

@@ -67,10 +67,22 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Hiển thị trong quiz'), findsOneWidget);
-    expect(find.text('Kanji'), findsOneWidget);
-    expect(find.text('Kana'), findsOneWidget);
-    expect(find.text('Cả hai'), findsOneWidget);
+    expect(
+      find.text('Hiển thị trong quiz', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Phông chữ tiếng Nhật', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Kiểu sách giáo khoa', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(find.text('Nét rõ hiện đại', skipOffstage: false), findsOneWidget);
+    expect(find.text('Kanji', skipOffstage: false), findsOneWidget);
+    expect(find.text('Kana', skipOffstage: false), findsOneWidget);
+    expect(find.text('Cả hai', skipOffstage: false), findsOneWidget);
 
     final saveButton = find.ancestor(
       of: find.text('Lưu'),
@@ -78,9 +90,8 @@ void main() {
     );
     expect(tester.widget<FilledButton>(saveButton).onPressed, isNull);
 
-    await tester.tap(find.byTooltip('Tăng').first);
-    await tester.pump();
-    await tester.tap(find.text('Cả hai'));
+    await tester.scrollUntilVisible(find.text('Nét rõ hiện đại'), 240);
+    await tester.tap(find.text('Nét rõ hiện đại'));
     await tester.pump();
 
     expect(store.saveCallCount, 0);
@@ -90,8 +101,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(store.saveCallCount, 1);
-    expect(store.lastSavedSettings?.newWordSessionSize, 6);
-    expect(store.lastSavedSettings?.quizJapaneseScript, quizScriptBothValue);
+    expect(
+      store.lastSavedSettings?.japaneseFont,
+      JapaneseFontChoice.clearModern,
+    );
     expect(find.text('Đã lưu cài đặt lên cloud.'), findsOneWidget);
   });
 
@@ -117,7 +130,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Tăng').first);
+    await tester.scrollUntilVisible(find.text('Nét rõ hiện đại'), 240);
+    await tester.tap(find.text('Nét rõ hiện đại'));
     await tester.pump();
     GoRouter.of(tester.element(find.byType(SettingsScreen))).go('/other');
     await tester.pumpAndSettle();
@@ -203,12 +217,14 @@ class _FakeCloudStore extends CloudStore {
   String _themeMode = lightThemeModeValue;
   int _sessionSize = 10;
   String _quizJapaneseScript = quizScriptKanjiValue;
+  JapaneseFontChoice _japaneseFont = JapaneseFontChoice.textbook;
 
   @override
   Future<AppSettings> getSettings(String deviceId) async => AppSettings(
         themeMode: _themeMode,
         sessionSize: _sessionSize,
         quizJapaneseScript: _quizJapaneseScript,
+        japaneseFont: _japaneseFont,
       );
 
   @override
@@ -222,5 +238,6 @@ class _FakeCloudStore extends CloudStore {
     _themeMode = settings.themeMode;
     _sessionSize = settings.sessionSize;
     _quizJapaneseScript = settings.quizJapaneseScript;
+    _japaneseFont = settings.japaneseFont;
   }
 }

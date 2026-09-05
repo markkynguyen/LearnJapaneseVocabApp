@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/models/app_models.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/japanese_mixed_text.dart';
 import 'pitch_accent_text.dart';
 
 class VocabularyStudyCard extends StatelessWidget {
@@ -47,7 +48,8 @@ class VocabularyStudyCard extends StatelessWidget {
                   vocab.kanji!.trim(),
                   textAlign: TextAlign.center,
                   locale: AppTypography.japaneseLocale,
-                  style: AppTypography.japanese(
+                  style: AppTypography.kanji(
+                    context,
                     Theme.of(context).textTheme.displayMedium,
                     fontWeight: FontWeight.w500,
                     height: 1.12,
@@ -125,6 +127,7 @@ class VocabularyStudyCard extends StatelessWidget {
                 icon: Icons.notes_rounded,
                 title: 'Ví dụ',
                 value: vocab.example!.trim(),
+                usesJapaneseTypography: true,
               ),
             if (!hasNote &&
                 !hasExample &&
@@ -161,11 +164,13 @@ class _DetailSection extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.value,
+    this.usesJapaneseTypography = false,
   });
 
   final IconData icon;
   final String title;
   final String value;
+  final bool usesJapaneseTypography;
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +195,13 @@ class _DetailSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(height: 1.45, fontSize: 17)),
+          if (usesJapaneseTypography)
+            JapaneseMixedText(
+              value,
+              style: const TextStyle(height: 1.45, fontSize: 17),
+            )
+          else
+            Text(value, style: const TextStyle(height: 1.45, fontSize: 17)),
         ],
       ),
     );

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
+import '../models/app_models.dart';
 import 'app_typography.dart';
 
 abstract final class AppTheme {
-  static ThemeData light() {
+  static ThemeData light({
+    JapaneseFontChoice japaneseFont = JapaneseFontChoice.textbook,
+  }) {
     return _buildTheme(
       brightness: Brightness.light,
       primary: AppColors.primary,
@@ -14,10 +17,13 @@ abstract final class AppTheme {
       onSurface: AppColors.textPrimary,
       onSurfaceVariant: AppColors.textSecondary,
       error: AppColors.danger,
+      japaneseFont: japaneseFont,
     );
   }
 
-  static ThemeData dark() {
+  static ThemeData dark({
+    JapaneseFontChoice japaneseFont = JapaneseFontChoice.textbook,
+  }) {
     return _buildTheme(
       brightness: Brightness.dark,
       primary: AppColors.primaryDark,
@@ -27,6 +33,7 @@ abstract final class AppTheme {
       onSurface: AppColors.textPrimaryDark,
       onSurfaceVariant: AppColors.textSecondaryDark,
       error: AppColors.dangerDark,
+      japaneseFont: japaneseFont,
     );
   }
 
@@ -39,6 +46,7 @@ abstract final class AppTheme {
     required Color onSurface,
     required Color onSurfaceVariant,
     required Color error,
+    required JapaneseFontChoice japaneseFont,
   }) {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
@@ -55,7 +63,9 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      fontFamily: AppTypography.defaultFontFamily,
       fontFamilyFallback: AppTypography.japaneseFontFamilyFallback,
+      extensions: [JapaneseTypographyTheme(fontChoice: japaneseFont)],
       colorScheme: scheme,
       scaffoldBackgroundColor: background,
       appBarTheme: AppBarTheme(

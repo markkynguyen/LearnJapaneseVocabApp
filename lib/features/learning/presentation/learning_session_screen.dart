@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/quiz_utils.dart';
 import '../../../core/widgets/japanese_quiz_text.dart';
+import '../../../core/widgets/japanese_mixed_text.dart';
 import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/learning_models.dart';
 import 'providers/learning_provider.dart';
@@ -387,7 +388,8 @@ class _LearningFeedbackDialog extends ConsumerWidget {
                   Text(
                     vocab.kanji!.trim(),
                     locale: AppTypography.japaneseLocale,
-                    style: AppTypography.japanese(
+                    style: AppTypography.kanji(
+                      context,
                       Theme.of(context).textTheme.headlineMedium,
                       fontWeight: FontWeight.w500,
                     ),
@@ -424,6 +426,7 @@ class _LearningFeedbackDialog extends ConsumerWidget {
                   _LearningFeedbackDetail(
                     label: 'Ví dụ',
                     value: vocab.example!.trim(),
+                    usesJapaneseTypography: true,
                   ),
                 if (vocab.note?.trim().isNotEmpty == true)
                   _LearningFeedbackDetail(
@@ -497,10 +500,12 @@ class _LearningFeedbackDetail extends StatelessWidget {
   const _LearningFeedbackDetail({
     required this.label,
     required this.value,
+    this.usesJapaneseTypography = false,
   });
 
   final String label;
   final String value;
+  final bool usesJapaneseTypography;
 
   @override
   Widget build(BuildContext context) {
@@ -519,7 +524,13 @@ class _LearningFeedbackDetail extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(height: 1.35, fontSize: 17)),
+          if (usesJapaneseTypography)
+            JapaneseMixedText(
+              value,
+              style: const TextStyle(height: 1.35, fontSize: 17),
+            )
+          else
+            Text(value, style: const TextStyle(height: 1.35, fontSize: 17)),
         ],
       ),
     );

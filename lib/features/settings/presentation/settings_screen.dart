@@ -11,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../import_export/presentation/providers/import_export_provider.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
+import 'widgets/japanese_font_card.dart';
 
 enum _SettingsExitChoice { cancel, discard, save }
 
@@ -180,6 +181,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ? darkThemeModeValue
                             : lightThemeModeValue,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  JapaneseFontCard(
+                    selected: settings.japaneseFont,
+                    onChanged: (value) => _updateDraft(
+                      settings.copyWith(japaneseFont: value),
                     ),
                   ),
                   const SizedBox(height: 22),

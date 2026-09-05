@@ -65,13 +65,23 @@ class VocabCard extends ConsumerWidget {
                             ? vocab.kanji!.trim()
                             : vocab.kana,
                         locale: AppTypography.japaneseLocale,
-                        style: AppTypography.japanese(
-                          null,
-                          color: colors.onSurface,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w500,
-                          height: 1.15,
-                        ),
+                        style: (vocab.kanji?.trim().isNotEmpty ?? false)
+                            ? AppTypography.kanji(
+                                context,
+                                null,
+                                color: colors.onSurface,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w500,
+                                height: 1.15,
+                              )
+                            : AppTypography.japanese(
+                                context,
+                                null,
+                                color: colors.onSurface,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w500,
+                                height: 1.15,
+                              ),
                       ),
                       const SizedBox(height: 8),
                       PitchAccentText(

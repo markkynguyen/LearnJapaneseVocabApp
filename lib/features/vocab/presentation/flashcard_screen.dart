@@ -7,6 +7,7 @@ import '../../../core/audio/audio_service.dart';
 import '../../../core/models/app_models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/japanese_mixed_text.dart';
 import '../../settings/presentation/providers/settings_provider.dart';
 import 'providers/flashcard_provider.dart';
 import 'widgets/pitch_accent_text.dart';
@@ -337,7 +338,8 @@ class _FlashcardFront extends StatelessWidget {
             vocab.kanji!.trim(),
             textAlign: TextAlign.center,
             locale: AppTypography.japaneseLocale,
-            style: AppTypography.japanese(
+            style: AppTypography.kanji(
+              context,
               Theme.of(context).textTheme.displayMedium,
               fontWeight: FontWeight.w500,
               height: 1.12,
@@ -446,7 +448,7 @@ class _FlashcardBack extends StatelessWidget {
             _BackSection(
               icon: Icons.notes_rounded,
               title: 'Ví dụ',
-              child: Text(
+              child: JapaneseMixedText(
                 vocab.example!.trim(),
                 style: const TextStyle(height: 1.45),
               ),

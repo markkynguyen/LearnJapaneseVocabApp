@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/models/app_models.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/japanese_mixed_text.dart';
 import 'providers/vocab_list_provider.dart';
 import 'widgets/vocab_card.dart';
 
@@ -240,7 +241,7 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xóa từ này?'),
-        content: Text(
+        content: JapaneseMixedText(
           'Từ "${item.vocab.kana}" sẽ bị xóa khỏi bộ từ. Không thể hoàn tác.',
         ),
         actions: [

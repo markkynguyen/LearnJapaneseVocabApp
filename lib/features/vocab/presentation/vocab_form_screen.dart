@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/app_models.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_typography.dart';
 import 'providers/vocab_form_provider.dart';
 import 'widgets/pitch_accent_picker.dart';
 
@@ -307,6 +308,10 @@ class _VocabFormBody extends ConsumerWidget {
               TextFormField(
                 controller: kanjiController,
                 textInputAction: TextInputAction.next,
+                style: AppTypography.kanji(
+                  context,
+                  Theme.of(context).textTheme.bodyLarge,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Kanji',
                   hintText: 'VD: 食べる',
@@ -317,6 +322,10 @@ class _VocabFormBody extends ConsumerWidget {
               TextFormField(
                 controller: kanaController,
                 textInputAction: TextInputAction.next,
+                style: AppTypography.japanese(
+                  context,
+                  Theme.of(context).textTheme.bodyLarge,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Kana *',
                   hintText: 'VD: たべる',
@@ -522,9 +531,17 @@ class _PreviewCardState extends State<_PreviewCard> {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                    style: widget.kanjiController.text.trim().isNotEmpty
+                        ? AppTypography.kanji(
+                            context,
+                            Theme.of(context).textTheme.titleMedium,
+                            fontWeight: FontWeight.w700,
+                          )
+                        : AppTypography.japanese(
+                            context,
+                            Theme.of(context).textTheme.titleMedium,
+                            fontWeight: FontWeight.w900,
+                          ),
                   ),
                   if (subtitle.isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -532,7 +549,10 @@ class _PreviewCardState extends State<_PreviewCard> {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: colors.onSurfaceVariant),
+                      style: AppTypography.japanese(
+                        context,
+                        TextStyle(color: colors.onSurfaceVariant),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 8),

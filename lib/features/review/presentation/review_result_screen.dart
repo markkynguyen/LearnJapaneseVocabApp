@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/time_utils.dart';
 import '../../vocab/presentation/widgets/pitch_accent_text.dart';
 import '../domain/review_models.dart';
@@ -320,10 +321,12 @@ class _ResultWordTile extends StatelessWidget {
                   child: hasKanji
                       ? Text(
                           vocab.kanji!.trim(),
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                          locale: AppTypography.japaneseLocale,
+                          style: AppTypography.kanji(
+                            context,
+                            Theme.of(context).textTheme.titleLarge,
+                            fontWeight: FontWeight.w700,
+                          ),
                         )
                       : PitchAccentReading(
                           kana: vocab.kana,

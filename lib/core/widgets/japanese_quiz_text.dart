@@ -38,7 +38,9 @@ class JapaneseQuizText extends StatelessWidget {
         text.primary,
         locale: AppTypography.japaneseLocale,
         textAlign: textAlign,
-        style: AppTypography.japanese(basePrimary),
+        style: text.usesKanji
+            ? AppTypography.kanji(context, basePrimary)
+            : AppTypography.japanese(context, basePrimary),
       );
     }
 
@@ -50,14 +52,16 @@ class JapaneseQuizText extends StatelessWidget {
           text.primary,
           locale: AppTypography.japaneseLocale,
           textAlign: textAlign,
-          style: AppTypography.japanese(basePrimary),
+          style: text.usesKanji
+              ? AppTypography.kanji(context, basePrimary)
+              : AppTypography.japanese(context, basePrimary),
         ),
         const SizedBox(height: 4),
         Text(
           text.secondary!.trim(),
           locale: AppTypography.japaneseLocale,
           textAlign: textAlign,
-          style: AppTypography.japanese(baseSecondary),
+          style: AppTypography.japanese(context, baseSecondary),
         ),
       ],
     );
