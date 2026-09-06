@@ -52,6 +52,7 @@ class _DetailBrowser extends StatefulWidget {
 
 class _DetailBrowserState extends State<_DetailBrowser> {
   late int _index;
+  int _contentGeneration = 0;
   final _history = <_Entry>[];
   @override
   void initState() {
@@ -65,7 +66,9 @@ class _DetailBrowserState extends State<_DetailBrowser> {
   void didUpdateWidget(covariant _DetailBrowser oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.characters != widget.characters ||
-        oldWidget.initialRadical != widget.initialRadical) {
+        oldWidget.initialRadical != widget.initialRadical ||
+        oldWidget.initialIndex != widget.initialIndex) {
+      _contentGeneration++;
       _history.clear();
       _index = widget.characters.isEmpty
           ? 0
@@ -129,7 +132,8 @@ class _DetailBrowserState extends State<_DetailBrowser> {
               Divider(color: colors.outlineVariant, height: 1),
               Expanded(
                 child: SingleChildScrollView(
-                  key: ValueKey('${entry.character}:${entry.radical?.id}'),
+                  key: ValueKey(
+                      '$_contentGeneration:$_index:${_history.length}:${entry.character}:${entry.radical?.id}',),
                   padding: const EdgeInsets.all(20),
                   child: entry.radical != null
                       ? _RadicalContent(
@@ -140,8 +144,6 @@ class _DetailBrowserState extends State<_DetailBrowser> {
                       : entry.character != null
                           ? _KanjiContent(
                               character: entry.character!,
-                              onRadical: (r) =>
-                                  _push((character: null, radical: r)),
                             )
                           : const Text(
                               'Từ này không có ký tự Hán tự để phân tích.',
@@ -180,9 +182,8 @@ class _DetailBrowserState extends State<_DetailBrowser> {
 }
 
 class _KanjiContent extends ConsumerWidget {
-  const _KanjiContent({required this.character, required this.onRadical});
+  const _KanjiContent({required this.character});
   final String character;
-  final ValueChanged<Radical> onRadical;
   @override
   Widget build(BuildContext context, WidgetRef ref) =>
       ref.watch(kanjiDetailProvider(character)).when(
@@ -254,53 +255,6 @@ class _KanjiContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Center(child: KanjiStrokeViewer(character: character)),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Thành phần cấu tạo',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  ref.watch(kanjiComponentsProvider(kanji.id)).when(
-                        loading: () => const LinearProgressIndicator(),
-                        error: (_, __) => _Retry(
-                          message: 'Không tải được thành phần.',
-                          onRetry: () =>
-                              ref.invalidate(kanjiComponentsProvider(kanji.id)),
-                        ),
-                        data: (components) => components.isEmpty
-                            ? const Text('Chưa có dữ liệu thành phần.')
-                            : Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: components
-                                    .map(
-                                      (c) => ActionChip(
-                                        label: Text.rich(
-                                          TextSpan(
-                                            children: [
-                                              TextSpan(
-                                                text: c.form,
-                                                style: AppTypography.kanji(
-                                                  context,
-                                                  null,
-                                                ),
-                                              ),
-                                              TextSpan(
-                                                  text: ' ${c.radical.nameVi}',),
-                                            ],
-                                          ),
-                                        ),
-                                        onPressed: () => onRadical(c.radical),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                      ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Các thành phần được nhận diện thuộc 214 bộ thủ; không phải mọi nét đều là một bộ thủ riêng.',
-                    style: TextStyle(fontSize: 12),
-                  ),
                 ],
               );
             },
@@ -359,40 +313,44 @@ class _RadicalContent extends ConsumerWidget {
               children: [
                 Text('$count lần xuất hiện trong bản thống kê gần nhất.'),
                 const SizedBox(height: 10),
-                ref.watch(radicalKanjiIdsProvider(radical.id)).when(
-                      loading: () => const LinearProgressIndicator(),
-                      error: (_, __) => _Retry(
-                        message: 'Không tải được Kanji liên quan.',
-                        onRetry: () => ref.invalidate(
-                          radicalKanjiIdsProvider(radical.id),
+                if (data.overview!.needsComponentUpdate)
+                  const Text(
+                      'Quy tắc phân tích đã thay đổi. Cập nhật thống kê ở tab Hán tự để xem Kanji liên quan.',)
+                else
+                  ref.watch(radicalKanjiIdsProvider(radical.id)).when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (_, __) => _Retry(
+                          message: 'Không tải được Kanji liên quan.',
+                          onRetry: () => ref.invalidate(
+                            radicalKanjiIdsProvider(radical.id),
+                          ),
                         ),
-                      ),
-                      data: (ids) {
-                        final kanji = data.kanji
-                            .where((k) => ids.contains(k.id))
-                            .toList();
-                        if (kanji.isEmpty) {
-                          return const Text(
-                            'Chưa gặp bộ này trong thư viện.',
-                          );
-                        }
-                        return Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: kanji
-                              .map(
-                                (k) => ActionChip(
-                                  label: Text(
-                                    '${k.character} · ${k.count}',
-                                    style: AppTypography.kanji(context, null),
+                        data: (ids) {
+                          final kanji = data.kanji
+                              .where((k) => ids.contains(k.id))
+                              .toList();
+                          if (kanji.isEmpty) {
+                            return const Text(
+                              'Chưa gặp bộ này trong thư viện.',
+                            );
+                          }
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: kanji
+                                .map(
+                                  (k) => ActionChip(
+                                    label: Text(
+                                      '${k.character} · ${k.count}',
+                                      style: AppTypography.kanji(context, null),
+                                    ),
+                                    onPressed: () => onKanji(k.character),
                                   ),
-                                  onPressed: () => onKanji(k.character),
-                                ),
-                              )
-                              .toList(),
-                        );
-                      },
-                    ),
+                                )
+                                .toList(),
+                          );
+                        },
+                      ),
               ],
             );
           },

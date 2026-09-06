@@ -1,0 +1,383 @@
+{
+  "component_version": 2,
+  "stops": [
+    {"element": "⺍", "display_form": "⺍"},
+    {"original": "戌", "display_form": "戌"},
+    {"element": "戌", "display_form": "戌"}
+  ],
+  "part_groups_note": "Pinned structural review: 斎 has an omitted original on its middle part; the other entries have matching element/original/number and consecutive part 1/2 across nested or split named contexts. Explicit IDs prevent merging unrelated occurrences in other tree contexts.",
+  "part_groups": {
+    "斎": [["kvg:0658e-g1", "kvg:0658e-g6", "kvg:0658e-g10"]],
+    "俸": [["kvg:04ff8-g8", "kvg:04ff8-g10"]],
+    "単": [["kvg:05358-g5", "kvg:05358-g8"]],
+    "卸": [["kvg:05378-g4", "kvg:05378-g6"]],
+    "嗅": [["kvg:055c5-g5", "kvg:055c5-g7"]],
+    "図": [["kvg:056f3-g2", "kvg:056f3-g4"]],
+    "垣": [["kvg:057a3-g3", "kvg:057a3-g7"]],
+    "奉": [["kvg:05949-g6", "kvg:05949-g8"]],
+    "宣": [["kvg:05ba3-g4", "kvg:05ba3-g8"]],
+    "御": [["kvg:05fa1-g7", "kvg:05fa1-g9"]],
+    "恒": [["kvg:06052-g3", "kvg:06052-g7"]],
+    "戴": [["kvg:06234-g3", "kvg:06234-g11"]],
+    "挿": [["kvg:0633f-g5", "kvg:0633f-g8"]],
+    "春": [["kvg:06625-g6", "kvg:06625-g8"]],
+    "棒": [["kvg:068d2-g8", "kvg:068d2-g10"]],
+    "武": [["kvg:06b66-g3", "kvg:06b66-g7"]],
+    "泰": [["kvg:06cf0-g6", "kvg:06cf0-g8"]],
+    "章": [["kvg:07ae0-g1", "kvg:07ae0-g6"]]
+  },
+  "expand_groups_note": "Structurally verified: other parts are covered by earlier ancestor stops. Expand these fragments without stealing strokes. Validator recomputes this exact set for the pinned corpus.",
+  "expand_groups": {
+  "囲": [
+    "kvg:056f2-g3"
+  ],
+  "井": [
+    "kvg:04e95-g1"
+  ],
+  "駅": [
+    "kvg:099c5-g6"
+  ],
+  "越": [
+    "kvg:08d8a-g5"
+  ],
+  "園": [
+    "kvg:05712-g8"
+  ],
+  "猿": [
+    "kvg:0733f-g8"
+  ],
+  "縁": [
+    "kvg:07e01-g6"
+  ],
+  "遠": [
+    "kvg:09060-g7"
+  ],
+  "卸": [
+    "kvg:05378-g11",
+    "kvg:05378-g12"
+  ],
+  "果": [
+    "kvg:0679c-g1"
+  ],
+  "菓": [
+    "kvg:083d3-g3"
+  ],
+  "釜": [
+    "kvg:091dc-g3"
+  ],
+  "巻": [
+    "kvg:05dfb-g5"
+  ],
+  "顔": [
+    "kvg:09854-g4"
+  ],
+  "棄": [
+    "kvg:068c4-g15",
+    "kvg:068c4-g16"
+  ],
+  "拒": [
+    "kvg:062d2-g3"
+  ],
+  "距": [
+    "kvg:08ddd-g4"
+  ],
+  "峡": [
+    "kvg:05ce1-g3",
+    "kvg:05ce1-g4",
+    "kvg:05ce1-g9"
+  ],
+  "挟": [
+    "kvg:0631f-g3",
+    "kvg:0631f-g4",
+    "kvg:0631f-g9"
+  ],
+  "狭": [
+    "kvg:072ed-g3",
+    "kvg:072ed-g4",
+    "kvg:072ed-g9"
+  ],
+  "業": [
+    "kvg:0696d-g4"
+  ],
+  "局": [
+    "kvg:05c40-g1"
+  ],
+  "曲": [
+    "kvg:066f2-g1",
+    "kvg:066f2-g5"
+  ],
+  "勲": [
+    "kvg:052f2-g5"
+  ],
+  "君": [
+    "kvg:0541b-g4"
+  ],
+  "薫": [
+    "kvg:085ab-g6"
+  ],
+  "群": [
+    "kvg:07fa4-g5"
+  ],
+  "郡": [
+    "kvg:090e1-g5"
+  ],
+  "券": [
+    "kvg:05238-g5"
+  ],
+  "互": [
+    "kvg:04e92-g1"
+  ],
+  "御": [
+    "kvg:05fa1-g14",
+    "kvg:05fa1-g15"
+  ],
+  "幸": [
+    "kvg:05e78-g3"
+  ],
+  "慌": [
+    "kvg:0614c-g8"
+  ],
+  "耕": [
+    "kvg:08015-g6"
+  ],
+  "荒": [
+    "kvg:08352-g6"
+  ],
+  "栽": [
+    "kvg:0683d-g11",
+    "kvg:0683d-g8",
+    "kvg:0683d-g9"
+  ],
+  "裁": [
+    "kvg:088c1-g10",
+    "kvg:088c1-g11",
+    "kvg:088c1-g13"
+  ],
+  "載": [
+    "kvg:08f09-g11",
+    "kvg:08f09-g8",
+    "kvg:08f09-g9"
+  ],
+  "産": [
+    "kvg:07523-g6"
+  ],
+  "嗣": [
+    "kvg:055e3-g5"
+  ],
+  "慈": [
+    "kvg:06148-g8"
+  ],
+  "滋": [
+    "kvg:06ecb-g7"
+  ],
+  "磁": [
+    "kvg:078c1-g8"
+  ],
+  "識": [
+    "kvg:08b58-g10",
+    "kvg:08b58-g12",
+    "kvg:08b58-g9"
+  ],
+  "執": [
+    "kvg:057f7-g4"
+  ],
+  "尺": [
+    "kvg:05c3a-g3"
+  ],
+  "釈": [
+    "kvg:091c8-g7"
+  ],
+  "主": [
+    "kvg:04e3b-g1"
+  ],
+  "種": [
+    "kvg:07a2e-g7"
+  ],
+  "腫": [
+    "kvg:0816b-g5"
+  ],
+  "樹": [
+    "kvg:06a39-g10",
+    "kvg:06a39-g7"
+  ],
+  "重": [
+    "kvg:091cd-g3"
+  ],
+  "承": [
+    "kvg:0627f-g2",
+    "kvg:0627f-g7"
+  ],
+  "衝": [
+    "kvg:0885d-g7"
+  ],
+  "乗": [
+    "kvg:04e57-g3"
+  ],
+  "剰": [
+    "kvg:05270-g4"
+  ],
+  "嘱": [
+    "kvg:05631-g6"
+  ],
+  "織": [
+    "kvg:07e54-g11",
+    "kvg:07e54-g8",
+    "kvg:07e54-g9"
+  ],
+  "職": [
+    "kvg:08077-g11",
+    "kvg:08077-g8",
+    "kvg:08077-g9"
+  ],
+  "尽": [
+    "kvg:05c3d-g4"
+  ],
+  "垂": [
+    "kvg:05782-g3"
+  ],
+  "睡": [
+    "kvg:07761-g5"
+  ],
+  "制": [
+    "kvg:05236-g2"
+  ],
+  "製": [
+    "kvg:088fd-g3"
+  ],
+  "戚": [
+    "kvg:0621a-g11",
+    "kvg:0621a-g12",
+    "kvg:0621a-g14"
+  ],
+  "繊": [
+    "kvg:07e4a-g10",
+    "kvg:07e4a-g7",
+    "kvg:07e4a-g8"
+  ],
+  "曹": [
+    "kvg:066f9-g3"
+  ],
+  "巣": [
+    "kvg:05de3-g4"
+  ],
+  "槽": [
+    "kvg:069fd-g5"
+  ],
+  "遭": [
+    "kvg:0906d-g4"
+  ],
+  "臓": [
+    "kvg:081d3-g5"
+  ],
+  "蔵": [
+    "kvg:08535-g3"
+  ],
+  "属": [
+    "kvg:05c5e-g4"
+  ],
+  "唾": [
+    "kvg:0553e-g5"
+  ],
+  "帯": [
+    "kvg:05e2f-g10"
+  ],
+  "滞": [
+    "kvg:06ede-g13",
+    "kvg:06ede-g14"
+  ],
+  "択": [
+    "kvg:0629e-g5"
+  ],
+  "沢": [
+    "kvg:06ca2-g5"
+  ],
+  "昼": [
+    "kvg:0663c-g4"
+  ],
+  "謄": [
+    "kvg:08b04-g5"
+  ],
+  "働": [
+    "kvg:050cd-g6"
+  ],
+  "動": [
+    "kvg:052d5-g4"
+  ],
+  "毒": [
+    "kvg:06bd2-g4"
+  ],
+  "濃": [
+    "kvg:06fc3-g4"
+  ],
+  "農": [
+    "kvg:08fb2-g2"
+  ],
+  "伴": [
+    "kvg:04f34-g3"
+  ],
+  "判": [
+    "kvg:05224-g2"
+  ],
+  "半": [
+    "kvg:0534a-g2"
+  ],
+  "畔": [
+    "kvg:07554-g3"
+  ],
+  "報": [
+    "kvg:05831-g4"
+  ],
+  "亡": [
+    "kvg:04ea1-g3"
+  ],
+  "忘": [
+    "kvg:05fd8-g4"
+  ],
+  "忙": [
+    "kvg:05fd9-g5"
+  ],
+  "望": [
+    "kvg:0671b-g5"
+  ],
+  "膨": [
+    "kvg:081a8-g10",
+    "kvg:081a8-g7"
+  ],
+  "妄": [
+    "kvg:05984-g4"
+  ],
+  "盲": [
+    "kvg:076f2-g4"
+  ],
+  "網": [
+    "kvg:07db2-g8"
+  ],
+  "訳": [
+    "kvg:08a33-g6"
+  ],
+  "郵": [
+    "kvg:090f5-g4"
+  ],
+  "裸": [
+    "kvg:088f8-g3"
+  ],
+  "卵": [
+    "kvg:05375-g1"
+  ],
+  "欄": [
+    "kvg:06b04-g10",
+    "kvg:06b04-g11",
+    "kvg:06b04-g12",
+    "kvg:06b04-g9"
+  ],
+  "丼": [
+    "kvg:04e3c-g2"
+  ],
+  "彙": [
+    "kvg:05f59-g5"
+  ],
+  "摯": [
+    "kvg:0646f-g5"
+  ]
+}
+}

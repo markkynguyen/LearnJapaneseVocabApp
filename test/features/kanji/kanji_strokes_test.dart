@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:jvocab/features/kanji/data/kanji_stroke_service.dart';
+import 'package:jvocab/features/kanji/domain/kanji_models.dart';
 import 'package:jvocab/features/kanji/presentation/widgets/kanji_stroke_animator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'fixtures.dart';
@@ -34,7 +35,14 @@ void main() {
     expect(transformed.strokeCount, 6);
     expect(transformed.staticSvgAt(2), contains('translate(1,1)'));
     expect(transformed.staticSvgAt(2), isNot(contains('script')));
-    expect('<path'.allMatches(transformed.staticSvgAt(2)).length, 2);
+    expect('<path'.allMatches(transformed.staticSvgAt(2)).length, 6);
+    expect(
+        'stroke-opacity="0.15"'.allMatches(transformed.staticSvgAt(2)).length,
+        4,);
+    expect(transformed.strokeIds, ['s1', 's2', 's3', 's4', 's5', 's6']);
+    final colored = transformed.staticSvgAt(0, highlighted: {'s2'});
+    expect('stroke="#d32f2f"'.allMatches(colored).length, 1);
+    expect(colored, isNot(contains('stroke-opacity="0.15"')));
   });
   test(
       'pins URL, shares inflight fetch, persists across service restarts and repairs corruption',
@@ -63,6 +71,10 @@ void main() {
       version: 'abc123',
     );
     expect((await offline.load('休')).paths, hasLength(6));
+    await service.invalidate('休');
+    await service.load('休');
+    expect(calls, 2,
+        reason: 'explicit retry bypasses memory and persistent SVG',);
     expect(service.cacheKey('𠮟'), endsWith('.20b9f'));
     expect(() => service.cacheKey('../'), throwsFormatException);
   });
@@ -88,11 +100,31 @@ void main() {
         home: Scaffold(body: KanjiStrokeAnimator(document: document)),
       ),
     );
-    expect(find.text('Nét 1/6'), findsOneWidget);
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    expect(
+        tester
+            .widget<IconButton>(find.byWidgetPredicate(
+                (w) => w is IconButton && w.tooltip == 'Nét trước',),)
+            .onPressed,
+        isNull,);
+    KanjiStrokePainter painter() => tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<KanjiStrokePainter>()
+        .single;
+    expect(painter().progress, 6);
     await tester.tap(find.byTooltip('Nét tiếp'));
     await tester.pump();
-    expect(find.text('Nét 2/6'), findsOneWidget);
+    expect(find.text('Nét 1/6'), findsOneWidget);
+    expect(painter().progress, 1);
+    await tester.tap(find.byTooltip('Nét trước'));
+    await tester.pump();
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    expect(painter().progress, 6);
     await tester.tap(find.text('Tự vẽ'));
+    await tester.pump();
+    expect(painter().progress, 0,
+        reason: 'animation zero is blank, unlike static zero',);
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Tạm dừng'), findsOneWidget);
     await tester.tap(find.text('Tạm dừng'));
@@ -114,6 +146,146 @@ void main() {
     expect(find.textContaining('Nét '), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets(
+      'independent repeated components stop playback and lock controls at zero',
+      (tester) async {
+    final document = StrokeDocument.parse(sampleSvg, kanjivgCommit: 'test');
+    const components = [
+      KanjiComponentOccurrence(
+          id: 'a',
+          form: '木',
+          strokeIds: ['s1', 's3'],
+          sortOrder: 0,
+          kanjivgCommit: 'test',),
+      KanjiComponentOccurrence(
+          id: 'b',
+          form: '木',
+          strokeIds: ['s2', 's4'],
+          sortOrder: 1,
+          kanjivgCommit: 'test',),
+      KanjiComponentOccurrence(
+          id: 'extra',
+          strokeIds: ['s5', 's6'],
+          sortOrder: 2,
+          kanjivgCommit: 'test',),
+    ];
+    Widget host(StrokeDocument doc, Brightness brightness) => MaterialApp(
+          theme: ThemeData(brightness: brightness),
+          home: Scaffold(
+              body: KanjiStrokeAnimator(document: doc, components: components),),
+        );
+    KanjiStrokePainter painter() => tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<KanjiStrokePainter>()
+        .singleWhere((p) => p.drawGrid);
+    final a = find.byKey(const ValueKey('component:a'));
+    final b = find.byKey(const ValueKey('component:b'));
+    await tester.pumpWidget(host(document, Brightness.light));
+    final semantics = tester.ensureSemantics();
+    expect(find.bySemanticsLabel(RegExp('木, thành phần 1')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('木, thành phần 2')), findsOneWidget);
+    semantics.dispose();
+    expect(find.text('Nét phụ'), findsOneWidget);
+    await tester.tap(find.text('Tự vẽ'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(a);
+    await tester.pumpAndSettle();
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    expect(find.text('Tạm dừng'), findsNothing);
+    expect(painter().progress, 6);
+    expect(painter().highlightedStrokeIds, {'s1', 's3'});
+    expect(painter().highlightColor, const Color(0xFFD32F2F));
+    expect(
+        tester
+            .widget<IconButton>(find.byWidgetPredicate(
+                (w) => w is IconButton && w.tooltip == 'Nét tiếp',),)
+            .onPressed,
+        isNull,);
+    expect(
+        tester
+            .widget<SegmentedButton<bool>>(find.byType(SegmentedButton<bool>))
+            .onSelectionChanged,
+        isNull,);
+    await tester.tap(b);
+    await tester.pump();
+    expect(tester.widget<ChoiceChip>(a).selected, isFalse);
+    expect(tester.widget<ChoiceChip>(b).selected, isTrue);
+    expect(painter().highlightedStrokeIds, {'s2', 's4'});
+    await tester.tap(b);
+    await tester.pump();
+    expect(painter().highlightedStrokeIds, isEmpty);
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    await tester.tap(find.byTooltip('Nét tiếp'));
+    await tester.pump();
+    await tester.tap(a);
+    await tester.pump();
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    await tester.tap(find.text('Bỏ chọn'));
+    await tester.pump();
+    expect(painter().highlightedStrokeIds, isEmpty);
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    await tester.tap(a);
+    await tester.pumpWidget(host(document, Brightness.dark));
+    await tester.pumpAndSettle();
+    expect(painter().highlightColor, const Color(0xFFFF6B6B));
+    expect(painter().highlightedStrokeIds, {'s1', 's3'});
+    await tester.pumpWidget(host(
+        StrokeDocument.parse(sampleSvg, kanjivgCommit: 'test'),
+        Brightness.dark,),);
+    await tester.pumpAndSettle();
+    expect(painter().highlightedStrokeIds, isEmpty);
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    for (var i = 0; i < 6; i++) {
+      await tester.tap(find.byTooltip('Nét tiếp'));
+      await tester.pump();
+    }
+    expect(find.text('Nét 6/6'), findsOneWidget);
+    expect(
+        tester
+            .widget<IconButton>(find.byWidgetPredicate(
+                (w) => w is IconButton && w.tooltip == 'Nét tiếp',),)
+            .onPressed,
+        isNull,);
+  });
+  testWidgets(
+      'mismatched source or path IDs disable highlighting without guessing',
+      (tester) async {
+    var retries = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: KanjiStrokeAnimator(
+            document: StrokeDocument.parse(sampleSvg, kanjivgCommit: 'test'),
+            components: const [
+              KanjiComponentOccurrence(
+                  id: 'wrong-source',
+                  form: '木',
+                  strokeIds: ['s1'],
+                  sortOrder: 0,
+                  kanjivgCommit: 'old',),
+              KanjiComponentOccurrence(
+                  id: 'wrong-id',
+                  form: '木',
+                  strokeIds: ['missing'],
+                  sortOrder: 1,
+                  kanjivgCommit: 'test',),
+            ],
+            onRetry: () => retries++,
+          ),
+        ),
+      ),
+    );
+    expect(
+        tester
+            .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+            .every((c) => c.onSelected == null),
+        isTrue,);
+    expect(find.textContaining('Chưa thể tô nét'), findsOneWidget);
+    await tester.tap(find.text('Tải lại nét'));
+    expect(retries, 1);
+    expect(find.text('Nét 0/6'), findsOneWidget);
+  });
   testWidgets('unsupported animation falls back to cumulative static SVG steps',
       (tester) async {
     final document = StrokeDocument.parse(
@@ -131,7 +303,7 @@ void main() {
     expect(find.text('SVG này chỉ hỗ trợ xem từng nét.'), findsOneWidget);
     await tester.tap(find.byTooltip('Nét tiếp'));
     await tester.pumpAndSettle();
-    expect(find.text('Nét 2/6'), findsOneWidget);
+    expect(find.text('Nét 1/6'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   test(
@@ -146,13 +318,25 @@ void main() {
       final zip = ZipDecoder()
           .decodeBytes(File('tool/kanji/.cache/kanjivg.zip').readAsBytesSync());
       final files = {for (final f in zip.files) f.name: f};
+      final occurrences = jsonDecode(
+          File('tool/kanji/.cache/component_occurrences.json')
+              .readAsStringSync(),) as List;
       for (final row in data['kanji'] as List) {
         final file = (row['id'] as int).toRadixString(16).padLeft(5, '0');
         final raw = utf8.decode(
           files['kanjivg-${source['kanjivg_commit']}/kanji/$file.svg']!.content
               as List<int>,
         );
-        final doc = StrokeDocument.parse(raw);
+        final doc = StrokeDocument.parse(raw,
+            kanjivgCommit: source['kanjivg_commit'] as String,);
+        final selected = occurrences.where((o) => o['kanji_id'] == row['id']);
+        final ids = selected.expand((o) => o['stroke_ids'] as List).toList();
+        expect(ids.toSet(), doc.strokeIds.toSet(),
+            reason: row['character'] as String,);
+        expect(ids.length, doc.strokeCount,
+            reason: 'No overlapping occurrences',);
+        expect(selected.every((o) => o['kanjivg_commit'] == doc.kanjivgCommit),
+            isTrue,);
         expect(
           doc.paths.length,
           greaterThan(0),

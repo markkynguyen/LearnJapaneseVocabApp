@@ -1,15 +1,20 @@
-# Kanji & Bộ thủ — bàn giao triển khai
-
-Mã nguồn nằm tại `D:\LearnJVocabApp`. Tính năng dùng Supabase, không thêm SQLite/Drift. Chưa áp dụng migration lên cloud và chưa phát hành ứng dụng.
-
 ## Phạm vi đã triển khai
 
-- Pipeline tái lập: 214 bộ Khang Hy, 2.136 Jōyō, 7.820 quan hệ thành phần; lớp 1–6 hoặc 8 (Trung học), không có JLPT.
+- Pipeline tái lập: 214 bộ Khang Hy, 2.136 Jōyō, 7.253 lần xuất hiện thành phần cuối; lớp 1–6 hoặc 8 (Trung học), không có JLPT.
 - Schema, RLS, RPC thống kê thủ công và RPC đọc snapshot nguyên tử, không bị giới hạn 1.000 hàng của PostgREST.
-- Tab Hán tự, hai lưới theo tần suất, dialog Kanji/Bộ thủ liên kết chéo, phân trang chuỗi như `先生`, trạng thái chưa hỗ trợ.
+- Tab Hán tự, hai lưới theo tần suất, dialog Bộ thủ mở Kanji liên quan, phân trang chuỗi như `先生`, trạng thái chưa hỗ trợ. Chip trong phân tích chọn/tô nét, không mở chi tiết bộ thủ.
 - Phân tích từ Flashcard và kết quả tìm kiếm Trang chủ; không sửa SRS/từ vựng.
 - KanjiVG CDN pin commit, cache bộ nhớ/lưu bền, từng nét tích lũy, phát/tạm dừng/vẽ lại, giảm chuyển động. SVG có transform không dùng được với bộ phát nét sẽ chuyển sang trình SVG tĩnh theo từng bước, đã lọc chỉ còn path/group. SVG hỏng hoàn toàn có thông báo lỗi và thử lại, không ngăn xem nghĩa/cách đọc.
 - Attribution trong Cài đặt → Nguồn dữ liệu & giấy phép.
+
+## Phân tích v2 và bước 0
+
+- Duyệt cây đến bộ thủ/biến thể hoặc ngoại lệ `戌`, `⺍`. Giữ từng lần xuất hiện và ID nhóm/nét, không gộp chỉ vì cùng chữ. `element` và `original` được lưu riêng; ô `戌` của `機` giữ nguyên nét nguồn `戍`.
+- `component_rules.json` lưu điểm dừng và ngoại lệ theo Kanji/ID nhóm. Nhóm `part` bị một điểm dừng cha che mất phần còn lại được mở rộng, không lấy trùng nét. Validator tính lại chính xác tập ngoại lệ này; thay đổi nguồn/quy tắc phải được rà soát trước khi sinh migration. Nhóm ghép riêng của `斎` và 17 trường hợp part đi qua các ngữ cảnh cây khác nhau được ghi tường minh; `audit_parts.py` in metadata/nhóm cha để rà soát. Đây là kiểm tra cấu trúc, không phải duyệt ngôn ngữ.
+- Thành phần bổ sung không thuộc 214 bộ có `radical_id = null`; nét không có tên hiện “Nét phụ” với hình thu nhỏ. Các thành phần cuối phủ mỗi nét đúng một lần.
+- Mở/chuyển chữ mặc định “Từng nét”, `Nét 0/N` hiện đầy đủ chữ. Bước 1–N tích lũy nét, không quay vòng. Animation vẫn bắt đầu từ chưa vẽ.
+- Bấm ô dừng animation, về bước 0 và tô đỏ đúng ID nét của lần xuất hiện đó; khóa phát/bước cho tới khi bấm lại hoặc “Bỏ chọn”. Chuyển chữ xóa lựa chọn, kể cả hai chữ liên tiếp giống nhau.
+- ID hoặc commit không khớp: giữ metadata nhưng không đoán nét; nút tải lại bỏ qua cache SVG và tải lại thành phần. SVG dự phòng giữ ID và tô màu từng path.
 
 ## Hợp đồng thống kê
 
@@ -21,15 +26,20 @@ Mã nguồn nằm tại `D:\LearnJVocabApp`. Tính năng dùng Supabase, không 
 - `unsupported_kanji_count` là số **ký tự CJK khác nhau** ngoài danh mục, không phải số lần xuất hiện. Xử lý Unicode scalar, gồm chữ ngoài BMP và Extension J của Unicode 17.
 - Thêm/sửa/xóa từ không tính lại. Đọc màn hình, đổi tab, mở dialog và thử tải lại cũng không gọi RPC tính toán. Không khóa sau 10 ngày.
 - Nút cập nhật gọi RPC rồi đọc lại cả overview/hai lưới. Advisory lock theo tài khoản và transaction ngăn kết quả ghi dở dang khi hai thiết bị cùng tính hoặc RPC lỗi.
+- `kanji_components` là phép chiếu duy nhất của các bộ tại điểm dừng; các thành phần bổ sung không được tính. `機` có hai ô 幺 nhưng chỉ đóng góp 幺=1.
+- Snapshot cũ giữ nguyên số liệu/thời gian với `component_version = 1`; UI cảnh báo cần cập nhật và chưa hiện Kanji liên quan theo quan hệ mới. Chỉ RPC thủ công ghi phiên bản 2. Thay quan hệ và hàm RPC trong cùng transaction, không tự tính/xóa snapshot khi migration.
 
 ## Sinh lại seed và duyệt dữ liệu
 
 Chạy từ gốc repo, cần Python 3 (thư viện chuẩn):
 
 ```powershell
-python tool/kanji/build_seed.py
 python tool/kanji/build_seed.py --validate-only
 python tool/kanji/build_seed.py --validate-only --release
+python tool/kanji/build_seed.py --cache-only
+python tool/kanji/build_components.py --cache-only
+python tool/kanji/build_components.py --validate-only
+python tool/kanji/test_components.py
 ```
 
 Lần đầu cần mạng để lấy archive KanjiVG pin commit. Snapshot KANJIDIC2 đã lưu tại `sources/kanjidic2.xml.gz`; cả hai nguồn đều được kiểm SHA-256 theo `sources.lock.json`. Xóa riêng cache tải về rồi chạy lại vẫn dùng đúng nguồn. Không tự chấp nhận checksum mới.
@@ -44,12 +54,14 @@ Lần đầu cần mạng để lấy archive KanjiVG pin commit. Snapshot KANJI
 
 Đầu ra tự sinh: migration `202609050003_seed_kanji_catalog.sql`, `assets/kanji/sources.json`, báo cáo, mẫu duyệt và `.cache/catalog.json` dùng cho corpus test. Không viết tay SQL seed. Chỉ chạy generator để thay migration này khi nó **chưa triển khai**. Sau khi đã triển khai, đổi đích generator thành migration có timestamp mới, duyệt diff và bảo toàn lịch sử migration; khi thay đổi thành phần phải xử lý cả những quan hệ cũ bị loại bỏ.
 
+Đối với v2, chỉ dùng `build_components.py`: sinh `202609060002_seed_kanji_component_occurrences.sql`, `component_validation_report.json` và `.cache/component_occurrences.json`; không chạm nghĩa/âm Hán Việt, trạng thái duyệt hoặc commit KanjiVG. `stats_v2.sql` là mẫu RPC được ghép vào transaction seed. Sau khi migration v2 triển khai, chỉ chạy `--validate-only` để kiểm tra; mọi thay đổi tiếp theo phải dùng timestamp mới. `--audit` chỉ xuất đề xuất ngoại lệ vào cache, không tự cập nhật quy tắc đã chốt.
+
 Giấy phép/nguồn chi tiết ở `assets/kanji/ATTRIBUTION.md`. Trước phát hành thương mại, người phụ trách cần xác nhận attribution, phân phối dữ liệu phái sinh và quy trình cập nhật nguồn đáp ứng điều khoản EDRDG/KanjiVG. Không coi việc generator pass là xác nhận pháp lý.
 
 ## Cache/offline
 
 - SVG: memory LRU 64 chữ; SharedPreferences/browser storage tối đa khoảng 2 MiB hoặc 100 SVG, khóa gồm phiên bản và code point. Khởi động lại vẫn đọc được SVG còn trong cache. Có thể bị loại bỏ khi vượt hạn mức hoặc khi người dùng xóa dữ liệu trình duyệt.
-- Metadata/component cache: khoảng 1 MiB/200 mục. Snapshot thống kê lưu riêng theo user ID; không dùng snapshot của tài khoản khác.
+- Metadata/component/quan hệ cache dùng namespace v2, khoảng 1 MiB/200 mục. SVG giữ namespace/commit cũ để tái sử dụng offline. Snapshot thống kê lưu riêng theo user ID; không dùng snapshot của tài khoản khác.
 - Khi offline và còn phiên đăng nhập, màn hình mất mạng có nút “Xem Hán tự đã lưu”. Mở lại các chữ đã xem không cần gọi cloud; nội dung chưa từng lưu cần tải lần đầu khi online.
 - Không lưu token trong cache tính năng. Lỗi quyền, auth hoặc schema không bị che bởi snapshot cũ. Cache không thay thế Supabase làm nguồn dữ liệu chính, không có hàng đợi ghi offline.
 
@@ -63,7 +75,7 @@ flutter test test/features/kanji/kanji_ui_test.dart --dart-define=KANJI_CAPTURE=
 flutter build web --release
 ```
 
-Corpus test cần chạy generator trước. Capture là kiểm tra ảnh tùy chọn trên Windows, dùng Segoe UI tại `C:/Windows/Fonts/segoeui.ttf`, ghi PNG vào `build/kanji_qa/`; test thông thường không cần font hệ thống này. Bộ mới kiểm tra mapping/Unicode, không tự tính, đúp thao tác, lỗi, cache cách ly tài khoản, parser/toàn bộ SVG, fallback tĩnh, animation/giảm chuyển động, UI nhỏ/chữ lớn, điều hướng, dialog và hai điểm vào.
+Corpus test cần chạy cả hai generator với `--cache-only` trước; tùy chọn này chỉ chuẩn bị dữ liệu test trong cache, không ghi đè migration đã triển khai. Capture là kiểm tra ảnh tùy chọn trên Windows, dùng Segoe UI tại `C:/Windows/Fonts/segoeui.ttf`, ghi PNG vào `build/kanji_qa/`; test thông thường không cần font hệ thống này. Bộ mới kiểm tra mapping/Unicode, không tự tính, đúp thao tác, lỗi, cache cách ly tài khoản, parser/toàn bộ SVG, fallback tĩnh, animation/giảm chuyển động, UI nhỏ/chữ lớn, điều hướng, dialog và hai điểm vào.
 
 Database trên **Supabase local/staging test database**, không chạy trên production:
 
@@ -73,6 +85,8 @@ supabase test db
 ```
 
 `supabase/tests/kanji_stats_test.sql` chứa 16 assertion pgTAP và dùng `fixtures/kanji_assertions.sql` để kiểm RPC/RLS dưới hai role người dùng. Fixtures rollback toàn bộ dữ liệu giả, kiểm chữ lặp, xóa từ, trường rỗng, chữ ngoài BMP, >1.000 kết quả và lỗi giữa transaction.
+
+`kanji_occurrences_test.sql` bổ sung schema/RLS/đếm bộ lặp/quy tắc mới và phiên bản snapshot. Harness PGlite còn tạo snapshot bằng RPC v1 trước khi chạy migration v2 rồi so sánh toàn bộ số liệu/thời gian sau migration. `node tool/kanji/test_database.mjs --assertions-only` chạy các assertion mà không ghi đè báo cáo benchmark cũ.
 
 Fallback khi chưa có Supabase CLI/Postgres local:
 
@@ -85,13 +99,10 @@ Harness PGlite pin 0.3.14 tạo Postgres WASM riêng trong bộ nhớ, giả l�
 
 ## Checklist trước phát hành
 
-Kết quả tại lần bàn giao: `flutter analyze` không có lỗi; **147 tests pass** khi bật cả corpus 2.136 SVG và capture UI; assertions database PGlite pass; seed sinh lại có cùng checksum và release gate từ chối dữ liệu chưa duyệt đúng như thiết kế. Chạy thử `flutter test --platform chrome` dừng ở bước loading, đã hủy; không ghi nhận là pass kiểm thử trình duyệt.
+Kết quả v2 ngày 2026-09-06: `flutter analyze` không có lỗi; **153 tests pass** khi bật cả corpus 2.136 SVG và capture UI; 5 test Python và assertions database PGlite pass; seed sinh lại có cùng checksum. Ảnh 6 chữ mẫu kiểm tra nét đỏ, theme sáng/tối, nét phụ và fallback SVG. Release gate vẫn yêu cầu con người duyệt dữ liệu như trước. Lần thử trước với `flutter test --platform chrome` dừng ở loading, đã hủy; không ghi nhận là pass kiểm thử trình duyệt.
 
-- [ ] Con người duyệt dữ liệu tiếng Việt/âm Hán Việt theo lô, tên bộ/dạng/thành phần; chạy gate `--release`.
-- [ ] Xác nhận điều khoản dữ liệu và attribution.
-- [ ] Chạy pgTAP trên Supabase local, smoke test RLS/Auth/PostgREST và benchmark trên staging.
-- [ ] Áp dụng migrations `202609050002` rồi `202609050003` vào môi trường đã chọn trước khi triển khai client.
-- [ ] Kiểm thử trên thiết bị Android và iOS: cache sau đóng/mở app ở chế độ máy bay, Pause/Replay, giảm chuyển động, SVG lỗi và chữ ngoài BMP.
-- [ ] Kiểm thử bản web đã triển khai cùng storage/CORS và offline sau tải lần đầu.
+Đã chạy `supabase db push --linked` cho `202609060001–002`, dry-run sau đó báo up to date. Kiểm tra cloud chỉ đọc bằng `supabase db query --linked --file tool/kanji/verify_cloud.sql`: 214 bộ, 2.136 Kanji có dữ liệu, 7.253 occurrences, 5.776 quan hệ bộ tại điểm dừng, không chồng ID nét; các chữ mẫu khớp. Authenticated chỉ đọc catalog, anon không đọc/catalog hoặc gọi RPC. Không gọi RPC tính lại cho tài khoản người dùng.
 
 Giới hạn môi trường hiện tại: bản web có thể build; Android debug bị Java/Gradle báo `Unable to establish loopback connection` trên máy này (thử IPv4 vẫn lỗi); iOS chưa build/test được trên Windows. Không coi các nền tảng này đã nghiệm thu chỉ vì widget test pass.
+
+Build web release v2 đã thành công. Còn cảnh báo dry-run WebAssembly trong `flutter_tts` và font Cupertino của dự án; bản build này là web JavaScript, không phải xác nhận hỗ trợ Wasm. Chưa phát hành client hay commit code của đợt cập nhật này.

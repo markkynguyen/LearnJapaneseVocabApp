@@ -74,6 +74,13 @@ class CloudStore {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getKanjiComponentOccurrences(int id) =>
+      _client
+          .from('kanji_component_occurrences')
+          .select('*, radicals(*)')
+          .eq('kanji_id', id)
+          .order('sort_order');
+
   Future<List<FolderWithCount>> getFolderSummaries() async {
     final rows = await _client.rpc<List<dynamic>>('get_folder_summaries');
     return rows.map((raw) {

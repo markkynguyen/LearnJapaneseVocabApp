@@ -31,6 +31,11 @@ final radicalKanjiIdsProvider = FutureProvider.family<Set<int>, int>(
   (ref, id) => ref.watch(kanjiRepositoryProvider).getKanjiIdsForRadical(id),
 );
 
+final kanjiOccurrencesProvider =
+    FutureProvider.family<List<KanjiComponentOccurrence>, int>(
+  (ref, id) => ref.watch(kanjiRepositoryProvider).getOccurrences(id),
+);
+
 final kanjiRefreshProvider =
     AsyncNotifierProvider<KanjiRefreshController, void>(
   KanjiRefreshController.new,

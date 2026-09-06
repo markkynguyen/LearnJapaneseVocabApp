@@ -13,7 +13,7 @@ class KanjiRepository {
   final CloudStore store;
   final String userId;
   final bool Function() _isOffline;
-  static const _catalogPrefix = 'kanji.catalog.v1.';
+  static const _catalogPrefix = 'kanji.catalog.v2.';
   Future<void> _writes = Future.value();
 
   Future<({dynamic json, bool cached})> _load(
@@ -112,5 +112,19 @@ class KanjiRepository {
       () async => (await store.getKanjiIdsForRadical(id)).toList(),
     );
     return (result.json as List).map((id) => (id as num).toInt()).toSet();
+  }
+
+  Future<List<KanjiComponentOccurrence>> getOccurrences(int id) async {
+    final result = await _load(
+      '${_catalogPrefix}occurrences.$id',
+      () => store.getKanjiComponentOccurrences(id),
+    );
+    return (result.json as List)
+        .map(
+          (row) => KanjiComponentOccurrence.fromJson(
+            Map<String, dynamic>.from(row as Map),
+          ),
+        )
+        .toList();
   }
 }

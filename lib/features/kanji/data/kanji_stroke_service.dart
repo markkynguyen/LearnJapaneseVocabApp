@@ -11,31 +11,57 @@ import 'package:xml/xml.dart';
 import '../domain/kanji_models.dart';
 
 class StrokeDocument {
-  StrokeDocument(this.paths, this.viewBox)
+  StrokeDocument(this.paths, this.viewBox, this.strokeIds, this.kanjivgCommit)
       : _staticSvg = null,
         _staticPathCount = 0;
-  StrokeDocument._static(this.viewBox, this._staticSvg, this._staticPathCount)
-      : paths = const [];
+  StrokeDocument._static(
+    this.viewBox,
+    this._staticSvg,
+    this._staticPathCount,
+    this.strokeIds,
+    this.kanjivgCommit,
+  ) : paths = const [];
   final List<Path> paths;
   final Rect viewBox;
+  final List<String> strokeIds;
+  final String? kanjivgCommit;
   final String? _staticSvg;
   final int _staticPathCount;
   bool get supportsAnimation => _staticSvg == null;
   int get strokeCount => supportsAnimation ? paths.length : _staticPathCount;
 
-  String staticSvgAt(int step) {
+  String staticSvgAt(
+    int step, {
+    Set<String> highlighted = const {},
+    Color ink = const Color(0xFF000000),
+    Color highlight = const Color(0xFFD32F2F),
+    Set<String>? onlyStrokeIds,
+  }) {
     final doc = XmlDocument.parse(_staticSvg!);
     final strokes = doc.descendants
         .whereType<XmlElement>()
         .where((e) => e.name.local == 'path')
         .toList();
-    for (final path in strokes.skip(step.clamp(0, strokeCount))) {
-      path.parent!.children.remove(path);
+    final visible = step == 0 ? strokeCount : step.clamp(0, strokeCount);
+    String hex(Color c) =>
+        '#${(c.toARGB32() & 0xffffff).toRadixString(16).padLeft(6, '0')}';
+    for (var i = 0; i < strokes.length; i++) {
+      final path = strokes[i];
+      final id = path.getAttribute('id');
+      if (onlyStrokeIds != null && !onlyStrokeIds.contains(id)) {
+        path.parent!.children.remove(path);
+        continue;
+      }
+      path.setAttribute(
+        'stroke',
+        hex(highlighted.contains(id) ? highlight : ink),
+      );
+      path.setAttribute('stroke-opacity', i < visible ? '1' : '0.15');
     }
     return doc.toXmlString();
   }
 
-  factory StrokeDocument.parse(String svg) {
+  factory StrokeDocument.parse(String svg, {String? kanjivgCommit}) {
     if (svg.length > 256 * 1024) throw const FormatException('SVG quá lớn.');
     final doc = XmlDocument.parse(svg);
     final root = doc.rootElement;
@@ -59,6 +85,11 @@ class StrokeDocument {
         );
     if (groups.isEmpty) throw const FormatException('Thiếu dữ liệu nét.');
     final viewBox = Rect.fromLTWH(box[0], box[1], box[2], box[3]);
+    final ids = groups.first.descendants
+        .whereType<XmlElement>()
+        .where((e) => e.name.local == 'path')
+        .map((e) => e.getAttribute('id') ?? '')
+        .toList();
     try {
       for (XmlNode? ancestor = groups.first;
           ancestor is XmlElement;
@@ -84,9 +115,9 @@ class StrokeDocument {
       if (paths.isEmpty || paths.length > 64) {
         throw const FormatException('Số nét không hợp lệ.');
       }
-      return StrokeDocument(paths, viewBox);
+      return StrokeDocument(paths, viewBox, ids, kanjivgCommit);
     } catch (_) {
-      return _staticFallback(root, groups.first, viewBox);
+      return _staticFallback(root, groups.first, viewBox, ids, kanjivgCommit);
     }
   }
 
@@ -97,6 +128,8 @@ class StrokeDocument {
     XmlElement root,
     XmlElement strokeGroup,
     Rect box,
+    List<String> ids,
+    String? version,
   ) {
     var count = 0;
     XmlElement? clean(XmlElement element, bool inStrokes) {
@@ -119,6 +152,8 @@ class StrokeDocument {
         }
         count++;
         attributes.add(XmlAttribute(XmlName('d'), d));
+        final id = element.getAttribute('id');
+        if (id != null) attributes.add(XmlAttribute(XmlName('id'), id));
       }
       final children = element.childElements
           .map((e) => clean(e, inStrokes))
@@ -149,7 +184,7 @@ class StrokeDocument {
     ], [
       drawing,
     ]);
-    return StrokeDocument._static(box, svg.toXmlString(), count);
+    return StrokeDocument._static(box, svg.toXmlString(), count, ids, version);
   }
 }
 
@@ -208,6 +243,17 @@ class KanjiStrokeService {
   final String version;
   final _memory = <String, StrokeDocument>{};
   final _inFlight = <String, Future<StrokeDocument>>{};
+  final _bypassCache = <String>{};
+
+  /// Explicit retry must not keep returning a structurally valid but mismatched SVG.
+  Future<void> invalidate(String character) async {
+    final key = cacheKey(character);
+    _memory.remove(key);
+    _bypassCache.add(key);
+    try {
+      await cache.remove(key);
+    } catch (_) {}
+  }
 
   String cacheKey(String character) {
     final codes = character.runes.toList();
@@ -236,10 +282,11 @@ class KanjiStrokeService {
   }
 
   Future<StrokeDocument> _load(String character, String key) async {
+    final bypass = _bypassCache.remove(key);
     try {
-      final cached = await cache.read(key);
+      final cached = bypass ? null : await cache.read(key);
       if (cached != null) {
-        final parsed = StrokeDocument.parse(cached);
+        final parsed = StrokeDocument.parse(cached, kanjivgCommit: version);
         _remember(key, parsed);
         return parsed;
       }
@@ -258,7 +305,7 @@ class KanjiStrokeService {
       throw StateError('Không tải được nét (${response.statusCode}).');
     }
     final svg = utf8.decode(response.bodyBytes);
-    final parsed = StrokeDocument.parse(svg);
+    final parsed = StrokeDocument.parse(svg, kanjivgCommit: version);
     _remember(key, parsed);
     try {
       await cache.write(key, svg);

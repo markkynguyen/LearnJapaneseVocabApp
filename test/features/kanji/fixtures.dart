@@ -1,9 +1,9 @@
 const sampleSvg =
     '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 109 109">
-<g id="kvg:StrokePaths_04f11"><g><path d="M 30,15 C 30,30 20,40 10,50"/>
-<path d="M 24,34 L 24,95"/><path d="M 40,40 L 95,40"/>
-<path d="M 68,10 L 68,95"/><path d="M 65,40 C 60,60 45,80 34,87"/>
-<path d="M 71,42 C 76,60 90,80 100,86"/></g></g>
+<g id="kvg:StrokePaths_04f11"><g><path id="s1" d="M 30,15 C 30,30 20,40 10,50"/>
+<path id="s2" d="M 24,34 L 24,95"/><path id="s3" d="M 40,40 L 95,40"/>
+<path id="s4" d="M 68,10 L 68,95"/><path id="s5" d="M 65,40 C 60,60 45,80 34,87"/>
+<path id="s6" d="M 71,42 C 76,60 90,80 100,86"/></g></g>
 <g id="kvg:StrokeNumbers_04f11"><text x="20" y="10">1</text></g></svg>''';
 
 Map<String, dynamic> kanjiJson(String char, {int count = 1}) => {
@@ -47,6 +47,7 @@ Map<String, dynamic> snapshotJson({bool empty = false}) => {
               'total_radical_count': 1,
               'total_vocab_scanned': 8,
               'unsupported_kanji_count': 1,
+              'component_version': 2,
             },
       'kanji': empty
           ? []
@@ -56,4 +57,17 @@ Map<String, dynamic> snapshotJson({bool empty = false}) => {
               kanjiJson('生', count: 2),
             ],
       'radicals': empty ? [] : [radicalJson(count: 12)],
+    };
+
+Map<String, dynamic> occurrenceJson() => {
+      'occurrence_id': 'g1',
+      'display_form': '亻',
+      'source_element': '亻',
+      'source_original': '人',
+      'radicals': radicalJson(),
+      'sort_order': 0,
+      'stroke_ids': ['s1', 's2'],
+      'source_group_ids': ['g1'],
+      'component_version': 2,
+      'kanjivg_commit': 'test',
     };

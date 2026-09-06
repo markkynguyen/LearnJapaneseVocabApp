@@ -5,6 +5,7 @@ import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 
 const db = new PGlite();
+let legacySnapshot;
 try {
   await db.exec(`
     create role anon;
@@ -22,13 +23,33 @@ try {
     sql = sql.replace('create extension if not exists pgcrypto;', '');
     await db.exec(sql);
     console.log(`Applied ${file}`);
+    if (file === '202609050003_seed_kanji_catalog.sql') {
+      await db.exec(`
+        insert into auth.users(id) values ('aaaaaaaa-0000-0000-0000-000000000004');
+        insert into public.folders(id,user_id,name) values ('bbbbbbbb-0000-0000-0000-000000000004','aaaaaaaa-0000-0000-0000-000000000004','migration preservation');
+        insert into public.vocabulary(user_id,folder_id,kanji,kana,romaji,meaning) values ('aaaaaaaa-0000-0000-0000-000000000004','bbbbbbbb-0000-0000-0000-000000000004','機森','かな','test','test');
+        select set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000004',false);
+        select public.recalculate_user_kanji_and_radical_stats();
+      `);
+      legacySnapshot = (await db.query('select public.get_user_kanji_snapshot() as snapshot')).rows[0].snapshot;
+    }
   }
+  const afterMigration = (await db.query('select public.get_user_kanji_snapshot() as snapshot')).rows[0].snapshot;
+  if (afterMigration.overview.component_version !== 1) throw new Error('Migration relabeled a legacy snapshot');
+  delete afterMigration.overview.component_version;
+  if (JSON.stringify(afterMigration) !== JSON.stringify(legacySnapshot)) throw new Error('Migration changed legacy snapshot counts/timestamps');
+  await db.exec("delete from auth.users where id='aaaaaaaa-0000-0000-0000-000000000004'; select set_config('request.jwt.claim.sub','',false);");
+  console.log('PASS: existing user snapshot survives migration unchanged, with version 1.');
   // Supabase supplies table privileges by default; replicate that for old tables.
   await db.exec(`grant select, insert, update, delete on public.folders, public.vocabulary, public.srs_progress to authenticated;`);
   const assertions = await readFile('supabase/tests/fixtures/kanji_assertions.sql', 'utf8');
   await db.exec(assertions);
+  await db.exec(await readFile('supabase/tests/fixtures/kanji_occurrences_assertions.sql', 'utf8'));
   console.log('PASS: Kanji schema, counts, idempotency, cleanup, roles/RLS, Unicode, snapshot >1000 rows, atomic rollback.');
 
+  if (process.argv.includes('--assertions-only')) {
+    console.log('PASS: v2 occurrences and manual versioned statistics.');
+  } else {
   const timings = [];
   for (const size of [1000, 10000, 50000]) {
     await db.exec(`
@@ -54,6 +75,7 @@ try {
     engine: 'PGlite 0.3.14 (local PostgreSQL WASM, NOT Supabase production latency)',
     node: process.version, measurements: timings,
   }, null, 2) + '\n');
+  }
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;

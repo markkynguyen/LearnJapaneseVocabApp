@@ -42,6 +42,10 @@ class KanjiHomeScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
+                      if (overview.needsComponentUpdate)
+                        const Text(
+                          'Quy tắc phân tích đã thay đổi. Cập nhật thống kê để đồng bộ.',
+                        ),
                       Text(
                         'Cập nhật: ${DateFormat('HH:mm dd/MM/yyyy').format(overview.calculatedAt.toLocal())} · ${overview.vocabScanned} từ đã quét',
                       ),

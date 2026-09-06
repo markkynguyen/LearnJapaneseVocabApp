@@ -42,6 +42,13 @@ class FakeKanjiStore extends CloudStore {
     if (error != null) throw error!;
     return kanjiJson(character);
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getKanjiComponentOccurrences(
+      int id,) async {
+    if (error != null) throw error!;
+    return [occurrenceJson()];
+  }
 }
 
 void main() {
@@ -121,9 +128,12 @@ void main() {
     final online = KanjiRepository(store, 'alice');
     await online.loadSnapshot();
     await online.getKanji('休');
+    await online.getOccurrences('休'.runes.single);
     final offline = KanjiRepository(store, 'alice', isOffline: () => true);
     expect((await offline.loadSnapshot()).fromCache, isTrue);
     expect((await offline.getKanji('休'))!.meaningVi, 'Nghỉ ngơi');
+    expect((await offline.getOccurrences('休'.runes.single)).single.strokeIds,
+        ['s1', 's2'],);
     await expectLater(
       KanjiRepository(store, 'bob', isOffline: () => true).loadSnapshot(),
       throwsStateError,
@@ -143,5 +153,12 @@ void main() {
           .loadSnapshot(),
       throwsStateError,
     );
+  });
+  test('old snapshot keeps counts and requests manual component update', () {
+    final raw = snapshotJson();
+    (raw['overview'] as Map).remove('component_version');
+    final old = KanjiSnapshot.fromJson(raw);
+    expect(old.overview!.needsComponentUpdate, isTrue);
+    expect(old.kanji.first.count, 12);
   });
 }

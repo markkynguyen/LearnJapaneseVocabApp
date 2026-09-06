@@ -63,6 +63,7 @@ def write_json(path, value):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--validate-only', action='store_true')
+    parser.add_argument('--cache-only', action='store_true', help='Prepare corpus test data without rewriting deployed migrations or editorial assets.')
     parser.add_argument('--release', action='store_true', help='Require human-approved Vietnamese data for all characters.')
     args = parser.parse_args()
     locks = json.loads(LOCK.read_text(encoding='utf-8')) if LOCK.exists() else {}
@@ -169,6 +170,9 @@ def main():
                   review_note='Machine validation only. Human linguistic approval is tracked per character in curated_vi.json.')
     if args.release and (missing_vi or missing_hanviet or report['approved_translations'] != 2136):
         raise ValueError('Release gate failed: Vietnamese data requires complete human approval. See validation_report.json.')
+    if args.cache_only:
+        write_json(CACHE / 'catalog.json', dict(kanji=kanji, radicals=radicals, components=components))
+        args.validate_only = True
     if not args.validate_only:
         write_json(LOCK, locks)
         write_json(OUT / 'sources.json', dict(kanjivg_commit=KVG_COMMIT, kanjidic_date=report['kanjidic_date'], sources=locks))

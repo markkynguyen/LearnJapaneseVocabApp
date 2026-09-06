@@ -115,9 +115,54 @@ class KanjiOverview {
         kanjiCount = _integer(json, 'total_kanji_count'),
         radicalCount = _integer(json, 'total_radical_count'),
         vocabScanned = _integer(json, 'total_vocab_scanned'),
-        unsupportedCount = _integer(json, 'unsupported_kanji_count');
+        unsupportedCount = _integer(json, 'unsupported_kanji_count'),
+        componentVersion = (json['component_version'] as num?)?.toInt() ?? 1;
+  final int componentVersion;
+  bool get needsComponentUpdate => componentVersion < 2;
   final DateTime calculatedAt;
   final int kanjiCount, radicalCount, vocabScanned, unsupportedCount;
+}
+
+class KanjiComponentOccurrence {
+  const KanjiComponentOccurrence({
+    required this.id,
+    required this.strokeIds,
+    required this.sortOrder,
+    required this.kanjivgCommit,
+    this.form,
+    this.radical,
+    this.sourceElement,
+    this.sourceOriginal,
+    this.groupIds = const [],
+    this.componentVersion = 2,
+  });
+  factory KanjiComponentOccurrence.fromJson(Map<String, dynamic> json) =>
+      KanjiComponentOccurrence(
+        id: json['occurrence_id'] as String,
+        form: json['display_form'] as String?,
+        strokeIds: _strings(json['stroke_ids']),
+        groupIds: _strings(json['source_group_ids']),
+        sourceElement: json['source_element'] as String?,
+        sourceOriginal: json['source_original'] as String?,
+        radical: json['radicals'] == null
+            ? null
+            : Radical.fromJson(
+                Map<String, dynamic>.from(json['radicals'] as Map),
+              ),
+        sortOrder: _integer(json, 'sort_order'),
+        componentVersion: _integer(json, 'component_version'),
+        kanjivgCommit: json['kanjivg_commit'] as String,
+      );
+  final String id, kanjivgCommit;
+  final String? form, sourceElement, sourceOriginal;
+  final Radical? radical;
+  final List<String> strokeIds, groupIds;
+  final int sortOrder, componentVersion;
+  String get label => form == null
+      ? 'Nét phụ'
+      : radical == null
+          ? form!
+          : '$form ${radical!.nameVi}';
 }
 
 class KanjiSnapshot {

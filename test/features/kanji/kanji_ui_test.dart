@@ -45,8 +45,10 @@ List<Override> overrides(FakeKanjiStore store) => [
         (ref, char) async =>
             char == '𠮷' ? null : Kanji.fromJson(kanjiJson(char)),
       ),
-      kanjiStrokesProvider
-          .overrideWith((ref, char) async => StrokeDocument.parse(sampleSvg)),
+      kanjiStrokesProvider.overrideWith((ref, char) async =>
+          StrokeDocument.parse(sampleSvg, kanjivgCommit: 'test'),),
+      kanjiOccurrencesProvider.overrideWith((ref, id) async =>
+          [KanjiComponentOccurrence.fromJson(occurrenceJson())],),
       kanjiComponentsProvider.overrideWith(
         (ref, id) async => [
           KanjiComponent(
@@ -160,7 +162,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('không có ký tự Hán tự'), findsOneWidget);
   });
-  testWidgets('component navigation uses one dialog and returns to source',
+  testWidgets('component selects strokes without opening radical details',
       (tester) async {
     await tester.pumpWidget(
       app(
@@ -169,19 +171,53 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.widgetWithText(ActionChip, '亻 Nhân'));
-    await tester.tap(find.widgetWithText(ActionChip, '亻 Nhân'));
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, '亻 Nhân'));
+    await tester.tap(find.widgetWithText(ChoiceChip, '亻 Nhân'));
     await tester.pumpAndSettle();
-    expect(find.text('Chi tiết bộ thủ'), findsOneWidget);
+    expect(find.text('Chi tiết bộ thủ'), findsNothing);
     expect(find.byType(Dialog), findsOneWidget);
-    await tester.ensureVisible(find.widgetWithText(ActionChip, '休 · 12'));
-    await tester.tap(find.widgetWithText(ActionChip, '休 · 12'));
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    await tester.tap(find.text('Bỏ chọn'));
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsOneWidget);
-    await tester.tap(find.byTooltip('Quay lại'));
-    await tester.pumpAndSettle();
-    expect(find.text('Chi tiết bộ thủ'), findsOneWidget);
+    expect(find.text('Bỏ chọn'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('pagination resets selection even for repeated characters',
+      (tester) async {
+    await tester.pumpWidget(app(
+        const Scaffold(body: KanjiDetailDialog(characters: ['休', '休'])),
+        FakeKanjiStore(),),);
+    await tester.pumpAndSettle();
+    final chip = find.widgetWithText(ChoiceChip, '亻 Nhân');
+    await tester.ensureVisible(chip);
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+    expect(find.text('Bỏ chọn'), findsOneWidget);
+    await tester.tap(find.text('Tiếp'));
+    await tester.pumpAndSettle();
+    expect(find.text('2/2'), findsOneWidget);
+    expect(find.text('Bỏ chọn'), findsNothing);
+    expect(find.text('Nét 0/6'), findsOneWidget);
+    expect(tester.widget<ChoiceChip>(chip).selected, isFalse);
+  });
+  testWidgets(
+      'stale snapshot warns and blocks related Kanji without recalculation',
+      (tester) async {
+    final store = FakeKanjiStore();
+    (store.data['overview'] as Map)['component_version'] = 1;
+    await tester.pumpWidget(app(const KanjiHomeScreen(), store));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Quy tắc phân tích'), findsOneWidget);
+    expect(find.textContaining('2020'), findsOneWidget);
+    await tester.tap(find.text('Bộ thủ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nhân'));
+    await tester.pumpAndSettle();
+    expect(find.text('Chi tiết bộ thủ'), findsOneWidget);
+    expect(find.textContaining('để xem Kanji liên quan'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, '休 · 12'), findsNothing);
+    expect(store.recalculations, 0);
   });
   testWidgets('four destinations preserve routes and selected indices',
       (tester) async {

@@ -1,0 +1,183 @@
+{
+  "component_version": 2,
+  "kanji_count": 2136,
+  "occurrence_count": 7253,
+  "supplementary_count": 1260,
+  "coverage": "Every SVG stroke belongs to exactly one terminal occurrence",
+  "samples": {
+    "機": [
+      {
+        "form": "木",
+        "strokes": [
+          "kvg:06a5f-s1",
+          "kvg:06a5f-s2",
+          "kvg:06a5f-s3",
+          "kvg:06a5f-s4"
+        ]
+      },
+      {
+        "form": "幺",
+        "strokes": [
+          "kvg:06a5f-s5",
+          "kvg:06a5f-s6",
+          "kvg:06a5f-s7"
+        ]
+      },
+      {
+        "form": "幺",
+        "strokes": [
+          "kvg:06a5f-s8",
+          "kvg:06a5f-s9",
+          "kvg:06a5f-s10"
+        ]
+      },
+      {
+        "form": "戌",
+        "strokes": [
+          "kvg:06a5f-s11",
+          "kvg:06a5f-s12",
+          "kvg:06a5f-s13",
+          "kvg:06a5f-s14",
+          "kvg:06a5f-s15",
+          "kvg:06a5f-s16"
+        ]
+      }
+    ],
+    "何": [
+      {
+        "form": "亻",
+        "strokes": [
+          "kvg:04f55-s1",
+          "kvg:04f55-s2"
+        ]
+      },
+      {
+        "form": "一",
+        "strokes": [
+          "kvg:04f55-s3"
+        ]
+      },
+      {
+        "form": "口",
+        "strokes": [
+          "kvg:04f55-s4",
+          "kvg:04f55-s5",
+          "kvg:04f55-s6"
+        ]
+      },
+      {
+        "form": "亅",
+        "strokes": [
+          "kvg:04f55-s7"
+        ]
+      }
+    ],
+    "学": [
+      {
+        "form": "⺍",
+        "strokes": [
+          "kvg:05b66-s1",
+          "kvg:05b66-s2",
+          "kvg:05b66-s3"
+        ]
+      },
+      {
+        "form": "冖",
+        "strokes": [
+          "kvg:05b66-s4",
+          "kvg:05b66-s5"
+        ]
+      },
+      {
+        "form": "子",
+        "strokes": [
+          "kvg:05b66-s6",
+          "kvg:05b66-s7",
+          "kvg:05b66-s8"
+        ]
+      }
+    ],
+    "森": [
+      {
+        "form": "木",
+        "strokes": [
+          "kvg:068ee-s1",
+          "kvg:068ee-s2",
+          "kvg:068ee-s3",
+          "kvg:068ee-s4"
+        ]
+      },
+      {
+        "form": "木",
+        "strokes": [
+          "kvg:068ee-s5",
+          "kvg:068ee-s6",
+          "kvg:068ee-s7",
+          "kvg:068ee-s8"
+        ]
+      },
+      {
+        "form": "木",
+        "strokes": [
+          "kvg:068ee-s9",
+          "kvg:068ee-s10",
+          "kvg:068ee-s11",
+          "kvg:068ee-s12"
+        ]
+      }
+    ],
+    "国": [
+      {
+        "form": "囗",
+        "strokes": [
+          "kvg:056fd-s1",
+          "kvg:056fd-s2",
+          "kvg:056fd-s8"
+        ]
+      },
+      {
+        "form": "玉",
+        "strokes": [
+          "kvg:056fd-s3",
+          "kvg:056fd-s4",
+          "kvg:056fd-s5",
+          "kvg:056fd-s6",
+          "kvg:056fd-s7"
+        ]
+      }
+    ],
+    "基": [
+      {
+        "form": "甘",
+        "strokes": [
+          "kvg:057fa-s1",
+          "kvg:057fa-s2",
+          "kvg:057fa-s3",
+          "kvg:057fa-s4",
+          "kvg:057fa-s5"
+        ]
+      },
+      {
+        "form": null,
+        "strokes": [
+          "kvg:057fa-s6"
+        ]
+      },
+      {
+        "form": "八",
+        "strokes": [
+          "kvg:057fa-s7",
+          "kvg:057fa-s8"
+        ]
+      },
+      {
+        "form": "土",
+        "strokes": [
+          "kvg:057fa-s9",
+          "kvg:057fa-s10",
+          "kvg:057fa-s11"
+        ]
+      }
+    ]
+  }
+}
