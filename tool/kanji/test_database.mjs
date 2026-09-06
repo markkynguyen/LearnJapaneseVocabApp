@@ -36,15 +36,22 @@ try {
   }
   const afterMigration = (await db.query('select public.get_user_kanji_snapshot() as snapshot')).rows[0].snapshot;
   if (afterMigration.overview.component_version !== 1) throw new Error('Migration relabeled a legacy snapshot');
+  const migratedRadicalForms = afterMigration.radical_forms;
+  delete afterMigration.radical_forms;
   delete afterMigration.overview.component_version;
   if (JSON.stringify(afterMigration) !== JSON.stringify(legacySnapshot)) throw new Error('Migration changed legacy snapshot counts/timestamps');
+  if (!Array.isArray(migratedRadicalForms) || migratedRadicalForms.length === 0) throw new Error('Migration did not add radical forms');
   await db.exec("delete from auth.users where id='aaaaaaaa-0000-0000-0000-000000000004'; select set_config('request.jwt.claim.sub','',false);");
   console.log('PASS: existing user snapshot survives migration unchanged, with version 1.');
   // Supabase supplies table privileges by default; replicate that for old tables.
   await db.exec(`grant select, insert, update, delete on public.folders, public.vocabulary, public.srs_progress to authenticated;`);
   const assertions = await readFile('supabase/tests/fixtures/kanji_assertions.sql', 'utf8');
   await db.exec(assertions);
+  console.log('PASS: base Kanji assertions.');
   await db.exec(await readFile('supabase/tests/fixtures/kanji_occurrences_assertions.sql', 'utf8'));
+  console.log('PASS: component occurrence assertions.');
+  await db.exec(await readFile('supabase/tests/fixtures/kanji_radical_forms_assertions.sql', 'utf8'));
+  console.log('PASS: radical form assertions.');
   console.log('PASS: Kanji schema, counts, idempotency, cleanup, roles/RLS, Unicode, snapshot >1000 rows, atomic rollback.');
 
   if (process.argv.includes('--assertions-only')) {

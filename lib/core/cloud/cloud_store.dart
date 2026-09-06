@@ -53,21 +53,44 @@ class CloudStore {
   Future<Map<String, dynamic>?> getKanji(String character) =>
       _client.from('kanji').select().eq('character', character).maybeSingle();
 
+  Future<List<Map<String, dynamic>>> getKanjiByCharacters(
+    Iterable<String> characters,
+  ) async {
+    final pending = characters.toSet().toList()..sort();
+    final result = <Map<String, dynamic>>[];
+    const batchSize = 100;
+    for (var start = 0; start < pending.length; start += batchSize) {
+      final end = start + batchSize < pending.length
+          ? start + batchSize
+          : pending.length;
+      final rows = await _client
+          .from('kanji')
+          .select()
+          .inFilter('character', pending.sublist(start, end))
+          .order('id');
+      result.addAll(rows);
+    }
+    return result;
+  }
+
   Future<List<Map<String, dynamic>>> getKanjiComponents(int id) => _client
       .from('kanji_components')
       .select('*, radicals(*)')
       .eq('kanji_id', id)
       .order('sort_order');
 
-  Future<Set<int>> getKanjiIdsForRadical(int radicalId) async {
+  Future<Set<int>> getKanjiIdsForRadicalForm(
+    int radicalId,
+    String form,
+  ) async {
     final ids = <int>{};
     for (var offset = 0;; offset += 500) {
       final rows = await _client
           .from('kanji_components')
           .select('kanji_id')
           .eq('radical_id', radicalId)
+          .eq('component_form', form)
           .order('kanji_id')
-          .order('component_form')
           .range(offset, offset + 499);
       ids.addAll(rows.map((r) => (r['kanji_id'] as num).toInt()));
       if (rows.length < 500) return ids;
@@ -194,6 +217,25 @@ class CloudStore {
       },
     );
     return items;
+  }
+
+  Future<List<VocabularyEntry>> getVocabContainingKanji(
+    String character, {
+    int pageSize = 500,
+  }) async {
+    if (pageSize <= 0) throw ArgumentError.value(pageSize, 'pageSize');
+    final result = <VocabularyEntry>[];
+    for (var offset = 0;; offset += pageSize) {
+      final rows = await _client
+          .from('vocabulary')
+          .select()
+          .like('kanji', '%$character%')
+          .order('created_at')
+          .order('id')
+          .range(offset, offset + pageSize - 1);
+      result.addAll(rows.map(VocabularyEntry.fromJson));
+      if (rows.length < pageSize) return result;
+    }
   }
 
   Future<VocabWithProgress?> getVocab(String id) async {

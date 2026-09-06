@@ -1,13 +1,12 @@
 {
   "component_version": 2,
   "stops": [
-    {"element": "⺍", "display_form": "⺍"},
-    {"original": "戌", "display_form": "戌"},
-    {"element": "戌", "display_form": "戌"}
+    {"element": "⺍", "display_form": "⺍"}
   ],
   "part_groups_note": "Pinned structural review: 斎 has an omitted original on its middle part; the other entries have matching element/original/number and consecutive part 1/2 across nested or split named contexts. Explicit IDs prevent merging unrelated occurrences in other tree contexts.",
   "part_groups": {
     "斎": [["kvg:0658e-g1", "kvg:0658e-g6", "kvg:0658e-g10"]],
+    "威": [["kvg:05a01-g3", "kvg:05a01-g9"]],
     "俸": [["kvg:04ff8-g8", "kvg:04ff8-g10"]],
     "単": [["kvg:05358-g5", "kvg:05358-g8"]],
     "卸": [["kvg:05378-g4", "kvg:05378-g6"]],
@@ -18,18 +17,25 @@
     "宣": [["kvg:05ba3-g4", "kvg:05ba3-g8"]],
     "御": [["kvg:05fa1-g7", "kvg:05fa1-g9"]],
     "恒": [["kvg:06052-g3", "kvg:06052-g7"]],
+    "感": [["kvg:0611f-g4", "kvg:0611f-g10"]],
+    "憾": [["kvg:061be-g6", "kvg:061be-g12"]],
     "戴": [["kvg:06234-g3", "kvg:06234-g11"]],
     "挿": [["kvg:0633f-g5", "kvg:0633f-g8"]],
     "春": [["kvg:06625-g6", "kvg:06625-g8"]],
     "棒": [["kvg:068d2-g8", "kvg:068d2-g10"]],
     "武": [["kvg:06b66-g3", "kvg:06b66-g7"]],
+    "減": [["kvg:06e1b-g5", "kvg:06e1b-g11"]],
     "泰": [["kvg:06cf0-g6", "kvg:06cf0-g8"]],
+    "滅": [["kvg:06ec5-g5", "kvg:06ec5-g11"]],
     "章": [["kvg:07ae0-g1", "kvg:07ae0-g6"]]
   },
   "expand_groups_note": "Structurally verified: other parts are covered by earlier ancestor stops. Expand these fragments without stealing strokes. Validator recomputes this exact set for the pinned corpus.",
   "expand_groups": {
   "囲": [
     "kvg:056f2-g3"
+  ],
+  "威": [
+    "kvg:05a01-g2"
   ],
   "井": [
     "kvg:04e95-g1"
@@ -67,6 +73,12 @@
   ],
   "巻": [
     "kvg:05dfb-g5"
+  ],
+  "感": [
+    "kvg:0611f-g3"
+  ],
+  "憾": [
+    "kvg:061be-g5"
   ],
   "顔": [
     "kvg:09854-g4"
@@ -124,6 +136,9 @@
   "券": [
     "kvg:05238-g5"
   ],
+  "減": [
+    "kvg:06e1b-g4"
+  ],
   "互": [
     "kvg:04e92-g1"
   ],
@@ -147,6 +162,11 @@
     "kvg:0683d-g11",
     "kvg:0683d-g8",
     "kvg:0683d-g9"
+  ],
+  "歳": [
+    "kvg:06b73-g10",
+    "kvg:06b73-g11",
+    "kvg:06b73-g13"
   ],
   "裁": [
     "kvg:088c1-g10",
@@ -272,6 +292,9 @@
   "蔵": [
     "kvg:08535-g3"
   ],
+  "蔑": [
+    "kvg:08511-g6"
+  ],
   "属": [
     "kvg:05c5e-g4"
   ],
@@ -284,6 +307,9 @@
   "滞": [
     "kvg:06ede-g13",
     "kvg:06ede-g14"
+  ],
+  "滅": [
+    "kvg:06ec5-g4"
   ],
   "択": [
     "kvg:0629e-g5"

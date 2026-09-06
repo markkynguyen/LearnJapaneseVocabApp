@@ -22,6 +22,8 @@
 
 - Mỗi lần xuất hiện được tính: `先生先生` cho 先=2, 生=2.
 - Một bộ được tính một lần trên mỗi lần xuất hiện của Kanji chứa bộ đó: `森` cho 木=1, không phải 3. Các dạng của cùng bộ trong cùng Kanji cũng không nhân đôi số đếm.
+- Snapshot `radical_forms` tách số đếm theo đúng `component_form`; một họ đã gặp luôn trả dạng gốc và toàn bộ biến thể theo thứ tự catalog, kể cả dạng có số đếm 0. `radicals` và `total_radical_count` vẫn giữ tổng theo họ để tương thích client cũ.
+- Danh sách Kanji liên quan phải lọc bằng cả `radical_id` và `component_form`; khóa cache cũng dùng cả hai giá trị để các dạng cùng tên không dùng lẫn dữ liệu.
 - `total_vocab_scanned` là số dòng từ vựng của tài khoản đã duyệt, gồm trường Kanji null/rỗng. Null, khoảng trắng, kana, 々, emoji và variation selector không tạo số đếm Kanji.
 - `unsupported_kanji_count` là số **ký tự CJK khác nhau** ngoài danh mục, không phải số lần xuất hiện. Xử lý Unicode scalar, gồm chữ ngoài BMP và Extension J của Unicode 17.
 - Thêm/sửa/xóa từ không tính lại. Đọc màn hình, đổi tab, mở dialog và thử tải lại cũng không gọi RPC tính toán. Không khóa sau 10 ngày.

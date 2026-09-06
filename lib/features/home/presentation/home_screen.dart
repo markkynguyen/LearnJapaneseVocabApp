@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../kanji/presentation/providers/kanji_providers.dart';
 import 'providers/home_provider.dart';
 import 'widgets/home_vocab_search.dart';
 import 'widgets/level_stats_dashboard.dart';
@@ -14,10 +15,10 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final greeting = ref.watch(greetingProvider);
     final totalDueCount = ref.watch(totalDueCountProvider);
     final totalLevelStats = ref.watch(totalLevelStatsProvider);
-    final colors = Theme.of(context).colorScheme;
+    final kanjiStats = ref.watch(kanjiSnapshotProvider);
+    final kanjiOverview = kanjiStats.valueOrNull?.overview;
 
     return Scaffold(
       body: SafeArea(
@@ -25,6 +26,7 @@ class HomeScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(totalDueCountProvider);
             ref.invalidate(totalLevelStatsProvider);
+            ref.invalidate(kanjiSnapshotProvider);
             await Future<void>.delayed(const Duration(milliseconds: 250));
           },
           child: CustomScrollView(
@@ -35,34 +37,18 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '$greeting!',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: colors.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      totalDueCount.when(
-                        data: (count) => Text(
-                          'Hôm nay bạn có $count từ cần ôn',
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                        loading: () => Text(
-                          'Đang tải số từ cần ôn...',
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                        error: (_, __) => Text(
-                          'Chưa thể tải số từ cần ôn.',
-                          style: TextStyle(color: context.appDanger),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
                       const HomeVocabSearch(),
                       const SizedBox(height: 18),
                       totalLevelStats.when(
-                        data: (stats) => LevelStatsDashboard(stats: stats),
+                        data: (stats) => LevelStatsDashboard(
+                          stats: stats,
+                          kanjiCount: kanjiOverview?.kanjiCount,
+                          radicalCount: kanjiOverview?.radicalCount,
+                          isCharacterStatsLoading:
+                              kanjiOverview == null && kanjiStats.isLoading,
+                          hasCharacterStatsError:
+                              kanjiOverview == null && kanjiStats.hasError,
+                        ),
                         loading: () => const _LoadingCard(),
                         error: (error, _) => _ErrorCard(message: '$error'),
                       ),

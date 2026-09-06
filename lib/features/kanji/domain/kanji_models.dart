@@ -91,6 +91,45 @@ class Radical {
   final List<String> variants, positions;
 }
 
+class RadicalForm {
+  const RadicalForm({
+    required this.radical,
+    required this.form,
+    required this.count,
+    required this.familyCount,
+    required this.isOriginal,
+    required this.formOrder,
+  });
+
+  factory RadicalForm.fromJson(Map<String, dynamic> json) {
+    final familyCount = (json['family_count'] as num?)?.toInt() ??
+        (json['count'] as num?)?.toInt() ??
+        0;
+    return RadicalForm(
+      radical: Radical.fromJson({...json, 'count': familyCount}),
+      form: json['form'] as String,
+      count: (json['count'] as num?)?.toInt() ?? 0,
+      familyCount: familyCount,
+      isOriginal: json['is_original'] == true,
+      formOrder: (json['form_order'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  factory RadicalForm.legacy(Radical radical) => RadicalForm(
+        radical: radical,
+        form: radical.character,
+        count: radical.count,
+        familyCount: radical.count,
+        isOriginal: true,
+        formOrder: 0,
+      );
+
+  final Radical radical;
+  final String form;
+  final int count, familyCount, formOrder;
+  final bool isOriginal;
+}
+
 class KanjiComponent {
   const KanjiComponent({
     required this.form,
@@ -170,28 +209,42 @@ class KanjiSnapshot {
     this.overview,
     this.kanji = const [],
     this.radicals = const [],
+    this.radicalForms = const [],
     this.fromCache = false,
   });
   factory KanjiSnapshot.fromJson(
     Map<String, dynamic> json, {
     bool fromCache = false,
-  }) =>
-      KanjiSnapshot(
-        overview: json['overview'] == null
-            ? null
-            : KanjiOverview.fromJson(
-                Map<String, dynamic>.from(json['overview'] as Map),
-              ),
-        kanji: (json['kanji'] as List)
-            .map((r) => Kanji.fromJson(Map<String, dynamic>.from(r as Map)))
-            .toList(),
-        radicals: (json['radicals'] as List)
-            .map((r) => Radical.fromJson(Map<String, dynamic>.from(r as Map)))
-            .toList(),
-        fromCache: fromCache,
-      );
+  }) {
+    final radicals = (json['radicals'] as List)
+        .map((r) => Radical.fromJson(Map<String, dynamic>.from(r as Map)))
+        .toList();
+    final rawForms = json['radical_forms'] as List?;
+    return KanjiSnapshot(
+      overview: json['overview'] == null
+          ? null
+          : KanjiOverview.fromJson(
+              Map<String, dynamic>.from(json['overview'] as Map),
+            ),
+      kanji: (json['kanji'] as List)
+          .map((r) => Kanji.fromJson(Map<String, dynamic>.from(r as Map)))
+          .toList(),
+      radicals: radicals,
+      radicalForms: rawForms == null
+          ? radicals.map(RadicalForm.legacy).toList()
+          : rawForms
+              .map(
+                (r) => RadicalForm.fromJson(
+                  Map<String, dynamic>.from(r as Map),
+                ),
+              )
+              .toList(),
+      fromCache: fromCache,
+    );
+  }
   final KanjiOverview? overview;
   final List<Kanji> kanji;
   final List<Radical> radicals;
+  final List<RadicalForm> radicalForms;
   final bool fromCache;
 }

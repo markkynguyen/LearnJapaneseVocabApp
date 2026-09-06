@@ -309,9 +309,9 @@ class _AppShell extends ConsumerWidget {
             case 0:
               context.go(AppRoutes.home);
             case 1:
-              context.go(AppRoutes.kanji);
-            case 2:
               context.go(AppRoutes.folders);
+            case 2:
+              context.go(AppRoutes.kanji);
             case 3:
               context.go(AppRoutes.settings);
           }
@@ -323,14 +323,14 @@ class _AppShell extends ConsumerWidget {
             label: 'Trang chủ',
           ),
           NavigationDestination(
-            icon: Icon(Icons.auto_stories_outlined),
-            selectedIcon: Icon(Icons.auto_stories),
-            label: 'Hán tự',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.folder_outlined),
             selectedIcon: Icon(Icons.folder_rounded),
             label: 'Thư viện',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.auto_stories_outlined),
+            selectedIcon: Icon(Icons.auto_stories),
+            label: 'Hán tự',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -351,10 +351,10 @@ class _AppShell extends ConsumerWidget {
     if (location.startsWith(AppRoutes.settings)) {
       return 3;
     }
-    if (location.startsWith(AppRoutes.kanji)) return 1;
+    if (location.startsWith(AppRoutes.kanji)) return 2;
     if (location.startsWith(AppRoutes.folders) ||
         location.startsWith('/vocab')) {
-      return 2;
+      return 1;
     }
     return 0;
   }

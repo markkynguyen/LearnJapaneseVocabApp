@@ -6,14 +6,41 @@ import '../../data/kanji_stroke_service.dart';
 import '../../domain/kanji_models.dart';
 import '../providers/kanji_providers.dart';
 import '../../../../core/theme/app_typography.dart';
+import 'kanji_section_heading.dart';
+
+List<KanjiComponentOccurrence> orderKanjiComponents(
+  Iterable<KanjiComponentOccurrence> components,
+) {
+  final ordered = List<KanjiComponentOccurrence>.of(components);
+  ordered.sort(
+    (a, b) => a.sortOrder != b.sortOrder
+        ? a.sortOrder.compareTo(b.sortOrder)
+        : a.id.compareTo(b.id),
+  );
+  return ordered;
+}
+
+const _componentChipHeight = 48.0;
+const _radicalGlyphSize = 18.0;
+const _supplementaryStrokePreviewSize = 28.0;
+const _supplementaryStrokeReferenceSize = _radicalGlyphSize * 2;
+const _supplementaryStrokeWidth = 6.0;
 
 class KanjiStrokeViewer extends ConsumerWidget {
-  const KanjiStrokeViewer({required this.character, super.key});
+  const KanjiStrokeViewer({
+    required this.character,
+    required this.hanVietLabel,
+    super.key,
+  });
   final String character;
+  final String hanVietLabel;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final occurrences =
         ref.watch(kanjiOccurrencesProvider(character.runes.single));
+    final orderedOccurrences = orderKanjiComponents(
+      occurrences.valueOrNull ?? const [],
+    );
     final strokes = ref.watch(kanjiStrokesProvider(character));
     Future<void> retry() async {
       final service = await ref.read(kanjiStrokeServiceProvider.future);
@@ -23,13 +50,29 @@ class KanjiStrokeViewer extends ConsumerWidget {
       ref.invalidate(kanjiStrokesProvider(character));
     }
 
-    final unavailableComponents = Wrap(
-      spacing: 8,
-      children: [
-        for (final c in occurrences.valueOrNull ?? <KanjiComponentOccurrence>[])
-          Chip(label: _ComponentLabel(c)),
-      ],
-    );
+    final unavailableComponents = orderedOccurrences.isEmpty
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const KanjiSectionHeading('Thành phần'),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final component in orderedOccurrences)
+                        Chip(label: _ComponentLabel(component)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
     return Column(
       children: [
         if (occurrences.isLoading) const LinearProgressIndicator(),
@@ -43,21 +86,22 @@ class KanjiStrokeViewer extends ConsumerWidget {
           data: (document) => KanjiStrokeAnimator(
             key: ValueKey(character),
             document: document,
-            components: occurrences.valueOrNull ?? const [],
+            components: orderedOccurrences,
+            hanVietLabel: hanVietLabel,
             onRetry: retry,
           ),
           loading: () => Column(
             children: [
-              unavailableComponents,
               const SizedBox(
                 height: 220,
                 child: Center(child: CircularProgressIndicator()),
               ),
+              _HanVietLabel(hanVietLabel),
+              unavailableComponents,
             ],
           ),
           error: (_, __) => Column(
             children: [
-              unavailableComponents,
               const Text(
                 'Chưa tải được thứ tự nét nên chưa thể tô nét. Bạn vẫn có thể đọc nghĩa và thành phần.',
               ),
@@ -66,6 +110,8 @@ class KanjiStrokeViewer extends ConsumerWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Tải lại nét'),
               ),
+              _HanVietLabel(hanVietLabel),
+              unavailableComponents,
             ],
           ),
         ),
@@ -78,11 +124,13 @@ class KanjiStrokeAnimator extends StatefulWidget {
   const KanjiStrokeAnimator({
     required this.document,
     this.components = const [],
+    this.hanVietLabel,
     this.onRetry,
     super.key,
   });
   final StrokeDocument document;
   final List<KanjiComponentOccurrence> components;
+  final String? hanVietLabel;
   final VoidCallback? onRetry;
   @override
   State<KanjiStrokeAnimator> createState() => _KanjiStrokeAnimatorState();
@@ -157,6 +205,7 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
 
   @override
   Widget build(BuildContext context) {
+    final orderedComponents = orderKanjiComponents(widget.components);
     final total = widget.document.strokeCount;
     final colors = Theme.of(context).colorScheme;
     final red = Theme.of(context).brightness == Brightness.dark
@@ -164,62 +213,6 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
         : const Color(0xFFD32F2F);
     return Column(
       children: [
-        if (widget.components.isNotEmpty) ...[
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final c in widget.components)
-                Semantics(
-                  label: '${c.label}, thành phần ${c.sortOrder + 1}',
-                  selected: _selectedId == c.id,
-                  child: ChoiceChip(
-                    showCheckmark: c.form != null,
-                    key: ValueKey('component:${c.id}'),
-                    selected: _selectedId == c.id,
-                    avatar: c.form == null && _canHighlight(c)
-                        ? SizedBox.square(
-                            dimension: 28,
-                            child: widget.document.supportsAnimation
-                                ? CustomPaint(
-                                    painter: KanjiStrokePainter(
-                                      widget.document,
-                                      total.toDouble(),
-                                      colors.primary,
-                                      colors.outlineVariant,
-                                      onlyStrokeIds: c.strokeIds.toSet(),
-                                      drawGrid: false,
-                                    ),
-                                  )
-                                : SvgPicture.string(
-                                    widget.document.staticSvgAt(
-                                      0,
-                                      ink: colors.primary,
-                                      onlyStrokeIds: c.strokeIds.toSet(),
-                                    ),
-                                  ),
-                          )
-                        : null,
-                    label: _ComponentLabel(c),
-                    onSelected: _canHighlight(c) ? (_) => _select(c) : null,
-                  ),
-                ),
-            ],
-          ),
-          if (widget.components.any((c) => !_canHighlight(c))) ...[
-            const Text('Dữ liệu thành phần và nét chưa khớp. Chưa thể tô nét.'),
-            TextButton(
-              onPressed: widget.onRetry,
-              child: const Text('Tải lại nét'),
-            ),
-          ],
-          if (_selectedId != null)
-            TextButton(
-              onPressed: () => setState(() => _selectedId = null),
-              child: const Text('Bỏ chọn'),
-            ),
-          const SizedBox(height: 12),
-        ],
         SegmentedButton<bool>(
           segments: const [
             ButtonSegment(
@@ -358,9 +351,86 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
               ),
             ],
           ),
+        if (widget.hanVietLabel != null) ...[
+          const SizedBox(height: 8),
+          _HanVietLabel(widget.hanVietLabel!),
+        ],
+        if (orderedComponents.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const KanjiSectionHeading('Thành phần'),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final c in orderedComponents)
+                      Semantics(
+                        label: c.label,
+                        selected: _selectedId == c.id,
+                        child: SizedBox(
+                          height: _componentChipHeight,
+                          child: ChoiceChip(
+                            showCheckmark: false,
+                            key: ValueKey('component:${c.id}'),
+                            selected: _selectedId == c.id,
+                            label: c.form == null && _canHighlight(c)
+                                ? _SupplementaryComponentLabel(
+                                    document: widget.document,
+                                    component: c,
+                                    totalStrokes: total,
+                                    ink: colors.onSurface,
+                                    guide: colors.outlineVariant,
+                                  )
+                                : _ComponentLabel(c),
+                            onSelected:
+                                _canHighlight(c) ? (_) => _select(c) : null,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (orderedComponents.any((c) => !_canHighlight(c))) ...[
+                  const Text(
+                    'Dữ liệu thành phần và nét chưa khớp. Chưa thể tô nét.',
+                  ),
+                  TextButton(
+                    onPressed: widget.onRetry,
+                    child: const Text('Tải lại nét'),
+                  ),
+                ],
+                if (_selectedId != null)
+                  TextButton(
+                    onPressed: () => setState(() => _selectedId = null),
+                    child: const Text('Bỏ chọn'),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
+}
+
+class _HanVietLabel extends StatelessWidget {
+  const _HanVietLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+      );
 }
 
 class _ComponentLabel extends StatelessWidget {
@@ -368,15 +438,100 @@ class _ComponentLabel extends StatelessWidget {
   final KanjiComponentOccurrence component;
   @override
   Widget build(BuildContext context) {
-    if (component.form == null) return const Text('Nét phụ');
-    return Text.rich(TextSpan(children: [
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+    if (component.form == null) {
+      return Text('Nét phụ', style: TextStyle(color: labelColor));
+    }
+    return Text.rich(
       TextSpan(
-          text: component.form,
-          style: AppTypography.japanese(context, null, fontSize: 18),
-          locale: AppTypography.japaneseLocale,),
-      if (component.radical != null)
-        TextSpan(text: ' ${component.radical!.nameVi}'),
-    ],),);
+        children: [
+          TextSpan(
+            text: component.form,
+            style: AppTypography.japanese(
+              context,
+              null,
+              color: labelColor,
+              fontSize: _radicalGlyphSize,
+            ),
+            locale: AppTypography.japaneseLocale,
+          ),
+          if (component.radical != null)
+            TextSpan(text: ' ${component.radical!.nameVi}'),
+        ],
+      ),
+      style: TextStyle(color: labelColor),
+    );
+  }
+}
+
+class _SupplementaryComponentLabel extends StatelessWidget {
+  const _SupplementaryComponentLabel({
+    required this.document,
+    required this.component,
+    required this.totalStrokes,
+    required this.ink,
+    required this.guide,
+  });
+
+  final StrokeDocument document;
+  final KanjiComponentOccurrence component;
+  final int totalStrokes;
+  final Color ink;
+  final Color guide;
+
+  @override
+  Widget build(BuildContext context) {
+    final previewImage = SizedBox.square(
+      dimension: _supplementaryStrokePreviewSize,
+      child: document.supportsAnimation
+          ? CustomPaint(
+              painter: KanjiStrokePainter(
+                document,
+                totalStrokes.toDouble(),
+                ink,
+                guide,
+                onlyStrokeIds: component.strokeIds.toSet(),
+                drawGrid: false,
+                strokeWidth: _supplementaryStrokeWidth,
+                fitToStrokeBounds: true,
+                maxScale: _supplementaryStrokeReferenceSize /
+                    math.max(document.viewBox.width, document.viewBox.height),
+              ),
+            )
+          : SvgPicture.string(
+              document.staticSvgAt(
+                0,
+                ink: ink,
+                onlyStrokeIds: component.strokeIds.toSet(),
+                strokeWidth: _supplementaryStrokeWidth,
+              ),
+            ),
+    );
+    // Chỉ chiếm chiều cao dòng của nhãn bộ thủ. Hình nét vẫn vẽ ở 28 px,
+    // nằm giữa chip mà không làm ô cao hơn.
+    final preview = SizedBox(
+      width: _supplementaryStrokePreviewSize,
+      height: _radicalGlyphSize,
+      child: OverflowBox(
+        minWidth: _supplementaryStrokePreviewSize,
+        maxWidth: _supplementaryStrokePreviewSize,
+        minHeight: _supplementaryStrokePreviewSize,
+        maxHeight: _supplementaryStrokePreviewSize,
+        alignment: Alignment.center,
+        child: previewImage,
+      ),
+    );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        preview,
+        const SizedBox(width: 6),
+        Text(
+          'Nét phụ',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
+      ],
+    );
   }
 }
 
@@ -390,6 +545,9 @@ class KanjiStrokePainter extends CustomPainter {
     this.highlightColor = const Color(0xFFD32F2F),
     this.onlyStrokeIds,
     this.drawGrid = true,
+    this.strokeWidth = 3,
+    this.fitToStrokeBounds = false,
+    this.maxScale,
   });
   final StrokeDocument document;
   final double progress;
@@ -398,6 +556,23 @@ class KanjiStrokePainter extends CustomPainter {
   final Set<String>? onlyStrokeIds;
   final Color highlightColor;
   final bool drawGrid;
+  final double strokeWidth;
+  final bool fitToStrokeBounds;
+  final double? maxScale;
+
+  Rect _paintBounds() {
+    Rect? bounds;
+    for (var i = 0; i < document.paths.length; i++) {
+      if (onlyStrokeIds != null &&
+          !onlyStrokeIds!.contains(document.strokeIds[i])) {
+        continue;
+      }
+      final pathBounds = document.paths[i].getBounds().inflate(strokeWidth);
+      bounds = bounds == null ? pathBounds : bounds.expandToInclude(pathBounds);
+    }
+    return bounds ?? document.viewBox;
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final grid = Paint()
@@ -417,8 +592,11 @@ class KanjiStrokePainter extends CustomPainter {
         grid,
       );
     }
-    final box = document.viewBox;
-    final scale = math.min(size.width / box.width, size.height / box.height);
+    final box = fitToStrokeBounds ? _paintBounds() : document.viewBox;
+    final fittedScale =
+        math.min(size.width / box.width, size.height / box.height);
+    final scale =
+        maxScale == null ? fittedScale : math.min(fittedScale, maxScale!);
     canvas.save();
     canvas.translate(
       (size.width - box.width * scale) / 2,
@@ -428,7 +606,7 @@ class KanjiStrokePainter extends CustomPainter {
     canvas.translate(-box.left, -box.top);
     final pen = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     for (var i = 0; i < document.paths.length; i++) {
@@ -466,5 +644,8 @@ class KanjiStrokePainter extends CustomPainter {
       oldDelegate.highlightedStrokeIds != highlightedStrokeIds ||
       oldDelegate.highlightColor != highlightColor ||
       oldDelegate.onlyStrokeIds != onlyStrokeIds ||
-      oldDelegate.drawGrid != drawGrid;
+      oldDelegate.drawGrid != drawGrid ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.fitToStrokeBounds != fitToStrokeBounds ||
+      oldDelegate.maxScale != maxScale;
 }

@@ -36,6 +36,7 @@ class StrokeDocument {
     Color ink = const Color(0xFF000000),
     Color highlight = const Color(0xFFD32F2F),
     Set<String>? onlyStrokeIds,
+    double? strokeWidth,
   }) {
     final doc = XmlDocument.parse(_staticSvg!);
     final strokes = doc.descendants
@@ -56,6 +57,9 @@ class StrokeDocument {
         'stroke',
         hex(highlighted.contains(id) ? highlight : ink),
       );
+      if (strokeWidth != null) {
+        path.setAttribute('stroke-width', strokeWidth.toString());
+      }
       path.setAttribute('stroke-opacity', i < visible ? '1' : '0.15');
     }
     return doc.toXmlString();

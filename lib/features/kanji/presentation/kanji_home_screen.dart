@@ -22,87 +22,23 @@ class KanjiHomeScreen extends ConsumerWidget {
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (previous?.overview case final overview?) ...[
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 6,
-                        children: [
-                          Text(
-                            '${overview.kanjiCount} Hán tự',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          Text(
-                            '${overview.radicalCount} bộ thủ',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (overview.needsComponentUpdate)
-                        const Text(
-                          'Quy tắc phân tích đã thay đổi. Cập nhật thống kê để đồng bộ.',
-                        ),
-                      Text(
-                        'Cập nhật: ${DateFormat('HH:mm dd/MM/yyyy').format(overview.calculatedAt.toLocal())} · ${overview.vocabScanned} từ đã quét',
-                      ),
-                      if (overview.unsupportedCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            '${overview.unsupportedCount} ký tự Hán tự ngoài danh mục Jōyō chưa được hỗ trợ.',
-                          ),
-                        ),
-                    ] else
-                      const Text(
-                        'Thống kê Hán tự từ thư viện từ vựng của bạn.',
-                      ),
-                    if (previous?.fromCache == true)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Đang xem bản thống kê đã lưu trên thiết bị.',
-                        ),
-                      ),
-                    const SizedBox(height: 10),
-                    FilledButton.icon(
-                      onPressed: refresh.isLoading
-                          ? null
-                          : () =>
-                              ref.read(kanjiRefreshProvider.notifier).refresh(),
-                      icon: refresh.isLoading
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.refresh),
-                      label: Text(
-                        refresh.isLoading
-                            ? 'Đang thống kê…'
-                            : 'Cập nhật thống kê',
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Số liệu chỉ đổi khi bạn bấm cập nhật.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    if (refresh.hasError)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 6),
-                        child: Text(
-                          'Chưa cập nhật được thống kê. Kiểm tra kết nối và thử lại.',
-                        ),
-                      ),
-                  ],
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: _KanjiStatsOverview(
+                  snapshot: previous,
+                  refresh: refresh,
+                  onRefresh: () =>
+                      ref.read(kanjiRefreshProvider.notifier).refresh(),
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: TabBar(tabs: [Tab(text: 'Hán tự'), Tab(text: 'Bộ thủ')]),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedTabBarDelegate(
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                tabBar: const TabBar(
+                  tabs: [Tab(text: 'Hán tự'), Tab(text: 'Bộ thủ')],
+                ),
+              ),
             ),
           ],
           body: snapshot.when(
@@ -135,12 +71,12 @@ class KanjiHomeScreen extends ConsumerWidget {
                           'Thêm từ có Hán tự được hỗ trợ vào thư viện rồi cập nhật thống kê.',
                         )
                       : KanjiGridView(items: data.kanji),
-                  data.radicals.isEmpty
+                  data.radicalForms.isEmpty
                       ? const _Empty(
                           'Chưa có bộ thủ',
                           'Bộ thủ sẽ xuất hiện khi thư viện có Hán tự được hỗ trợ.',
                         )
-                      : RadicalGridView(items: data.radicals),
+                      : RadicalGridView(items: data.radicalForms),
                 ],
               );
             },
@@ -149,6 +85,306 @@ class KanjiHomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _PinnedTabBarDelegate extends SliverPersistentHeaderDelegate {
+  const _PinnedTabBarDelegate({
+    required this.tabBar,
+    required this.backgroundColor,
+  });
+
+  final TabBar tabBar;
+  final Color backgroundColor;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) =>
+      Material(
+        color: backgroundColor,
+        elevation: overlapsContent ? 2 : 0,
+        shadowColor: Theme.of(context).colorScheme.shadow.withValues(alpha: .2),
+        child: tabBar,
+      );
+
+  @override
+  bool shouldRebuild(covariant _PinnedTabBarDelegate oldDelegate) =>
+      oldDelegate.tabBar != tabBar ||
+      oldDelegate.backgroundColor != backgroundColor;
+}
+
+class _KanjiStatsOverview extends StatelessWidget {
+  const _KanjiStatsOverview({
+    required this.snapshot,
+    required this.refresh,
+    required this.onRefresh,
+  });
+
+  final KanjiSnapshot? snapshot;
+  final AsyncValue<void> refresh;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final overview = snapshot?.overview;
+    return Card(
+      margin: EdgeInsets.zero,
+      color: colors.surfaceContainerLow,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (overview != null) ...[
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = (constraints.maxWidth - 10) / 2;
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _StatMetric(
+                        width: width,
+                        value: overview.kanjiCount,
+                        label: 'Hán tự',
+                        icon: Icons.translate_rounded,
+                        background: colors.primaryContainer,
+                        foreground: colors.onPrimaryContainer,
+                      ),
+                      _StatMetric(
+                        width: width,
+                        value: overview.radicalCount,
+                        label: 'Bộ thủ',
+                        icon: Icons.account_tree_outlined,
+                        background: colors.secondaryContainer,
+                        foreground: colors.onSecondaryContainer,
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+              _MetadataRow(
+                icon: Icons.schedule_rounded,
+                text:
+                    'Cập nhật ${DateFormat('HH:mm · dd/MM/yyyy').format(overview.calculatedAt.toLocal())}',
+              ),
+              if (overview.needsComponentUpdate) ...[
+                const SizedBox(height: 12),
+                _StatusBanner(
+                  icon: Icons.sync_problem_rounded,
+                  message:
+                      'Quy tắc phân tích đã thay đổi. Cập nhật thống kê để đồng bộ.',
+                  background: colors.tertiaryContainer,
+                  foreground: colors.onTertiaryContainer,
+                ),
+              ],
+              if (overview.unsupportedCount > 0) ...[
+                const SizedBox(height: 10),
+                _StatusBanner(
+                  icon: Icons.info_outline_rounded,
+                  message:
+                      '${overview.unsupportedCount} ký tự Hán tự ngoài danh mục Jōyō chưa được hỗ trợ.',
+                  background: colors.surfaceContainerHighest,
+                  foreground: colors.onSurfaceVariant,
+                ),
+              ],
+            ] else
+              Text(
+                'Chưa có dữ liệu thống kê. Hãy cập nhật để khám phá các Hán tự và bộ thủ trong thư viện.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+              ),
+            if (snapshot?.fromCache == true) ...[
+              const SizedBox(height: 10),
+              _StatusBanner(
+                icon: Icons.cloud_off_outlined,
+                message: 'Bạn đang xem dữ liệu đã lưu trên thiết bị.',
+                background: colors.surfaceContainerHighest,
+                foreground: colors.onSurfaceVariant,
+              ),
+            ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: refresh.isLoading ? null : onRefresh,
+                icon: refresh.isLoading
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                label: Text(
+                  refresh.isLoading ? 'Đang thống kê…' : 'Cập nhật thống kê',
+                ),
+              ),
+            ),
+            if (refresh.hasError) ...[
+              const SizedBox(height: 10),
+              _StatusBanner(
+                icon: Icons.error_outline_rounded,
+                message:
+                    'Chưa cập nhật được thống kê. Kiểm tra kết nối và thử lại.',
+                background: colors.errorContainer,
+                foreground: colors.onErrorContainer,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatMetric extends StatelessWidget {
+  const _StatMetric({
+    required this.width,
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.background,
+    required this.foreground,
+  });
+
+  final double width;
+  final int value;
+  final String label;
+  final IconData icon;
+  final Color background, foreground;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: '$value $label',
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: foreground, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$value',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: foreground,
+                                fontWeight: FontWeight.w800,
+                                height: 1,
+                              ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: foreground,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _MetadataRow extends StatelessWidget {
+  const _MetadataRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: colors.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusBanner extends StatelessWidget {
+  const _StatusBanner({
+    required this.icon,
+    required this.message,
+    required this.background,
+    required this.foreground,
+  });
+
+  final IconData icon;
+  final String message;
+  final Color background, foreground;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 19, color: foreground),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: foreground,
+                      height: 1.35,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class KanjiGridView extends StatelessWidget {
@@ -171,17 +407,18 @@ class KanjiGridView extends StatelessWidget {
 
 class RadicalGridView extends StatelessWidget {
   const RadicalGridView({required this.items, super.key});
-  final List<Radical> items;
+  final List<RadicalForm> items;
   @override
   Widget build(BuildContext context) => _grid(items.length, (context, index) {
         final item = items[index];
         return _GlyphTile(
-          character: item.character,
-          label: item.nameVi,
+          character: item.form,
+          label: item.radical.nameVi,
           count: item.count,
+          semanticKind: item.isOriginal ? 'dạng gốc' : 'biến thể',
           onTap: () => showDialog<void>(
             context: context,
-            builder: (_) => RadicalDetailDialog(radical: item),
+            builder: (_) => RadicalDetailDialog(radicalForm: item),
           ),
         );
       });
@@ -205,14 +442,21 @@ class _GlyphTile extends StatelessWidget {
     required this.label,
     required this.count,
     required this.onTap,
+    this.semanticKind,
   });
   final String character, label;
+  final String? semanticKind;
   final int count;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Semantics(
         button: true,
-        label: '$character, $label, $count lần xuất hiện',
+        label: [
+          character,
+          label,
+          if (semanticKind != null) semanticKind!,
+          '$count lần xuất hiện',
+        ].join(', '),
         child: Card(
           margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,

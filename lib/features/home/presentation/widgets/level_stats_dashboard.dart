@@ -6,16 +6,23 @@ import '../../../../core/models/app_models.dart';
 class LevelStatsDashboard extends StatelessWidget {
   const LevelStatsDashboard({
     required this.stats,
-    this.title = 'Thống kê từ vựng của bạn',
+    this.kanjiCount,
+    this.radicalCount,
+    this.isCharacterStatsLoading = false,
+    this.hasCharacterStatsError = false,
+    this.title = 'Thống kê học tập của bạn',
     super.key,
   });
 
   final LevelStats stats;
+  final int? kanjiCount;
+  final int? radicalCount;
+  final bool isCharacterStatsLoading;
+  final bool hasCharacterStatsError;
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final maxCount = [
       for (var level = SrsConstants.minLevel;
           level <= SrsConstants.maxLevel;
@@ -35,28 +42,37 @@ class LevelStatsDashboard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Tổng số từ đã học:',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: colors.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: 6),
-            RichText(
-              text: TextSpan(
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: colors.onSurface,
-                      fontWeight: FontWeight.w900,
-                    ),
+            const SizedBox(height: 14),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextSpan(text: _formatNumber(stats.learnedWords)),
-                  TextSpan(
-                    text: ' /${_formatNumber(stats.totalWords)}',
-                    style: TextStyle(
-                      color: colors.onSurfaceVariant,
-                      fontWeight: FontWeight.w800,
+                  Expanded(
+                    child: _MetricTile(
+                      icon: Icons.school_outlined,
+                      label: 'Từ đã học',
+                      value: '${_formatNumber(stats.learnedWords)} '
+                          '/ ${_formatNumber(stats.totalWords)}',
+                      semanticValue:
+                          '${stats.learnedWords} trên ${stats.totalWords}',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MetricTile(
+                      icon: Icons.translate_rounded,
+                      label: 'Kanji',
+                      value: _characterStatValue(kanjiCount),
+                      semanticValue: _characterSemanticValue(kanjiCount),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MetricTile(
+                      icon: Icons.account_tree_outlined,
+                      label: 'Bộ thủ',
+                      value: _characterStatValue(radicalCount),
+                      semanticValue: _characterSemanticValue(radicalCount),
                     ),
                   ),
                 ],
@@ -81,6 +97,17 @@ class LevelStatsDashboard extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                'Mức độ ghi nhớ từ vựng',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
           ],
         ),
       ),
@@ -98,6 +125,85 @@ class LevelStatsDashboard extends StatelessWidget {
       }
     }
     return buffer.toString();
+  }
+
+  String _characterStatValue(int? count) {
+    if (count != null) return _formatNumber(count);
+    return isCharacterStatsLoading ? '…' : '—';
+  }
+
+  String _characterSemanticValue(int? count) {
+    if (count != null) return '$count';
+    if (isCharacterStatsLoading) return 'đang tải';
+    if (hasCharacterStatsError) return 'chưa tải được';
+    return 'chưa có thống kê';
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.semanticValue,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String semanticValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Semantics(
+      container: true,
+      label: '$label: $semanticValue',
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 96),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colors.primaryContainer.withValues(alpha: 0.42),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: colors.primary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

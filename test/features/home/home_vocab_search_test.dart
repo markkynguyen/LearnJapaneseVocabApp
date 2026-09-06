@@ -5,6 +5,8 @@ import 'package:jvocab/core/audio/audio_service.dart';
 import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/features/home/presentation/home_screen.dart';
 import 'package:jvocab/features/home/presentation/providers/home_provider.dart';
+import 'package:jvocab/features/kanji/domain/kanji_models.dart';
+import 'package:jvocab/features/kanji/presentation/providers/kanji_providers.dart';
 import 'package:jvocab/features/vocab/presentation/providers/vocab_list_provider.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/pitch_accent_text.dart';
 import 'package:jvocab/features/vocab/presentation/widgets/vocabulary_study_card.dart';
@@ -27,6 +29,7 @@ void main() {
           totalLevelStatsProvider.overrideWith(
             (ref) => const LevelStats(totalWords: 1, levelCounts: {1: 1}),
           ),
+          kanjiSnapshotProvider.overrideWith((ref) => _kanjiSnapshot()),
           homeVocabSuggestionsProvider('tab').overrideWith(
             (ref) => [result],
           ),
@@ -38,6 +41,28 @@ void main() {
     await tester.pump();
 
     expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.textContaining('Chào buổi'), findsNothing);
+    expect(find.textContaining('Hôm nay bạn có'), findsNothing);
+    expect(find.text('Thống kê học tập của bạn'), findsOneWidget);
+    expect(find.text('Kanji'), findsOneWidget);
+    expect(find.text('Bộ thủ'), findsOneWidget);
+    expect(find.text('đã học / tổng số'), findsNothing);
+    expect(find.text('Hán tự khác nhau'), findsNothing);
+    expect(find.text('Bộ thủ đã gặp'), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == 'Kanji: 3',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == 'Bộ thủ: 2',
+      ),
+      findsOneWidget,
+    );
     final searchField = find.byWidgetPredicate(
       (widget) =>
           widget is TextField &&
@@ -103,6 +128,7 @@ void main() {
           totalLevelStatsProvider.overrideWith(
             (ref) => const LevelStats(totalWords: 1, levelCounts: {2: 1}),
           ),
+          kanjiSnapshotProvider.overrideWith((ref) => _kanjiSnapshot()),
           homeVocabSuggestionsProvider('tab').overrideWith((ref) => [result]),
           audioServiceProvider.overrideWith((ref) => _FakeAudioService()),
           vocabListControllerProvider.overrideWith(() => controller),
@@ -149,6 +175,20 @@ void main() {
     );
   });
 }
+
+KanjiSnapshot _kanjiSnapshot() => KanjiSnapshot.fromJson({
+      'overview': {
+        'last_calculated_at': '2026-09-06T00:00:00Z',
+        'total_kanji_count': 3,
+        'total_radical_count': 2,
+        'total_vocab_scanned': 1,
+        'unsupported_kanji_count': 0,
+        'component_version': 2,
+      },
+      'kanji': <Object?>[],
+      'radicals': <Object?>[],
+      'radical_forms': <Object?>[],
+    });
 
 class _FakeAudioService extends AudioService {
   final List<String> spokenVocabIds = [];

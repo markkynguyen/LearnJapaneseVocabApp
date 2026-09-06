@@ -70,15 +70,9 @@ class _FontOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final (title, subtitle) = switch (choice) {
-      JapaneseFontChoice.textbook => (
-          'Kiểu sách giáo khoa',
-          'Klee One · Mặc định',
-        ),
-      JapaneseFontChoice.clearModern => (
-          'Nét rõ hiện đại',
-          'BIZ UDPGothic',
-        ),
+    final title = switch (choice) {
+      JapaneseFontChoice.textbook => 'Kiểu sách giáo khoa',
+      JapaneseFontChoice.clearModern => 'Nét rõ hiện đại',
     };
     return Material(
       color: selected ? colors.primary.withValues(alpha: 0.09) : null,
@@ -112,14 +106,6 @@ class _FontOption extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(

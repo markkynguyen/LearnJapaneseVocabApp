@@ -121,14 +121,24 @@ def extract(root, radical_forms, rules, audit=False):
             first['stroke_ids'].extend(row['stroke_ids'])
             first['source_group_ids'].extend(row['source_group_ids'])
         merged.append(first)
-    merged.sort(key=lambda row: min(order[p] for p in row['stroke_ids']))
-    for index, row in enumerate(merged):
+    # A component starts at its earliest stroke, even when its remaining
+    # strokes are interleaved with another component (for example 囗 in 国).
+    # occurrence_id is only a deterministic tie-breaker; every stroke belongs
+    # to one occurrence, so equal first stroke positions are not expected.
+    for row in merged:
         row['stroke_ids'].sort(key=order.get)
         row['occurrence_id'] = (row['source_group_ids'] or row['stroke_ids'])[0]
+    merged.sort(
+        key=lambda row: (order[row['stroke_ids'][0]], row['occurrence_id'])
+    )
+    for index, row in enumerate(merged):
         row['sort_order'] = index
         del row['_part'], row['_number']
     assert Counter(p for row in merged for p in row['stroke_ids']) == Counter(paths), f'{char}: stroke coverage'
     assert len({r['occurrence_id'] for r in merged}) == len(merged)
+    first_strokes = [order[row['stroke_ids'][0]] for row in merged]
+    assert first_strokes == sorted(first_strokes), f'{char}: occurrences are not in first-stroke order'
+    assert [row['sort_order'] for row in merged] == list(range(len(merged)))
     return merged
 
 

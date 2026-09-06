@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/models/app_models.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/kanji_models.dart';
+import '../../domain/kanji_vocabulary_readings.dart';
 import '../providers/kanji_providers.dart';
+import 'kanji_section_heading.dart';
 import 'kanji_stroke_animator.dart';
 
 Future<void> showKanjiAnalysis(BuildContext context, String? text) =>
@@ -27,25 +30,27 @@ class KanjiDetailDialog extends StatelessWidget {
 }
 
 class RadicalDetailDialog extends StatelessWidget {
-  const RadicalDetailDialog({required this.radical, super.key});
-  final Radical radical;
+  const RadicalDetailDialog({required this.radicalForm, super.key});
+  final RadicalForm radicalForm;
   @override
-  Widget build(BuildContext context) =>
-      _DetailBrowser(characters: const [], initialRadical: radical);
+  Widget build(BuildContext context) => _DetailBrowser(
+        characters: const [],
+        initialRadicalForm: radicalForm,
+      );
 }
 
-typedef _Entry = ({String? character, Radical? radical});
+typedef _Entry = ({String? character, RadicalForm? radicalForm});
 
 /// Điều hướng nội dung trong một dialog, không chồng vô hạn các dialog lên nhau.
 class _DetailBrowser extends StatefulWidget {
   const _DetailBrowser({
     required this.characters,
     this.initialIndex = 0,
-    this.initialRadical,
+    this.initialRadicalForm,
   });
   final List<String> characters;
   final int initialIndex;
-  final Radical? initialRadical;
+  final RadicalForm? initialRadicalForm;
   @override
   State<_DetailBrowser> createState() => _DetailBrowserState();
 }
@@ -66,7 +71,7 @@ class _DetailBrowserState extends State<_DetailBrowser> {
   void didUpdateWidget(covariant _DetailBrowser oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.characters != widget.characters ||
-        oldWidget.initialRadical != widget.initialRadical ||
+        oldWidget.initialRadicalForm != widget.initialRadicalForm ||
         oldWidget.initialIndex != widget.initialIndex) {
       _contentGeneration++;
       _history.clear();
@@ -89,7 +94,7 @@ class _DetailBrowserState extends State<_DetailBrowser> {
         : (
             character:
                 widget.characters.isEmpty ? null : widget.characters[_index],
-            radical: widget.initialRadical
+            radicalForm: widget.initialRadicalForm
           );
     final colors = Theme.of(context).colorScheme;
     return Dialog(
@@ -115,7 +120,7 @@ class _DetailBrowserState extends State<_DetailBrowser> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        entry.radical != null
+                        entry.radicalForm != null
                             ? 'Chi tiết bộ thủ'
                             : 'Phân tích Hán tự',
                         style: Theme.of(context).textTheme.titleLarge,
@@ -133,13 +138,17 @@ class _DetailBrowserState extends State<_DetailBrowser> {
               Expanded(
                 child: SingleChildScrollView(
                   key: ValueKey(
-                      '$_contentGeneration:$_index:${_history.length}:${entry.character}:${entry.radical?.id}',),
+                    '$_contentGeneration:$_index:${_history.length}:${entry.character}:${entry.radicalForm?.radical.id}:${entry.radicalForm?.form}',
+                  ),
                   padding: const EdgeInsets.all(20),
-                  child: entry.radical != null
+                  child: entry.radicalForm != null
                       ? _RadicalContent(
-                          radical: entry.radical!,
+                          radicalForm: entry.radicalForm!,
+                          onRadicalForm: (form) => _push(
+                            (character: null, radicalForm: form),
+                          ),
                           onKanji: (char) =>
-                              _push((character: char, radical: null)),
+                              _push((character: char, radicalForm: null)),
                         )
                       : entry.character != null
                           ? _KanjiContent(
@@ -194,67 +203,28 @@ class _KanjiContent extends ConsumerWidget {
             ),
             data: (kanji) {
               if (kanji == null) {
-                return Column(
-                  children: [
-                    _Character(character),
-                    const Text(
-                      'Chữ này chưa có trong danh mục 2.136 Jōyō. Các chữ được hỗ trợ vẫn có thể xem bằng Trước/Tiếp.',
-                    ),
-                  ],
+                return const Text(
+                  'Chữ này chưa có trong danh mục 2.136 Jōyō. Các chữ được hỗ trợ vẫn có thể xem bằng Trước/Tiếp.',
                 );
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(child: _Character(kanji.character)),
-                  Center(
-                    child: Text(
-                      kanji.hanViet?.toUpperCase() ?? 'Chưa có âm Hán Việt',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                  const KanjiSectionHeading('Thứ tự nét'),
+                  const SizedBox(height: 12),
+                  KanjiStrokeViewer(
+                    character: character,
+                    hanVietLabel:
+                        kanji.hanViet?.toUpperCase() ?? 'Chưa có âm Hán Việt',
                   ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Wrap(
-                      spacing: 8,
-                      children: [
-                        Chip(label: Text(kanji.gradeLabel)),
-                        Chip(label: Text('${kanji.strokeCount} nét')),
-                      ],
-                    ),
-                  ),
-                  _TextSection(
-                    'Âm On',
-                    kanji.onyomi.isEmpty
-                        ? 'Chưa có dữ liệu'
-                        : kanji.onyomi.join(' · '),
-                    japanese: kanji.onyomi.isNotEmpty,
-                  ),
-                  _TextSection(
-                    'Âm Kun',
-                    kanji.kunyomi.isEmpty
-                        ? 'Chưa có dữ liệu'
-                        : kanji.kunyomi.join(' · '),
-                    japanese: kanji.kunyomi.isNotEmpty,
-                  ),
+                  const SizedBox(height: 16),
                   _TextSection(
                     kanji.meaningVi == null
                         ? 'Nghĩa tiếng Anh (chưa có bản dịch)'
                         : 'Nghĩa tiếng Việt',
                     kanji.meaningVi ?? kanji.meaningEn,
                   ),
-                  if (kanji.meaningVi != null && !kanji.translationReviewed)
-                    const Text(
-                      'Bản dịch đang chờ duyệt.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Thứ tự nét',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Center(child: KanjiStrokeViewer(character: character)),
+                  _KanjiVocabularyReadings(character: character),
                 ],
               );
             },
@@ -262,16 +232,27 @@ class _KanjiContent extends ConsumerWidget {
 }
 
 class _RadicalContent extends ConsumerWidget {
-  const _RadicalContent({required this.radical, required this.onKanji});
-  final Radical radical;
+  const _RadicalContent({
+    required this.radicalForm,
+    required this.onRadicalForm,
+    required this.onKanji,
+  });
+  final RadicalForm radicalForm;
+  final ValueChanged<RadicalForm> onRadicalForm;
   final ValueChanged<String> onKanji;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(kanjiSnapshotProvider);
+    final radical = radicalForm.radical;
+    final familyForms = _familyForms(radicalForm, snapshot.valueOrNull);
+    final currentForm = familyForms.firstWhere(
+      (item) => item.form == radicalForm.form,
+      orElse: () => radicalForm,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(child: _Character(radical.character)),
+        Center(child: _Character(currentForm.form)),
         Center(
           child: Text(
             radical.nameVi,
@@ -281,18 +262,15 @@ class _RadicalContent extends ConsumerWidget {
         _TextSection('Ý nghĩa', radical.meaningVi),
         _TextSection('Số nét của dạng gốc', '${radical.strokeCount}'),
         if (radical.variants.isNotEmpty)
-          _TextSection(
-            'Các biến thể',
-            radical.variants.join(' · '),
-            japanese: true,
+          _RadicalFamilyNavigation(
+            forms: familyForms,
+            selectedForm: currentForm.form,
+            onSelected: onRadicalForm,
           ),
         if (radical.positions.isNotEmpty)
           _TextSection('Vị trí thường gặp', radical.positions.join(' · ')),
         const SizedBox(height: 16),
-        Text(
-          'Trong thư viện của bạn',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        const KanjiSectionHeading('Trong thư viện của bạn'),
         const SizedBox(height: 8),
         snapshot.when(
           loading: () => const LinearProgressIndicator(),
@@ -306,8 +284,17 @@ class _RadicalContent extends ConsumerWidget {
                 'Chưa có thống kê. Mở tab Hán tự và bấm Cập nhật thống kê.',
               );
             }
-            final matches = data.radicals.where((r) => r.id == radical.id);
-            final count = matches.isEmpty ? 0 : matches.first.count;
+            final matches = data.radicalForms.where(
+              (item) =>
+                  item.radical.id == radical.id &&
+                  item.form == currentForm.form,
+            );
+            final count =
+                matches.isEmpty ? currentForm.count : matches.first.count;
+            final key = (
+              radicalId: radical.id,
+              form: currentForm.form,
+            );
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -315,14 +302,15 @@ class _RadicalContent extends ConsumerWidget {
                 const SizedBox(height: 10),
                 if (data.overview!.needsComponentUpdate)
                   const Text(
-                      'Quy tắc phân tích đã thay đổi. Cập nhật thống kê ở tab Hán tự để xem Kanji liên quan.',)
+                    'Quy tắc phân tích đã thay đổi. Cập nhật thống kê ở tab Hán tự để xem Kanji liên quan.',
+                  )
                 else
-                  ref.watch(radicalKanjiIdsProvider(radical.id)).when(
+                  ref.watch(radicalKanjiIdsProvider(key)).when(
                         loading: () => const LinearProgressIndicator(),
                         error: (_, __) => _Retry(
                           message: 'Không tải được Kanji liên quan.',
                           onRetry: () => ref.invalidate(
-                            radicalKanjiIdsProvider(radical.id),
+                            radicalKanjiIdsProvider(key),
                           ),
                         ),
                         data: (ids) {
@@ -331,7 +319,7 @@ class _RadicalContent extends ConsumerWidget {
                               .toList();
                           if (kanji.isEmpty) {
                             return const Text(
-                              'Chưa gặp bộ này trong thư viện.',
+                              'Chưa gặp dạng này trong thư viện.',
                             );
                           }
                           return Wrap(
@@ -360,6 +348,374 @@ class _RadicalContent extends ConsumerWidget {
   }
 }
 
+List<RadicalForm> _familyForms(
+  RadicalForm selected,
+  KanjiSnapshot? snapshot,
+) {
+  final known = <String, RadicalForm>{
+    for (final item in snapshot?.radicalForms ?? const <RadicalForm>[])
+      if (item.radical.id == selected.radical.id) item.form: item,
+  };
+  known.putIfAbsent(selected.form, () => selected);
+  final radical = selected.radical;
+  final forms = [radical.character, ...radical.variants];
+  return [
+    for (var index = 0; index < forms.length; index++)
+      known[forms[index]] ??
+          RadicalForm(
+            radical: radical,
+            form: forms[index],
+            count: 0,
+            familyCount: selected.familyCount,
+            isOriginal: index == 0,
+            formOrder: index,
+          ),
+  ];
+}
+
+class _RadicalFamilyNavigation extends StatelessWidget {
+  const _RadicalFamilyNavigation({
+    required this.forms,
+    required this.selectedForm,
+    required this.onSelected,
+  });
+
+  final List<RadicalForm> forms;
+  final String selectedForm;
+  final ValueChanged<RadicalForm> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final original = forms.first;
+    final variants = forms.skip(1).toList();
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const KanjiSectionHeading('Dạng gốc'),
+          const SizedBox(height: 8),
+          _RadicalFormBox(
+            item: original,
+            selected: original.form == selectedForm,
+            onPressed: () => onSelected(original),
+          ),
+          if (variants.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const KanjiSectionHeading('Các biến thể'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final item in variants)
+                  _RadicalFormBox(
+                    item: item,
+                    selected: item.form == selectedForm,
+                    onPressed: () => onSelected(item),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RadicalFormBox extends StatelessWidget {
+  const _RadicalFormBox({
+    required this.item,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final RadicalForm item;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final borderColor = selected ? colors.primary : colors.outlineVariant;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label:
+          '${item.form}, ${item.isOriginal ? 'dạng gốc' : 'biến thể'}, ${item.count} lần xuất hiện',
+      child: Material(
+        key: ValueKey('radical-form:${item.radical.id}:${item.form}'),
+        color: selected ? colors.primaryContainer : colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: borderColor, width: selected ? 2 : 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: selected ? null : onPressed,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 76, minHeight: 58),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.form,
+                    style: AppTypography.kanji(
+                      context,
+                      Theme.of(context).textTheme.titleLarge,
+                      color: selected
+                          ? colors.onPrimaryContainer
+                          : colors.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${item.count}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: selected
+                              ? colors.onPrimaryContainer
+                              : colors.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _KanjiVocabularyReadings extends ConsumerWidget {
+  const _KanjiVocabularyReadings({required this.character});
+
+  final String character;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      ref.watch(kanjiVocabularyGroupsProvider(character)).when(
+            loading: () => const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Đang tải từ vựng trong Thư viện...'),
+                SizedBox(height: 8),
+                LinearProgressIndicator(),
+              ],
+            ),
+            error: (_, __) => _Retry(
+              message: 'Không tải được từ vựng trong Thư viện.',
+              onRetry: () =>
+                  ref.invalidate(kanjiVocabularyGroupsProvider(character)),
+            ),
+            data: (groups) => Column(
+              children: [
+                _ReadingCategoryTile(
+                  key: ValueKey('$character:on'),
+                  title: 'Âm On',
+                  count: groups.onyomiCount,
+                  groups: groups.onyomi,
+                ),
+                const SizedBox(height: 10),
+                _ReadingCategoryTile(
+                  key: ValueKey('$character:kun'),
+                  title: 'Âm Kun',
+                  count: groups.kunyomiCount,
+                  groups: groups.kunyomi,
+                ),
+                if (groups.unknown.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _UnknownReadingTile(
+                    key: ValueKey('$character:unknown'),
+                    vocabulary: groups.unknown,
+                  ),
+                ],
+              ],
+            ),
+          );
+}
+
+class _ReadingCategoryTile extends StatelessWidget {
+  const _ReadingCategoryTile({
+    required this.title,
+    required this.count,
+    required this.groups,
+    super.key,
+  });
+
+  final String title;
+  final int count;
+  final List<KanjiVocabularyReadingGroup> groups;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: false,
+        maintainState: true,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        title: KanjiSectionHeading('$title ($count)', maxLines: 1),
+        children: groups.isEmpty
+            ? [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Chưa có dữ liệu cách đọc.',
+                      style: TextStyle(color: colors.onSurfaceVariant),
+                    ),
+                  ),
+                ),
+              ]
+            : [
+                Divider(height: 1, color: colors.outlineVariant),
+                for (var index = 0; index < groups.length; index++) ...[
+                  _ReadingGroupTile(group: groups[index]),
+                  if (index < groups.length - 1)
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: colors.outlineVariant,
+                    ),
+                ],
+              ],
+      ),
+    );
+  }
+}
+
+class _ReadingGroupTile extends StatelessWidget {
+  const _ReadingGroupTile({required this.group});
+
+  final KanjiVocabularyReadingGroup group;
+
+  @override
+  Widget build(BuildContext context) => ExpansionTile(
+        key: PageStorageKey('${group.type.name}:${group.reading}'),
+        initiallyExpanded: false,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        title: Text(
+          '${group.reading} (${group.vocabulary.length})',
+          locale: AppTypography.japaneseLocale,
+          style: AppTypography.japanese(
+            context,
+            Theme.of(context).textTheme.titleSmall,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        children: group.vocabulary.isEmpty
+            ? [
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Text('Chưa có từ vựng trong Thư viện.'),
+                  ),
+                ),
+              ]
+            : [
+                for (var index = 0;
+                    index < group.vocabulary.length;
+                    index++) ...[
+                  _VocabularyReadingRow(vocab: group.vocabulary[index]),
+                  if (index < group.vocabulary.length - 1)
+                    const Divider(height: 16),
+                ],
+              ],
+      );
+}
+
+class _UnknownReadingTile extends StatelessWidget {
+  const _UnknownReadingTile({required this.vocabulary, super.key});
+
+  final List<VocabularyEntry> vocabulary;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          title: KanjiSectionHeading(
+            'Chưa xác định (${vocabulary.length})',
+            maxLines: 1,
+          ),
+          children: [
+            for (var index = 0; index < vocabulary.length; index++) ...[
+              _VocabularyReadingRow(vocab: vocabulary[index]),
+              if (index < vocabulary.length - 1) const Divider(height: 16),
+            ],
+          ],
+        ),
+      );
+}
+
+class _VocabularyReadingRow extends StatelessWidget {
+  const _VocabularyReadingRow({required this.vocab});
+
+  final VocabularyEntry vocab;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final kanji = vocab.kanji?.trim();
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              kanji == null || kanji.isEmpty ? vocab.kana.trim() : kanji,
+              locale: AppTypography.japaneseLocale,
+              style: AppTypography.kanji(
+                context,
+                null,
+                color: colors.onSurface,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              vocab.kana.trim(),
+              locale: AppTypography.japaneseLocale,
+              style: AppTypography.japanese(
+                context,
+                null,
+                color: colors.onSurfaceVariant,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              vocab.meaning.trim(),
+              style: TextStyle(color: colors.onSurface, height: 1.35),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Character extends StatelessWidget {
   const _Character(this.text);
   final String text;
@@ -369,27 +725,19 @@ class _Character extends StatelessWidget {
 }
 
 class _TextSection extends StatelessWidget {
-  const _TextSection(this.label, this.value, {this.japanese = false});
+  const _TextSection(this.label, this.value);
   final String label, value;
-  final bool japanese;
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: Theme.of(context).textTheme.labelLarge),
+            KanjiSectionHeading(label),
             const SizedBox(height: 4),
             Text(
               value,
-              style: japanese
-                  ? AppTypography.japanese(
-                      context,
-                      null,
-                      fontSize: 17,
-                      height: 1.5,
-                    )
-                  : const TextStyle(fontSize: 17, height: 1.5),
+              style: const TextStyle(fontSize: 17, height: 1.5),
             ),
           ],
         ),

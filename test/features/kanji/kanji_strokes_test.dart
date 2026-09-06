@@ -37,12 +37,17 @@ void main() {
     expect(transformed.staticSvgAt(2), isNot(contains('script')));
     expect('<path'.allMatches(transformed.staticSvgAt(2)).length, 6);
     expect(
-        'stroke-opacity="0.15"'.allMatches(transformed.staticSvgAt(2)).length,
-        4,);
+      'stroke-opacity="0.15"'.allMatches(transformed.staticSvgAt(2)).length,
+      4,
+    );
     expect(transformed.strokeIds, ['s1', 's2', 's3', 's4', 's5', 's6']);
     final colored = transformed.staticSvgAt(0, highlighted: {'s2'});
     expect('stroke="#d32f2f"'.allMatches(colored).length, 1);
     expect(colored, isNot(contains('stroke-opacity="0.15"')));
+    expect(
+      transformed.staticSvgAt(0, strokeWidth: 6),
+      contains('stroke-width="6.0"'),
+    );
   });
   test(
       'pins URL, shares inflight fetch, persists across service restarts and repairs corruption',
@@ -73,8 +78,11 @@ void main() {
     expect((await offline.load('休')).paths, hasLength(6));
     await service.invalidate('休');
     await service.load('休');
-    expect(calls, 2,
-        reason: 'explicit retry bypasses memory and persistent SVG',);
+    expect(
+      calls,
+      2,
+      reason: 'explicit retry bypasses memory and persistent SVG',
+    );
     expect(service.cacheKey('𠮟'), endsWith('.20b9f'));
     expect(() => service.cacheKey('../'), throwsFormatException);
   });
@@ -102,11 +110,15 @@ void main() {
     );
     expect(find.text('Nét 0/6'), findsOneWidget);
     expect(
-        tester
-            .widget<IconButton>(find.byWidgetPredicate(
-                (w) => w is IconButton && w.tooltip == 'Nét trước',),)
-            .onPressed,
-        isNull,);
+      tester
+          .widget<IconButton>(
+            find.byWidgetPredicate(
+              (w) => w is IconButton && w.tooltip == 'Nét trước',
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
     KanjiStrokePainter painter() => tester
         .widgetList<CustomPaint>(find.byType(CustomPaint))
         .map((w) => w.painter)
@@ -123,8 +135,11 @@ void main() {
     expect(painter().progress, 6);
     await tester.tap(find.text('Tự vẽ'));
     await tester.pump();
-    expect(painter().progress, 0,
-        reason: 'animation zero is blank, unlike static zero',);
+    expect(
+      painter().progress,
+      0,
+      reason: 'animation zero is blank, unlike static zero',
+    );
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Tạm dừng'), findsOneWidget);
     await tester.tap(find.text('Tạm dừng'));
@@ -152,27 +167,31 @@ void main() {
     final document = StrokeDocument.parse(sampleSvg, kanjivgCommit: 'test');
     const components = [
       KanjiComponentOccurrence(
-          id: 'a',
-          form: '木',
-          strokeIds: ['s1', 's3'],
-          sortOrder: 0,
-          kanjivgCommit: 'test',),
+        id: 'b',
+        form: '木',
+        strokeIds: ['s2', 's4'],
+        sortOrder: 1,
+        kanjivgCommit: 'test',
+      ),
       KanjiComponentOccurrence(
-          id: 'b',
-          form: '木',
-          strokeIds: ['s2', 's4'],
-          sortOrder: 1,
-          kanjivgCommit: 'test',),
+        id: 'a',
+        form: '木',
+        strokeIds: ['s1', 's3'],
+        sortOrder: 0,
+        kanjivgCommit: 'test',
+      ),
       KanjiComponentOccurrence(
-          id: 'extra',
-          strokeIds: ['s5', 's6'],
-          sortOrder: 2,
-          kanjivgCommit: 'test',),
+        id: 'extra',
+        strokeIds: ['s5', 's6'],
+        sortOrder: 2,
+        kanjivgCommit: 'test',
+      ),
     ];
     Widget host(StrokeDocument doc, Brightness brightness) => MaterialApp(
           theme: ThemeData(brightness: brightness),
           home: Scaffold(
-              body: KanjiStrokeAnimator(document: doc, components: components),),
+            body: KanjiStrokeAnimator(document: doc, components: components),
+          ),
         );
     KanjiStrokePainter painter() => tester
         .widgetList<CustomPaint>(find.byType(CustomPaint))
@@ -181,12 +200,46 @@ void main() {
         .singleWhere((p) => p.drawGrid);
     final a = find.byKey(const ValueKey('component:a'));
     final b = find.byKey(const ValueKey('component:b'));
+    final extra = find.byKey(const ValueKey('component:extra'));
     await tester.pumpWidget(host(document, Brightness.light));
+    expect(
+      orderKanjiComponents(components).map((c) => c.id),
+      ['a', 'b', 'extra'],
+    );
+    expect(find.text('Thành phần'), findsOneWidget);
+    expect(find.text('Thành phần theo thứ tự viết'), findsNothing);
     final semantics = tester.ensureSemantics();
-    expect(find.bySemanticsLabel(RegExp('木, thành phần 1')), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('木, thành phần 2')), findsOneWidget);
+    expect(find.bySemanticsLabel('木'), findsAtLeastNWidgets(2));
     semantics.dispose();
     expect(find.text('Nét phụ'), findsOneWidget);
+    expect(tester.getSize(a).height, 48);
+    expect(tester.getSize(b).height, 48);
+    expect(tester.getSize(extra).height, 48);
+    expect(
+      tester.getTopLeft(a).dx,
+      closeTo(tester.getTopLeft(find.text('Thành phần')).dx, 0.01),
+    );
+    final previewPainters = tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<KanjiStrokePainter>()
+        .where((p) => !p.drawGrid)
+        .toList();
+    expect(previewPainters, hasLength(1));
+    expect(
+      previewPainters.single.ink,
+      Theme.of(tester.element(extra)).colorScheme.onSurface,
+    );
+    expect(previewPainters.single.strokeWidth, 6);
+    expect(previewPainters.single.fitToStrokeBounds, isTrue);
+    final preview = find.byWidgetPredicate(
+      (widget) =>
+          widget is CustomPaint &&
+          widget.painter is KanjiStrokePainter &&
+          (widget.painter as KanjiStrokePainter).onlyStrokeIds != null,
+    );
+    expect(tester.getSize(preview), const Size(28, 28));
+    expect(tester.getSize(find.byType(OverflowBox)), const Size(28, 18));
     await tester.tap(find.text('Tự vẽ'));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(a);
@@ -197,16 +250,21 @@ void main() {
     expect(painter().highlightedStrokeIds, {'s1', 's3'});
     expect(painter().highlightColor, const Color(0xFFD32F2F));
     expect(
-        tester
-            .widget<IconButton>(find.byWidgetPredicate(
-                (w) => w is IconButton && w.tooltip == 'Nét tiếp',),)
-            .onPressed,
-        isNull,);
+      tester
+          .widget<IconButton>(
+            find.byWidgetPredicate(
+              (w) => w is IconButton && w.tooltip == 'Nét tiếp',
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
     expect(
-        tester
-            .widget<SegmentedButton<bool>>(find.byType(SegmentedButton<bool>))
-            .onSelectionChanged,
-        isNull,);
+      tester
+          .widget<SegmentedButton<bool>>(find.byType(SegmentedButton<bool>))
+          .onSelectionChanged,
+      isNull,
+    );
     await tester.tap(b);
     await tester.pump();
     expect(tester.widget<ChoiceChip>(a).selected, isFalse);
@@ -230,9 +288,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(painter().highlightColor, const Color(0xFFFF6B6B));
     expect(painter().highlightedStrokeIds, {'s1', 's3'});
-    await tester.pumpWidget(host(
+    await tester.pumpWidget(
+      host(
         StrokeDocument.parse(sampleSvg, kanjivgCommit: 'test'),
-        Brightness.dark,),);
+        Brightness.dark,
+      ),
+    );
     await tester.pumpAndSettle();
     expect(painter().highlightedStrokeIds, isEmpty);
     expect(find.text('Nét 0/6'), findsOneWidget);
@@ -242,11 +303,15 @@ void main() {
     }
     expect(find.text('Nét 6/6'), findsOneWidget);
     expect(
-        tester
-            .widget<IconButton>(find.byWidgetPredicate(
-                (w) => w is IconButton && w.tooltip == 'Nét tiếp',),)
-            .onPressed,
-        isNull,);
+      tester
+          .widget<IconButton>(
+            find.byWidgetPredicate(
+              (w) => w is IconButton && w.tooltip == 'Nét tiếp',
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
   });
   testWidgets(
       'mismatched source or path IDs disable highlighting without guessing',
@@ -259,17 +324,19 @@ void main() {
             document: StrokeDocument.parse(sampleSvg, kanjivgCommit: 'test'),
             components: const [
               KanjiComponentOccurrence(
-                  id: 'wrong-source',
-                  form: '木',
-                  strokeIds: ['s1'],
-                  sortOrder: 0,
-                  kanjivgCommit: 'old',),
+                id: 'wrong-source',
+                form: '木',
+                strokeIds: ['s1'],
+                sortOrder: 0,
+                kanjivgCommit: 'old',
+              ),
               KanjiComponentOccurrence(
-                  id: 'wrong-id',
-                  form: '木',
-                  strokeIds: ['missing'],
-                  sortOrder: 1,
-                  kanjivgCommit: 'test',),
+                id: 'wrong-id',
+                form: '木',
+                strokeIds: ['missing'],
+                sortOrder: 1,
+                kanjivgCommit: 'test',
+              ),
             ],
             onRetry: () => retries++,
           ),
@@ -277,10 +344,11 @@ void main() {
       ),
     );
     expect(
-        tester
-            .widgetList<ChoiceChip>(find.byType(ChoiceChip))
-            .every((c) => c.onSelected == null),
-        isTrue,);
+      tester
+          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+          .every((c) => c.onSelected == null),
+      isTrue,
+    );
     expect(find.textContaining('Chưa thể tô nét'), findsOneWidget);
     await tester.tap(find.text('Tải lại nét'));
     expect(retries, 1);
@@ -319,24 +387,34 @@ void main() {
           .decodeBytes(File('tool/kanji/.cache/kanjivg.zip').readAsBytesSync());
       final files = {for (final f in zip.files) f.name: f};
       final occurrences = jsonDecode(
-          File('tool/kanji/.cache/component_occurrences.json')
-              .readAsStringSync(),) as List;
+        File('tool/kanji/.cache/component_occurrences.json').readAsStringSync(),
+      ) as List;
       for (final row in data['kanji'] as List) {
         final file = (row['id'] as int).toRadixString(16).padLeft(5, '0');
         final raw = utf8.decode(
           files['kanjivg-${source['kanjivg_commit']}/kanji/$file.svg']!.content
               as List<int>,
         );
-        final doc = StrokeDocument.parse(raw,
-            kanjivgCommit: source['kanjivg_commit'] as String,);
+        final doc = StrokeDocument.parse(
+          raw,
+          kanjivgCommit: source['kanjivg_commit'] as String,
+        );
         final selected = occurrences.where((o) => o['kanji_id'] == row['id']);
         final ids = selected.expand((o) => o['stroke_ids'] as List).toList();
-        expect(ids.toSet(), doc.strokeIds.toSet(),
-            reason: row['character'] as String,);
-        expect(ids.length, doc.strokeCount,
-            reason: 'No overlapping occurrences',);
-        expect(selected.every((o) => o['kanjivg_commit'] == doc.kanjivgCommit),
-            isTrue,);
+        expect(
+          ids.toSet(),
+          doc.strokeIds.toSet(),
+          reason: row['character'] as String,
+        );
+        expect(
+          ids.length,
+          doc.strokeCount,
+          reason: 'No overlapping occurrences',
+        );
+        expect(
+          selected.every((o) => o['kanjivg_commit'] == doc.kanjivgCommit),
+          isTrue,
+        );
         expect(
           doc.paths.length,
           greaterThan(0),

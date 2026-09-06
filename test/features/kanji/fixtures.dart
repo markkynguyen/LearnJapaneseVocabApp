@@ -34,9 +34,24 @@ Map<String, dynamic> radicalJson({int count = 1}) => {
       'name_vi': 'Nhân',
       'meaning_vi': 'Người',
       'stroke_count': 2,
-      'variants': ['亻'],
+      'variants': ['亻', '𠆢', '入'],
       'positions': ['Trái'],
       'count': count,
+    };
+Map<String, dynamic> radicalFormJson({
+  required String form,
+  required int count,
+  int familyCount = 20,
+  required bool isOriginal,
+  required int formOrder,
+}) =>
+    {
+      ...radicalJson(count: familyCount),
+      'form': form,
+      'count': count,
+      'family_count': familyCount,
+      'is_original': isOriginal,
+      'form_order': formOrder,
     };
 Map<String, dynamic> snapshotJson({bool empty = false}) => {
       'overview': empty
@@ -56,7 +71,35 @@ Map<String, dynamic> snapshotJson({bool empty = false}) => {
               kanjiJson('先', count: 8),
               kanjiJson('生', count: 2),
             ],
-      'radicals': empty ? [] : [radicalJson(count: 12)],
+      'radicals': empty ? [] : [radicalJson(count: 20)],
+      'radical_forms': empty
+          ? []
+          : [
+              radicalFormJson(
+                form: '人',
+                count: 8,
+                isOriginal: true,
+                formOrder: 0,
+              ),
+              radicalFormJson(
+                form: '亻',
+                count: 12,
+                isOriginal: false,
+                formOrder: 1,
+              ),
+              radicalFormJson(
+                form: '𠆢',
+                count: 0,
+                isOriginal: false,
+                formOrder: 2,
+              ),
+              radicalFormJson(
+                form: '入',
+                count: 0,
+                isOriginal: false,
+                formOrder: 3,
+              ),
+            ],
     };
 
 Map<String, dynamic> occurrenceJson() => {

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/cloud/cloud_store.dart';
+import '../domain/kanji_vocabulary_readings.dart';
 import '../domain/kanji_models.dart';
 
 class KanjiRepository {
@@ -93,6 +94,24 @@ class KanjiRepository {
         : Kanji.fromJson(Map<String, dynamic>.from(result.json as Map));
   }
 
+  Future<KanjiVocabularyGroups> getVocabularyGroups(Kanji target) async {
+    final vocabulary = await store.getVocabContainingKanji(target.character);
+    final characters = vocabulary
+        .expand((vocab) => extractKanjiCharacters(vocab.kanji))
+        .toSet();
+    final rows = await store.getKanjiByCharacters(characters);
+    final catalog = {
+      for (final row in rows)
+        if (row['character'] case final String character)
+          character: Kanji.fromJson(Map<String, dynamic>.from(row)),
+    };
+    return const KanjiVocabularyReadingClassifier().classify(
+      target: target,
+      vocabulary: vocabulary,
+      catalog: catalog,
+    );
+  }
+
   Future<List<KanjiComponent>> getComponents(int id) async {
     final result = await _load(
       '${_catalogPrefix}components.$id',
@@ -106,10 +125,10 @@ class KanjiRepository {
         .toList();
   }
 
-  Future<Set<int>> getKanjiIdsForRadical(int id) async {
+  Future<Set<int>> getKanjiIdsForRadicalForm(int id, String form) async {
     final result = await _load(
-      '${_catalogPrefix}related.$id',
-      () async => (await store.getKanjiIdsForRadical(id)).toList(),
+      '${_catalogPrefix}related.$id.$form',
+      () async => (await store.getKanjiIdsForRadicalForm(id, form)).toList(),
     );
     return (result.json as List).map((id) => (id as num).toInt()).toSet();
   }

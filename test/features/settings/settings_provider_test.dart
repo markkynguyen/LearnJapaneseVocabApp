@@ -80,6 +80,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Nét rõ hiện đại', skipOffstage: false), findsOneWidget);
+    expect(find.textContaining('Klee One', skipOffstage: false), findsNothing);
+    expect(
+      find.textContaining('BIZ UDPGothic', skipOffstage: false),
+      findsNothing,
+    );
     expect(find.text('Kanji', skipOffstage: false), findsOneWidget);
     expect(find.text('Kana', skipOffstage: false), findsOneWidget);
     expect(find.text('Cả hai', skipOffstage: false), findsOneWidget);

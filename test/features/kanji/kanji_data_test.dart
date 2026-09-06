@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:jvocab/core/cloud/cloud_store.dart';
+import 'package:jvocab/core/models/app_models.dart';
 import 'package:jvocab/features/kanji/data/kanji_repository.dart';
 import 'package:jvocab/features/kanji/domain/kanji_models.dart';
 import 'package:jvocab/features/kanji/presentation/providers/kanji_providers.dart';
@@ -23,6 +24,7 @@ class FakeKanjiStore extends CloudStore {
   Object? error;
   Completer<void>? pending;
   Map<String, dynamic> data = snapshotJson();
+  List<VocabularyEntry> vocabulary = const [];
   @override
   Future<Map<String, dynamic>> getKanjiSnapshot() async {
     reads++;
@@ -44,10 +46,39 @@ class FakeKanjiStore extends CloudStore {
   }
 
   @override
+  Future<List<VocabularyEntry>> getVocabContainingKanji(
+    String character, {
+    int pageSize = 500,
+  }) async {
+    if (error != null) throw error!;
+    return vocabulary
+        .where((vocab) => vocab.kanji?.contains(character) ?? false)
+        .toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getKanjiByCharacters(
+    Iterable<String> characters,
+  ) async {
+    if (error != null) throw error!;
+    return characters.map(kanjiJson).toList();
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> getKanjiComponentOccurrences(
-      int id,) async {
+    int id,
+  ) async {
     if (error != null) throw error!;
     return [occurrenceJson()];
+  }
+
+  @override
+  Future<Set<int>> getKanjiIdsForRadicalForm(
+    int radicalId,
+    String form,
+  ) async {
+    if (error != null) throw error!;
+    return form == '亻' ? {'休'.runes.single} : {'先'.runes.single};
   }
 }
 
@@ -80,6 +111,27 @@ void main() {
       KanjiSnapshot.fromJson(snapshotJson()).overview!.calculatedAt.isUtc,
       isTrue,
     );
+  });
+  test('parses separate radical forms and falls back to legacy snapshots', () {
+    final snapshot = KanjiSnapshot.fromJson(snapshotJson());
+    expect(
+      snapshot.radicalForms.map((item) => item.form),
+      ['人', '亻', '𠆢', '入'],
+    );
+    expect(snapshot.radicalForms.map((item) => item.count), [8, 12, 0, 0]);
+    expect(
+      snapshot.radicalForms.map((item) => item.familyCount),
+      [20, 20, 20, 20],
+    );
+    expect(snapshot.radicalForms.map((item) => item.radical.nameVi).toSet(), {
+      'Nhân',
+    });
+
+    final legacyJson = snapshotJson()..remove('radical_forms');
+    final legacy = KanjiSnapshot.fromJson(legacyJson);
+    expect(legacy.radicalForms, hasLength(1));
+    expect(legacy.radicalForms.single.form, '人');
+    expect(legacy.radicalForms.single.count, 20);
   });
   test(
       'does not calculate on provider reads; coalesces repeated button presses',
@@ -129,11 +181,21 @@ void main() {
     await online.loadSnapshot();
     await online.getKanji('休');
     await online.getOccurrences('休'.runes.single);
+    await online.getKanjiIdsForRadicalForm(9, '人');
+    await online.getKanjiIdsForRadicalForm(9, '亻');
     final offline = KanjiRepository(store, 'alice', isOffline: () => true);
     expect((await offline.loadSnapshot()).fromCache, isTrue);
     expect((await offline.getKanji('休'))!.meaningVi, 'Nghỉ ngơi');
-    expect((await offline.getOccurrences('休'.runes.single)).single.strokeIds,
-        ['s1', 's2'],);
+    expect(
+      (await offline.getOccurrences('休'.runes.single)).single.strokeIds,
+      ['s1', 's2'],
+    );
+    expect(await offline.getKanjiIdsForRadicalForm(9, '人'), {
+      '先'.runes.single,
+    });
+    expect(await offline.getKanjiIdsForRadicalForm(9, '亻'), {
+      '休'.runes.single,
+    });
     await expectLater(
       KanjiRepository(store, 'bob', isOffline: () => true).loadSnapshot(),
       throwsStateError,
