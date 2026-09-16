@@ -53,6 +53,12 @@ class CloudStore {
   Future<Map<String, dynamic>?> getKanji(String character) =>
       _client.from('kanji').select().eq('character', character).maybeSingle();
 
+  Future<Map<String, dynamic>?> getKanjiDecomposition(int id) => _client
+      .from('kanji_decompositions')
+      .select()
+      .eq('kanji_id', id)
+      .maybeSingle();
+
   Future<List<Map<String, dynamic>>> getKanjiByCharacters(
     Iterable<String> characters,
   ) async {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -25,6 +26,7 @@ class FakeKanjiStore extends CloudStore {
   Completer<void>? pending;
   Map<String, dynamic> data = snapshotJson();
   List<VocabularyEntry> vocabulary = const [];
+  Map<String, Set<int>> radicalKanjiIds = const {};
   @override
   Future<Map<String, dynamic>> getKanjiSnapshot() async {
     reads++;
@@ -43,6 +45,12 @@ class FakeKanjiStore extends CloudStore {
   Future<Map<String, dynamic>?> getKanji(String character) async {
     if (error != null) throw error!;
     return kanjiJson(character);
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getKanjiDecomposition(int id) async {
+    if (error != null) throw error!;
+    return null;
   }
 
   @override
@@ -78,6 +86,8 @@ class FakeKanjiStore extends CloudStore {
     String form,
   ) async {
     if (error != null) throw error!;
+    final configured = radicalKanjiIds[form];
+    if (configured != null) return configured;
     return form == '亻' ? {'休'.runes.single} : {'先'.runes.single};
   }
 }
@@ -209,7 +219,7 @@ void main() {
     expect((await online.loadSnapshot()).fromCache, isTrue);
   });
   test('corrupt persistent cache is rejected', () async {
-    SharedPreferences.setMockInitialValues({'kanji.snapshot.v1.a': 'not JSON'});
+    SharedPreferences.setMockInitialValues({'kanji.snapshot.v4.a': 'not JSON'});
     await expectLater(
       KanjiRepository(FakeKanjiStore(), 'a', isOffline: () => true)
           .loadSnapshot(),
@@ -222,5 +232,33 @@ void main() {
     final old = KanjiSnapshot.fromJson(raw);
     expect(old.overview!.needsComponentUpdate, isTrue);
     expect(old.kanji.first.count, 12);
+  });
+  test('v4 ignores every previous snapshot cache namespace offline', () async {
+    SharedPreferences.setMockInitialValues({
+      'kanji.snapshot.v1.a': jsonEncode(snapshotJson()),
+      'kanji.snapshot.v3.a': jsonEncode(snapshotJson()),
+      'kanji.catalog.v2.char.休': jsonEncode(kanjiJson('休')),
+      'kanji.catalog.v2.occurrences.20241': jsonEncode([occurrenceJson()]),
+      'kanji.tree.v1.root.20241': '{}',
+    });
+    final repository =
+        KanjiRepository(FakeKanjiStore(), 'a', isOffline: () => true);
+    await expectLater(repository.loadSnapshot(), throwsStateError);
+    await expectLater(repository.getKanji('休'), throwsStateError);
+    await expectLater(
+      repository.getOccurrences('休'.runes.single),
+      throwsStateError,
+    );
+    await expectLater(
+      repository.getKanjiDecomposition('休'.runes.single),
+      throwsStateError,
+    );
+    final v2 = snapshotJson();
+    (v2['overview'] as Map)['component_version'] = 2;
+    expect(KanjiSnapshot.fromJson(v2).overview!.needsComponentUpdate, isTrue);
+    expect(
+      KanjiSnapshot.fromJson(snapshotJson()).overview!.needsComponentUpdate,
+      isFalse,
+    );
   });
 }

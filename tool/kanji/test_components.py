@@ -29,7 +29,7 @@ class ComponentTests(unittest.TestCase):
         row = self.characters['機'][3]
         self.assertEqual((row['source_element'], row['source_original']), ('戈', None))
         self.assertEqual(row['radical_id'], 62)
-        self.assertIsNone(self.characters['学'][0]['radical_id'])
+        self.assertEqual(self.characters['学'][0]['radical_id'], 42)
 
     def test_original_xu_no_longer_hides_the_halberd_radical(self):
         affected = '威幾感憾機減歳蔑滅'
@@ -110,14 +110,15 @@ class ComponentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'ambiguous parts'):
             extract(root, {'木': 75}, {'stops': []})
 
-    def test_parts_from_different_contexts_require_explicit_override(self):
+    def test_parts_from_different_contexts_are_not_merged(self):
         root = ET.fromstring('''<svg xmlns="http://www.w3.org/2000/svg" xmlns:kvg="http://kanjivg.tagaini.net">
           <g id="StrokePaths"><g id="root" kvg:element="仮">
             <g id="left" kvg:element="甲"><g id="a" kvg:element="木" kvg:part="1"><path id="s1"/></g></g>
             <g id="right" kvg:element="乙"><g id="b" kvg:element="木" kvg:part="2"><path id="s2"/></g></g>
           </g></g></svg>''')
-        with self.assertRaisesRegex(ValueError, 'tree contexts'):
-            extract(root, {'木': 75}, {'stops': []})
+        rows = extract(root, {'木': 75}, {'stops': []})
+        self.assertEqual([r['stroke_ids'] for r in rows], [['s1'], ['s2']])
+        self.assertTrue(all(r['radical_id'] is None for r in rows))
 
 
 if __name__ == '__main__':

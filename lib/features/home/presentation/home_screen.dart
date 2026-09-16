@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../kanji/presentation/providers/kanji_providers.dart';
+import '../../kanji/presentation/radical_display_groups.dart';
 import 'providers/home_provider.dart';
 import 'widgets/home_vocab_search.dart';
 import 'widgets/level_stats_dashboard.dart';
@@ -18,7 +19,11 @@ class HomeScreen extends ConsumerWidget {
     final totalDueCount = ref.watch(totalDueCountProvider);
     final totalLevelStats = ref.watch(totalLevelStatsProvider);
     final kanjiStats = ref.watch(kanjiSnapshotProvider);
-    final kanjiOverview = kanjiStats.valueOrNull?.overview;
+    final kanjiSnapshot = kanjiStats.valueOrNull;
+    final kanjiOverview = kanjiSnapshot?.overview;
+    final radicalCount = kanjiSnapshot == null || kanjiOverview == null
+        ? null
+        : radicalDisplayItems(kanjiSnapshot.radicalForms).length;
 
     return Scaffold(
       body: SafeArea(
@@ -43,7 +48,7 @@ class HomeScreen extends ConsumerWidget {
                         data: (stats) => LevelStatsDashboard(
                           stats: stats,
                           kanjiCount: kanjiOverview?.kanjiCount,
-                          radicalCount: kanjiOverview?.radicalCount,
+                          radicalCount: radicalCount,
                           isCharacterStatsLoading:
                               kanjiOverview == null && kanjiStats.isLoading,
                           hasCharacterStatsError:

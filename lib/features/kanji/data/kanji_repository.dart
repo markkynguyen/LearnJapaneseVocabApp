@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/cloud/cloud_store.dart';
 import '../domain/kanji_vocabulary_readings.dart';
 import '../domain/kanji_models.dart';
+import '../domain/kanji_decomposition.dart';
 
 class KanjiRepository {
   KanjiRepository(this.store, this.userId, {bool Function()? isOffline})
@@ -14,7 +15,8 @@ class KanjiRepository {
   final CloudStore store;
   final String userId;
   final bool Function() _isOffline;
-  static const _catalogPrefix = 'kanji.catalog.v2.';
+  static const _catalogPrefix = 'kanji.catalog.v3.';
+  static const _treePrefix = 'kanji.tree.v2.';
   Future<void> _writes = Future.value();
 
   Future<({dynamic json, bool cached})> _load(
@@ -54,8 +56,9 @@ class KanjiRepository {
     final operation = _writes.then((_) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(key, raw);
-      if (!key.startsWith(_catalogPrefix)) return;
-      final order = prefs.getStringList('${_catalogPrefix}order') ?? [];
+      final prefix = key.startsWith(_treePrefix) ? _treePrefix : _catalogPrefix;
+      if (!key.startsWith(prefix)) return;
+      final order = prefs.getStringList('${prefix}order') ?? [];
       order.remove(key);
       order.add(key);
       var bytes = order.fold<int>(
@@ -67,7 +70,7 @@ class KanjiRepository {
         bytes -= (prefs.getString(oldest)?.length ?? 0) * 2;
         await prefs.remove(oldest);
       }
-      await prefs.setStringList('${_catalogPrefix}order', order);
+      await prefs.setStringList('${prefix}order', order);
     });
     _writes = operation.catchError((Object _) {});
     return operation;
@@ -75,7 +78,7 @@ class KanjiRepository {
 
   Future<KanjiSnapshot> loadSnapshot() async {
     final result =
-        await _load('kanji.snapshot.v1.$userId', store.getKanjiSnapshot);
+        await _load('kanji.snapshot.v4.$userId', store.getKanjiSnapshot);
     return KanjiSnapshot.fromJson(
       Map<String, dynamic>.from(result.json as Map),
       fromCache: result.cached,
@@ -83,6 +86,41 @@ class KanjiRepository {
   }
 
   Future<void> recalculate() => store.recalculateKanjiStats();
+
+  Future<KanjiDecomposition?> getKanjiDecomposition(int id) async {
+    final result = await _load(
+      '${_treePrefix}root.$id',
+      () => store.getKanjiDecomposition(id),
+    );
+    if (result.json == null) return null;
+    final tree = KanjiDecomposition.fromJson(
+      Map<String, dynamic>.from(result.json as Map),
+    );
+    if (tree.kanjiId != id || tree.root.form != String.fromCharCode(id)) {
+      throw const FormatException('Cây không thuộc Hán tự đang xem.');
+    }
+    return tree;
+  }
+
+  Future<Map<String, Kanji>> getDecompositionMeanings(
+    KanjiDecomposition tree,
+  ) async {
+    final characters = tree.root.descendants
+        .where((n) => n.kind == KanjiComponentKind.kanji)
+        .map((n) => n.form)
+        .whereType<String>()
+        .toSet();
+    if (characters.isEmpty) return {};
+    final result = await _load(
+      '${_treePrefix}meanings.${tree.kanjivgCommit}.${tree.kanjiId}',
+      () => store.getKanjiByCharacters(characters),
+    );
+    return {
+      for (final row in result.json as List)
+        (row as Map)['character'] as String:
+            Kanji.fromJson(Map<String, dynamic>.from(row)),
+    };
+  }
 
   Future<Kanji?> getKanji(String character) async {
     final result = await _load(
@@ -133,12 +171,29 @@ class KanjiRepository {
     return (result.json as List).map((id) => (id as num).toInt()).toSet();
   }
 
+  /// Hợp nhất các Hán tự chứa bất kỳ dạng nào của cùng một bộ thủ.
+  ///
+  /// Việc gộp chỉ phục vụ UI; catalog và RPC vẫn truy vấn từng dạng gốc.
+  Future<Set<int>> getKanjiIdsForRadicalForms(
+    int id,
+    Iterable<String> forms,
+  ) async {
+    final ids = await Future.wait(
+      forms.toSet().map((form) => getKanjiIdsForRadicalForm(id, form)),
+    );
+    return ids.expand((items) => items).toSet();
+  }
+
   Future<List<KanjiComponentOccurrence>> getOccurrences(int id) async {
     final result = await _load(
       '${_catalogPrefix}occurrences.$id',
       () => store.getKanjiComponentOccurrences(id),
     );
-    return (result.json as List)
+    final rows = result.json as List;
+    if (rows.any((row) => (row as Map)['component_version'] != 3)) {
+      throw const FormatException('Dữ liệu thành phần cần được cập nhật.');
+    }
+    return rows
         .map(
           (row) => KanjiComponentOccurrence.fromJson(
             Map<String, dynamic>.from(row as Map),

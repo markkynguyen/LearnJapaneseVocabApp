@@ -38,7 +38,7 @@ begin
     from jsonb_to_recordset(snapshot->'radical_forms')
       as f(id integer, form text, form_order integer)
     where id = 9
-  ) = array['人','亻','𠆢','入'], 'family forms or order are wrong: ' || coalesce((
+  ) = array['人','亻'], 'zero-count forms should be omitted: ' || coalesce((
     select array_agg(form order by form_order)::text
     from jsonb_to_recordset(snapshot->'radical_forms')
       as f(id integer, form text, form_order integer)
@@ -49,7 +49,24 @@ begin
     from jsonb_to_recordset(snapshot->'radical_forms')
       as f(id integer, count bigint, form_order integer)
     where id = 9
-  ) = array[1,2,0,0]::bigint[], 'human form counts are wrong';
+  ) = array[1,2]::bigint[], 'human form counts are wrong';
+  assert not exists (
+    select 1
+    from jsonb_to_recordset(snapshot->'radical_forms')
+      as f(id integer, count bigint)
+    where count <= 0
+  ), 'zero-count forms should not be included';
+  assert (
+    select coalesce(bool_and(count >= next_count), true)
+    from (
+      select
+        (item->>'count')::bigint as count,
+        lead((item->>'count')::bigint) over (order by ordinality) as next_count
+      from jsonb_array_elements(snapshot->'radical_forms') with ordinality
+        as entries(item, ordinality)
+    ) ordered
+    where next_count is not null
+  ), 'forms are not globally sorted by count';
   assert not exists (
     select 1
     from jsonb_to_recordset(snapshot->'radical_forms')
@@ -61,7 +78,7 @@ begin
     from jsonb_to_recordset(snapshot->'radical_forms')
       as f(id integer, form text, count bigint)
     where id = 75 and form = '木'
-  ) = 4, '森 contributes one 木 per Kanji occurrence';
+  ) = 8, '休 and each 森 contribute all 木 positions';
 end $$;
 
 reset role;

@@ -62,7 +62,7 @@ Map<String, dynamic> snapshotJson({bool empty = false}) => {
               'total_radical_count': 1,
               'total_vocab_scanned': 8,
               'unsupported_kanji_count': 1,
-              'component_version': 2,
+               'component_version': 4,
             },
       'kanji': empty
           ? []
@@ -104,6 +104,8 @@ Map<String, dynamic> snapshotJson({bool empty = false}) => {
 
 Map<String, dynamic> occurrenceJson() => {
       'occurrence_id': 'g1',
+      'kind': 'radical',
+      'radical_id': 9,
       'display_form': '亻',
       'source_element': '亻',
       'source_original': '人',
@@ -111,6 +113,6 @@ Map<String, dynamic> occurrenceJson() => {
       'sort_order': 0,
       'stroke_ids': ['s1', 's2'],
       'source_group_ids': ['g1'],
-      'component_version': 2,
+      'component_version': 3,
       'kanjivg_commit': 'test',
     };

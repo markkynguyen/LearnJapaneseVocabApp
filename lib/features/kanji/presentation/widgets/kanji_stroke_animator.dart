@@ -126,12 +126,17 @@ class KanjiStrokeAnimator extends StatefulWidget {
     this.components = const [],
     this.hanVietLabel,
     this.onRetry,
+    this.controlledSelection = false,
+    this.selectedComponentId,
+    this.showComponents = true,
     super.key,
   });
   final StrokeDocument document;
   final List<KanjiComponentOccurrence> components;
   final String? hanVietLabel;
   final VoidCallback? onRetry;
+  final bool controlledSelection, showComponents;
+  final String? selectedComponentId;
   @override
   State<KanjiStrokeAnimator> createState() => _KanjiStrokeAnimatorState();
 }
@@ -144,11 +149,11 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
   int _step = 0;
   String? _selectedId;
   Set<String> get _highlighted => widget.components
-      .where((c) => c.id == _selectedId)
+      .where((c) => c.id == _selectedId && _canHighlight(c))
       .expand((c) => c.strokeIds)
       .toSet();
   bool _canHighlight(KanjiComponentOccurrence c) =>
-      c.componentVersion == 2 &&
+      c.componentVersion == 3 &&
       c.kanjivgCommit == widget.document.kanjivgCommit &&
       c.strokeIds.isNotEmpty &&
       widget.document.strokeIds.every((id) => id.isNotEmpty) &&
@@ -163,6 +168,7 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
   @override
   void initState() {
     super.initState();
+    _selectedId = widget.selectedComponentId;
     _controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: widget.document.strokeCount * 650),
@@ -180,10 +186,19 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
       _step = 0;
       _selectedId = null;
       _animated = false;
-    } else if (_selectedId != null &&
+    } else if (!widget.controlledSelection &&
+        _selectedId != null &&
         !widget.components
             .any((c) => c.id == _selectedId && _canHighlight(c))) {
       _selectedId = null;
+    }
+    if (widget.controlledSelection &&
+        (oldWidget.selectedComponentId != widget.selectedComponentId ||
+            oldWidget.document != widget.document)) {
+      _controller.stop();
+      _animated = false;
+      _step = 0;
+      _selectedId = widget.selectedComponentId;
     }
   }
 
@@ -262,7 +277,8 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
                     'Thứ tự viết ${_animated ? (_controller.value * total).ceil() : _step}/$total nét',
                 image: true,
                 child: SizedBox.square(
-                  dimension: 200,
+                  dimension:
+                      MediaQuery.sizeOf(context).height < 600 ? 144 : 200,
                   child: !widget.document.supportsAnimation
                       ? SvgPicture.string(
                           widget.document.staticSvgAt(
@@ -341,7 +357,9 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
                     : null,
                 icon: const Icon(Icons.chevron_left),
               ),
-              Text('Nét $_step/$total'),
+              Flexible(
+                  child:
+                      Text('Nét $_step/$total', textAlign: TextAlign.center),),
               IconButton(
                 tooltip: 'Nét tiếp',
                 onPressed: _step < total && _selectedId == null
@@ -355,7 +373,7 @@ class _KanjiStrokeAnimatorState extends State<KanjiStrokeAnimator>
           const SizedBox(height: 8),
           _HanVietLabel(widget.hanVietLabel!),
         ],
-        if (orderedComponents.isNotEmpty) ...[
+        if (widget.showComponents && orderedComponents.isNotEmpty) ...[
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,

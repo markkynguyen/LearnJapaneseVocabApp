@@ -32,7 +32,7 @@ do $$ begin
   assert (select total_kanji_count from public.user_kanji_stats_overview)=5, 'Distinct supported Kanji';
   assert (select unsupported_kanji_count from public.user_kanji_stats_overview)=1, 'Distinct unknown Kanji';
   assert (select total_vocab_scanned from public.user_kanji_stats_overview)=3, 'All library rows scanned, including empty Kanji fields';
-  assert (select count from public.user_radical_stats where radical_id=75)=2, 'Wood in 休 and 森 counted once per Kanji occurrence';
+  assert (select count from public.user_radical_stats where radical_id=75)=4, 'Wood positions in 休 and 森 are counted';
   assert (select count(*) from public.user_kanji_stats)=5, 'No duplicate stats after repeated RPC';
   assert jsonb_array_length(public.get_user_kanji_snapshot()->'kanji')=5, 'Snapshot count';
 end $$;

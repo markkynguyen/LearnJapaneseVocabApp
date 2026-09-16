@@ -110,7 +110,7 @@ void main() {
     expect(find.textContaining('Dữ liệu chỉ thay đổi'), findsNothing);
     await tester.tap(find.widgetWithText(Tab, 'Bộ thủ'));
     await tester.pumpAndSettle();
-    expect(find.text('Nhân'), findsNWidgets(4));
+    expect(find.text('Nhân'), findsNWidgets(2));
   });
   testWidgets('tab bar stays pinned while the grid scrolls', (tester) async {
     final data = snapshotJson();
@@ -133,18 +133,36 @@ void main() {
     expect(tabRect.top, greaterThanOrEqualTo(appBarRect.bottom - 1));
   });
   testWidgets(
-      'radical forms have separate cards, details, related Kanji and history',
+      'radical forms filter zero counts, sort globally, and keep details',
       (tester) async {
-    await tester.pumpWidget(app(const KanjiHomeScreen(), FakeKanjiStore()));
+    final store = FakeKanjiStore();
+    final data = snapshotJson();
+    (data['radical_forms'] as List).add({
+      'id': 75,
+      'character': '木',
+      'name_vi': 'Mộc',
+      'meaning_vi': 'Cây',
+      'stroke_count': 4,
+      'variants': <String>[],
+      'positions': ['Trên'],
+      'form': '木',
+      'count': 10,
+      'family_count': 10,
+      'is_original': true,
+      'form_order': 0,
+    });
+    store.data = data;
+    await tester.pumpWidget(app(const KanjiHomeScreen(), store));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(Tab, 'Bộ thủ'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Nhân'), findsNWidgets(4));
+    expect(find.text('Nhân'), findsNWidgets(2));
+    expect(find.text('Mộc'), findsOneWidget);
     expect(find.text('人'), findsOneWidget);
     expect(find.text('亻'), findsOneWidget);
-    expect(find.text('𠆢'), findsOneWidget);
-    expect(find.text('入'), findsOneWidget);
+    expect(find.text('𠆢'), findsNothing);
+    expect(find.text('入'), findsNothing);
     expect(
       find.bySemanticsLabel('人, Nhân, dạng gốc, 8 lần xuất hiện'),
       findsOneWidget,
@@ -153,6 +171,20 @@ void main() {
       find.bySemanticsLabel('亻, Nhân, biến thể, 12 lần xuất hiện'),
       findsOneWidget,
     );
+    expect(
+      find.bySemanticsLabel('木, Mộc, dạng gốc, 10 lần xuất hiện'),
+      findsOneWidget,
+    );
+    final orderedCards = [
+      find.bySemanticsLabel('亻, Nhân, biến thể, 12 lần xuất hiện'),
+      find.bySemanticsLabel('木, Mộc, dạng gốc, 10 lần xuất hiện'),
+      find.bySemanticsLabel('人, Nhân, dạng gốc, 8 lần xuất hiện'),
+    ];
+    final visualOrder = orderedCards
+        .map(tester.getTopLeft)
+        .map((offset) => offset.dy * 1000 + offset.dx)
+        .toList();
+    expect(visualOrder, orderedEquals([...visualOrder]..sort()));
 
     await tester.tap(find.text('亻'));
     await tester.pumpAndSettle();
@@ -191,6 +223,96 @@ void main() {
       findsOneWidget,
     );
     expect(find.widgetWithText(ActionChip, '休 · 12'), findsOneWidget);
+  });
+  testWidgets(
+      'configured radical variants render as one UI group with combined details',
+      (tester) async {
+    final store = FakeKanjiStore();
+    final data = snapshotJson();
+    data['kanji'] = [kanjiJson('休', count: 2), kanjiJson('先', count: 3)];
+    data['radicals'] = <Object?>[];
+    data['radical_forms'] = [
+      {
+        'id': 87,
+        'character': '爪',
+        'name_vi': 'Trảo',
+        'meaning_vi': 'Móng vuốt',
+        'stroke_count': 4,
+        'variants': ['爫', '⺤'],
+        'positions': ['Trên'],
+        'form': '爪',
+        'count': 7,
+        'family_count': 12,
+        'is_original': true,
+        'form_order': 0,
+      },
+      {
+        'id': 87,
+        'character': '爪',
+        'name_vi': 'Trảo',
+        'meaning_vi': 'Móng vuốt',
+        'stroke_count': 4,
+        'variants': ['爫', '⺤'],
+        'positions': ['Trên'],
+        'form': '爫',
+        'count': 2,
+        'family_count': 12,
+        'is_original': false,
+        'form_order': 1,
+      },
+      {
+        'id': 87,
+        'character': '爪',
+        'name_vi': 'Trảo',
+        'meaning_vi': 'Móng vuốt',
+        'stroke_count': 4,
+        'variants': ['爫', '⺤'],
+        'positions': ['Trên'],
+        'form': '⺤',
+        'count': 3,
+        'family_count': 12,
+        'is_original': false,
+        'form_order': 2,
+      },
+    ];
+    store
+      ..data = data
+      ..radicalKanjiIds = {
+        '爫': {'休'.runes.single},
+        '⺤': {'先'.runes.single},
+      };
+
+    await tester.pumpWidget(app(const KanjiHomeScreen(), store));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == '2 Bộ thủ',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(Tab, 'Bộ thủ'));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('爫, Trảo, 5 lần xuất hiện'), findsOneWidget);
+    expect(find.text('⺤'), findsNothing);
+    expect(
+      find.bySemanticsLabel('爪, Trảo, dạng gốc, 7 lần xuất hiện'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.bySemanticsLabel('爫, Trảo, 5 lần xuất hiện'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('5 lần xuất hiện trong bản thống kê gần nhất.'),
+      findsOneWidget,
+    );
+    expect(find.text('Dạng gốc'), findsNothing);
+    expect(find.text('Các biến thể'), findsNothing);
+    expect(find.widgetWithText(ActionChip, '休 · 2'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, '先 · 3'), findsOneWidget);
   });
   testWidgets('radical detail hides form navigation when there are no variants',
       (tester) async {

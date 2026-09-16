@@ -1,8 +1,5 @@
 {
-  "component_version": 2,
-  "stops": [
-    {"element": "⺍", "display_form": "⺍"}
-  ],
+  "component_version": 3,
   "part_groups_note": "Pinned structural review: 斎 has an omitted original on its middle part; the other entries have matching element/original/number and consecutive part 1/2 across nested or split named contexts. Explicit IDs prevent merging unrelated occurrences in other tree contexts.",
   "part_groups": {
     "斎": [["kvg:0658e-g1", "kvg:0658e-g6", "kvg:0658e-g10"]],

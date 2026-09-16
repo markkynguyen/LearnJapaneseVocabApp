@@ -6,6 +6,7 @@ import { performance } from 'node:perf_hooks';
 
 const db = new PGlite();
 let legacySnapshot;
+let beforeDecompositions;
 try {
   await db.exec(`
     create role anon;
@@ -18,6 +19,13 @@ try {
     grant execute on function auth.uid() to authenticated, anon;
   `);
   for (const file of (await readdir('supabase/migrations')).filter(f => f.endsWith('.sql')).sort()) {
+    if (file >= '202609090001') continue; // Verify historical migrations before the deliberate rebuild.
+    if (file === '202609080001_kanji_decompositions.sql') {
+      beforeDecompositions = (await db.query(`select
+        (select jsonb_agg(t order by kanji_id, occurrence_id) from public.kanji_component_occurrences t) as occurrences,
+        (select jsonb_agg(t order by kanji_id, radical_id, component_form) from public.kanji_components t) as components,
+        public.get_user_kanji_snapshot() as snapshot`)).rows[0];
+    }
     let sql = await readFile(`supabase/migrations/${file}`, 'utf8');
     // PGlite ships gen_random_uuid in core, but does not bundle pgcrypto.
     sql = sql.replace('create extension if not exists pgcrypto;', '');
@@ -34,6 +42,15 @@ try {
       legacySnapshot = (await db.query('select public.get_user_kanji_snapshot() as snapshot')).rows[0].snapshot;
     }
   }
+  const afterDecompositions = (await db.query(`select
+    (select jsonb_agg(t order by kanji_id, occurrence_id) from public.kanji_component_occurrences t) as occurrences,
+    (select jsonb_agg(t order by kanji_id, radical_id, component_form) from public.kanji_components t) as components,
+    public.get_user_kanji_snapshot() as snapshot`)).rows[0];
+  if (JSON.stringify(beforeDecompositions) !== JSON.stringify(afterDecompositions)) {
+    throw new Error('Hierarchical catalog changed v2 components or statistics');
+  }
+  await db.exec(await readFile('supabase/tests/fixtures/kanji_decompositions_assertions.sql', 'utf8'));
+  console.log('PASS: hierarchical trees, RLS and unchanged v2 statistics/occurrences.');
   const afterMigration = (await db.query('select public.get_user_kanji_snapshot() as snapshot')).rows[0].snapshot;
   if (afterMigration.overview.component_version !== 1) throw new Error('Migration relabeled a legacy snapshot');
   const migratedRadicalForms = afterMigration.radical_forms;
@@ -41,8 +58,32 @@ try {
   delete afterMigration.overview.component_version;
   if (JSON.stringify(afterMigration) !== JSON.stringify(legacySnapshot)) throw new Error('Migration changed legacy snapshot counts/timestamps');
   if (!Array.isArray(migratedRadicalForms) || migratedRadicalForms.length === 0) throw new Error('Migration did not add radical forms');
+  await db.exec(`
+    insert into public.srs_progress(vocab_id,user_id,level,correct_count,wrong_count)
+    select id,user_id,3,7,2 from public.vocabulary
+    on conflict (vocab_id) do update set level=3,correct_count=7,wrong_count=2;
+    insert into public.user_learning_settings(user_id,session_size)
+    values ('aaaaaaaa-0000-0000-0000-000000000004',17);
+    insert into public.device_preferences(user_id,device_id,theme_mode)
+    values ('aaaaaaaa-0000-0000-0000-000000000004','preservation-test','dark');
+  `);
+  const protectedTables = ['auth.users', 'public.vocabulary', 'public.folders',
+    'public.srs_progress', 'public.user_learning_settings', 'public.device_preferences'];
+  const protectedSnapshot = async () => Promise.all(protectedTables.map(async table =>
+    (await db.query(`select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]') as data from ${table} t`)).rows[0].data));
+  const beforeTaxonomy = await protectedSnapshot();
+  await db.exec(await readFile('supabase/migrations/202609090001_kanji_taxonomy_v3.sql', 'utf8'));
+  await db.exec(await readFile('supabase/migrations/202609090002_sort_filter_radical_forms.sql', 'utf8'));
+  await db.exec(await readFile('supabase/migrations/202609170001_kanji_radical_statistics_v4.sql', 'utf8'));
+  if (JSON.stringify(beforeTaxonomy) !== JSON.stringify(await protectedSnapshot())) {
+    throw new Error('Taxonomy migration changed protected learning/account data');
+  }
+  const reset = (await db.query('select public.get_user_kanji_snapshot() as snapshot')).rows[0].snapshot;
+  if (reset.overview !== null || reset.kanji.length || reset.radicals.length) throw new Error('Kanji statistics were not reset');
+  console.log('PASS: taxonomy migrations preserve complete vocabulary, folders, SRS, settings, device preferences and accounts; only Kanji stats reset.');
+  await db.exec(await readFile('supabase/tests/fixtures/kanji_taxonomy_assertions.sql', 'utf8'));
   await db.exec("delete from auth.users where id='aaaaaaaa-0000-0000-0000-000000000004'; select set_config('request.jwt.claim.sub','',false);");
-  console.log('PASS: existing user snapshot survives migration unchanged, with version 1.');
+  console.log('PASS: historical migrations preserved v1 snapshot; taxonomy rebuilds deliberately clear only Kanji statistics.');
   // Supabase supplies table privileges by default; replicate that for old tables.
   await db.exec(`grant select, insert, update, delete on public.folders, public.vocabulary, public.srs_progress to authenticated;`);
   const assertions = await readFile('supabase/tests/fixtures/kanji_assertions.sql', 'utf8');
@@ -55,7 +96,7 @@ try {
   console.log('PASS: Kanji schema, counts, idempotency, cleanup, roles/RLS, Unicode, snapshot >1000 rows, atomic rollback.');
 
   if (process.argv.includes('--assertions-only')) {
-    console.log('PASS: v2 occurrences and manual versioned statistics.');
+    console.log('PASS: v3 occurrences and v4 nested manual statistics.');
   } else {
   const timings = [];
   for (const size of [1000, 10000, 50000]) {

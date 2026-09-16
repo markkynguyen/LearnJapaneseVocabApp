@@ -157,10 +157,12 @@ class KanjiOverview {
         unsupportedCount = _integer(json, 'unsupported_kanji_count'),
         componentVersion = (json['component_version'] as num?)?.toInt() ?? 1;
   final int componentVersion;
-  bool get needsComponentUpdate => componentVersion < 2;
+  bool get needsComponentUpdate => componentVersion < 4;
   final DateTime calculatedAt;
   final int kanjiCount, radicalCount, vocabScanned, unsupportedCount;
 }
+
+enum KanjiComponentKind { kanji, radical, supplementary }
 
 class KanjiComponentOccurrence {
   const KanjiComponentOccurrence({
@@ -172,8 +174,11 @@ class KanjiComponentOccurrence {
     this.radical,
     this.sourceElement,
     this.sourceOriginal,
+    this.kind = KanjiComponentKind.supplementary,
+    this.radicalId,
+    this.sourcePartial = false,
     this.groupIds = const [],
-    this.componentVersion = 2,
+    this.componentVersion = 3,
   });
   factory KanjiComponentOccurrence.fromJson(Map<String, dynamic> json) =>
       KanjiComponentOccurrence(
@@ -183,6 +188,9 @@ class KanjiComponentOccurrence {
         groupIds: _strings(json['source_group_ids']),
         sourceElement: json['source_element'] as String?,
         sourceOriginal: json['source_original'] as String?,
+        kind: KanjiComponentKind.values.byName(json['kind'] as String),
+        radicalId: (json['radical_id'] as num?)?.toInt(),
+        sourcePartial: json['source_partial'] == true,
         radical: json['radicals'] == null
             ? null
             : Radical.fromJson(
@@ -195,9 +203,12 @@ class KanjiComponentOccurrence {
   final String id, kanjivgCommit;
   final String? form, sourceElement, sourceOriginal;
   final Radical? radical;
+  final KanjiComponentKind kind;
+  final int? radicalId;
+  final bool sourcePartial;
   final List<String> strokeIds, groupIds;
   final int sortOrder, componentVersion;
-  String get label => form == null
+  String get label => kind == KanjiComponentKind.supplementary || form == null
       ? 'Nét phụ'
       : radical == null
           ? form!

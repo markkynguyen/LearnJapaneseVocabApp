@@ -1,4 +1,64 @@
-## Phạm vi đã triển khai
+## Quy tắc hiện hành — thống kê v4 / taxonomy v3 / cây v2 (2026-09-17)
+
+- Chỉ có `radical`, `kanji`, `supplementary`. Tra bộ thủ theo `display_form → source_element → source_original`, trước kiểm tra Jōyō. Nguồn nhận dạng là `radicals.tsv` và ánh xạ sản phẩm `⺍ → 小`; không dùng các biến thể suy ra trong cache làm đầu vào nhận dạng.
+- Jōyō lấy từ KANJIDIC2 đã khóa checksum: lớp 1–6, 8, đúng 2.136 chữ. Tầng không phải bộ thủ/Jōyō được bỏ và đưa con lên; lá không nhận dạng được là Nét phụ. `partial` chỉ còn metadata nguồn `source_partial`, không phải loại đầu ra.
+- `display_form` luôn là dạng SVG. Bộ thủ có `radical_id`, tên/nghĩa và catalog gốc liên kết riêng. Ví dụ `孝 → 耂 Lão + 子 Tử`, `座 → 广 + 人 + 人 + 土`; hai 人 chọn độc lập. Liên kết “Chi tiết bộ thủ” giữ nguyên biến thể khi tra chữ liên quan.
+- Các generator cũ đều chuyển tới `build_taxonomy.py`. Cây UI sinh từ SVG gốc và dừng tại bộ thủ; occurrences vẫn là các lá của cây. Phép chiếu thống kê riêng duyệt cả bộ cha/con, giữ từng vị trí cấu tạo, nhưng bỏ wrapper khi bộ, dạng và toàn bộ nét trùng nhau. Vì vậy `員 → 口 + 貝 + 目 + 八`, còn cây UI của `員` vẫn chỉ hiện `口 + 貝`.
+- `202609170001_kanji_radical_statistics_v4.sql` dựng lại dữ liệu feature Kanji trong transaction, chặn FK từ bảng ngoài phạm vi và chỉ xóa snapshot thống kê Kanji. Bảng nội bộ `kanji_radical_stat_components` không cấp quyền đọc client; `kanji_components` giữ quan hệ tại điểm dừng để danh sách Hán tự liên quan không đổi.
+- Cache: `kanji.catalog.v3.`, `kanji.tree.v2.`, `kanji.snapshot.v4.{userId}`. Không đọc lại snapshot cũ; giữ cache SVG theo commit vì nét gốc không đổi. Nội dung mới cần tải online ít nhất một lần.
+- Số liệu sinh thực tế: 10.495 node UI (6.050 Bộ thủ, 3.047 Hán tự, 1.398 Nét phụ), 7.448 occurrences v3, 5.823 quan hệ UI và 7.659 quan hệ thống kê v4. Đây là kết quả, không phải quota kiểm thử; invariant là phân loại đúng nguồn và phân hoạch nét đầy đủ, không trùng.
+
+```powershell
+python tool/kanji/build_taxonomy.py --cache-only
+python -m unittest discover -s tool/kanji -p "test_*.py"
+node tool/kanji/test_database.mjs --assertions-only
+flutter analyze
+flutter test --dart-define=KANJI_CORPUS=true --dart-define=KANJI_CAPTURE=true
+flutter build web --release
+```
+
+Mặc định generator ghi migration **mới v4**, không ghi lại các migration lịch sử. Sau khi triển khai v4, những thay đổi dữ liệu tiếp theo phải dùng tên migration mới. `--validate-only` không ghi kết quả; `--cache-only` chuẩn bị cache và báo cáo, không ghi migration.
+
+Harness kiểm cả lịch sử migration và rebuild, so sánh toàn bộ nội dung 6 bảng từ vựng/thư mục/SRS/cài đặt học/thiết bị/tài khoản trước-sau, cùng RLS, lỗi rollback và đếm 人 trong 座. Cloud kiểm chỉ đọc bằng `verify_learning_preservation.sql` và `verify_taxonomy_cloud.sql`; không chạy fixtures chứa tài khoản giả lên cloud.
+
+Các phần phía dưới là lịch sử triển khai, không phải quy tắc taxonomy hiện hành.
+
+Nghiệm thu v3: 180 Flutter tests qua khi bật corpus/capture; 16 Python tests qua; analyzer sạch và database harness qua. Đã áp dụng migration v3 lên Supabase, truy vấn cloud xác nhận 2.136 cây v2, 7.448 occurrences v3, 0 `partial`, 0 node Hán tự ngoài Jōyō và 0 lỗi phân hoạch. Fingerprint trước/sau khớp toàn bộ 1.026 từ, 24 thư mục, 1.026 SRS, cài đặt học/thiết bị và tài khoản; không gọi RPC cập nhật thống kê. Client chưa được phát hành.
+
+Web release JavaScript đã build thành công. Còn cảnh báo dry-run Wasm của `flutter_tts` và font Cupertino đã có trước; không coi đây là nghiệm thu Wasm hoặc ứng dụng Android/iOS. Ảnh `build/kanji_qa/tree_05b5d_dark_paths.png` xác nhận 耂 Lão và thông tin/link giữ biến thể; ảnh `tree_05ea7_light_paths_human.png` xác nhận chọn riêng từng 人.
+
+## Lịch sử: phân tích nhiều tầng — 2026-09-08
+
+- `kanji_decompositions` bổ sung 2.136 cây / 11.151 nút, sinh từ cùng commit KanjiVG. Dữ liệu v2, các quan hệ bộ thủ và snapshot thống kê không đổi. Đã áp dụng migrations `202609080001–002` lên Supabase; truy vấn chỉ đọc xác nhận 0 lỗi phân hoạch nét và quyền catalog chỉ đọc cho authenticated.
+- Mặc định hiện thành phần lớn: `想 → 相 + 心`, `森 → 木 + 林`, `機 → 木 + 幾`. Bấm Hán tự mở thêm một tầng ngay bên dưới và tô đỏ đúng ID nét trong SVG chữ gốc; bộ thủ là điểm dừng, các lần xuất hiện giống nhau có ID riêng. Nhóm `partial` hiển thị hình nét với chú thích một phần; không giả làm Hán tự đầy đủ.
+- Cây và nghĩa tải theo lô vào cache riêng `kanji.tree.v1.` (1 MiB/200 mục), mở sâu không gọi mạng. Thiếu mục từ vẫn mở cấu tạo được. Thiếu/lệch SVG vẫn xem cây nhưng không đoán nét. Thiếu cây dùng UI phân tích cơ bản v2 và nút thử lại.
+- Ô Hán tự màu chàm, bộ thủ xanh ngọc, nét phụ trung tính; nhãn loại, dấu chọn và viền đỏ phân biệt trạng thái. Hình thường 200 px, 144 px dưới 600 px chiều cao cửa sổ. Hình/điều khiển cố định trên vùng nội dung cuộn; nếu phần dialog còn dưới 450 px hoặc chữ lớn hơn 150%, chuyển sang cuộn chung để không che hết nội dung. Mở nhánh tôn trọng giảm chuyển động.
+- `KanjiDecompositionSelection` quản lý nhánh và nút chọn riêng với animator. `asOccurrence` chỉ tái sử dụng hợp đồng ID nét của renderer v2, không ghi dữ liệu occurrences hoặc thống kê.
+
+Kiểm tra/sinh dữ liệu:
+
+```powershell
+python tool/kanji/build_decompositions.py --cache-only
+python tool/kanji/build_decompositions.py --validate-only
+python tool/kanji/test_decompositions.py
+python tool/kanji/test_components.py
+node tool/kanji/test_database.mjs --assertions-only
+flutter analyze
+flutter test --dart-define=KANJI_CORPUS=true --dart-define=KANJI_CAPTURE=true
+flutter build web --release
+```
+
+Không chạy generator ở chế độ ghi seed mặc định để sửa migrations đã triển khai. Thay đổi cây trong tương lai phải có migration mới và đối chiếu nguồn/ngoại lệ; không tự đổi checksum hoặc quy tắc thống kê. SHA-256 của corpus JSON chuẩn hóa hiện tại: `7683c12f6fabd8adb1a50e3648da45adb06fd1d1752e6c23346067a5f50d4cb4`.
+
+Kết quả: analyzer sạch, 177 Flutter tests qua (bao gồm corpus và capture), 6 Python hierarchy tests + 8 v2 tests qua, database harness qua và xác nhận nguyên vẹn occurrences/quan hệ/snapshot trước-sau migration. 28 ảnh cây thật trong `build/kanji_qa/tree_*.png`, gồm sáng/tối và SVG dự phòng; đã rà hình, tô nét và font Kanji trong nhãn hỗn hợp. Web release JavaScript build thành công; còn các cảnh báo Wasm `flutter_tts` và font Cupertino đã có trước. Chưa phát hành client web; chưa kiểm thử ứng dụng native trong đợt này.
+
+Kiểm tra cloud chỉ đọc, không gọi RPC cập nhật thống kê:
+
+```powershell
+npx supabase db query --linked --file tool/kanji/verify_decompositions_cloud.sql
+```
+
+## Phạm vi đã triển khai trước cây nhiều tầng
 
 - Pipeline tái lập: 214 bộ Khang Hy, 2.136 Jōyō, 7.253 lần xuất hiện thành phần cuối; lớp 1–6 hoặc 8 (Trung học), không có JLPT.
 - Schema, RLS, RPC thống kê thủ công và RPC đọc snapshot nguyên tử, không bị giới hạn 1.000 hàng của PostgREST.

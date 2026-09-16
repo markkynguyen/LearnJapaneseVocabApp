@@ -5,6 +5,7 @@ import '../../../../core/connectivity/cloud_connectivity.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/kanji_repository.dart';
 import '../../domain/kanji_models.dart';
+import '../../domain/kanji_decomposition.dart';
 import '../../domain/kanji_vocabulary_readings.dart';
 
 final kanjiRepositoryProvider = Provider<KanjiRepository>((ref) {
@@ -51,9 +52,50 @@ final radicalKanjiIdsProvider = FutureProvider.family<Set<int>, RadicalFormKey>(
       .getKanjiIdsForRadicalForm(key.radicalId, key.form),
 );
 
+class RadicalFormsKey {
+  RadicalFormsKey({required this.radicalId, required Iterable<String> forms})
+      : forms = List.unmodifiable(forms.toSet());
+
+  final int radicalId;
+  final List<String> forms;
+
+  @override
+  bool operator ==(Object other) =>
+      other is RadicalFormsKey &&
+      radicalId == other.radicalId &&
+      _sameForms(forms, other.forms);
+
+  @override
+  int get hashCode => Object.hash(radicalId, Object.hashAll(forms));
+}
+
+bool _sameForms(List<String> a, List<String> b) =>
+    a.length == b.length && a.indexed.every((entry) => entry.$2 == b[entry.$1]);
+
+final radicalKanjiIdsForFormsProvider =
+    FutureProvider.family<Set<int>, RadicalFormsKey>(
+  (ref, key) => ref
+      .watch(kanjiRepositoryProvider)
+      .getKanjiIdsForRadicalForms(key.radicalId, key.forms),
+);
+
 final kanjiOccurrencesProvider =
     FutureProvider.family<List<KanjiComponentOccurrence>, int>(
   (ref, id) => ref.watch(kanjiRepositoryProvider).getOccurrences(id),
+);
+
+final kanjiDecompositionProvider =
+    FutureProvider.autoDispose.family<KanjiDecomposition?, int>(
+  (ref, id) => ref.watch(kanjiRepositoryProvider).getKanjiDecomposition(id),
+);
+
+final kanjiDecompositionMeaningsProvider =
+    FutureProvider.autoDispose.family<Map<String, Kanji>, int>(
+  (ref, id) async {
+    final tree = await ref.watch(kanjiDecompositionProvider(id).future);
+    if (tree == null) return {};
+    return ref.watch(kanjiRepositoryProvider).getDecompositionMeanings(tree);
+  },
 );
 
 final kanjiRefreshProvider =

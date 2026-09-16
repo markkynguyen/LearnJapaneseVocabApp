@@ -6,8 +6,9 @@ import '../../../../core/theme/app_typography.dart';
 import '../../domain/kanji_models.dart';
 import '../../domain/kanji_vocabulary_readings.dart';
 import '../providers/kanji_providers.dart';
+import '../radical_display_groups.dart';
 import 'kanji_section_heading.dart';
-import 'kanji_stroke_animator.dart';
+import 'kanji_decomposition_viewer.dart';
 
 Future<void> showKanjiAnalysis(BuildContext context, String? text) =>
     showDialog<void>(
@@ -30,27 +31,35 @@ class KanjiDetailDialog extends StatelessWidget {
 }
 
 class RadicalDetailDialog extends StatelessWidget {
-  const RadicalDetailDialog({required this.radicalForm, super.key});
-  final RadicalForm radicalForm;
+  const RadicalDetailDialog({
+    this.radicalForm,
+    this.displayItem,
+    super.key,
+  }) : assert(radicalForm != null || displayItem != null);
+
+  final RadicalForm? radicalForm;
+  final RadicalDisplayItem? displayItem;
+
   @override
   Widget build(BuildContext context) => _DetailBrowser(
         characters: const [],
-        initialRadicalForm: radicalForm,
+        initialRadicalItem:
+            displayItem ?? radicalDisplayItemForForm(radicalForm!),
       );
 }
 
-typedef _Entry = ({String? character, RadicalForm? radicalForm});
+typedef _Entry = ({String? character, RadicalDisplayItem? radicalItem});
 
 /// Điều hướng nội dung trong một dialog, không chồng vô hạn các dialog lên nhau.
 class _DetailBrowser extends StatefulWidget {
   const _DetailBrowser({
     required this.characters,
     this.initialIndex = 0,
-    this.initialRadicalForm,
+    this.initialRadicalItem,
   });
   final List<String> characters;
   final int initialIndex;
-  final RadicalForm? initialRadicalForm;
+  final RadicalDisplayItem? initialRadicalItem;
   @override
   State<_DetailBrowser> createState() => _DetailBrowserState();
 }
@@ -71,7 +80,7 @@ class _DetailBrowserState extends State<_DetailBrowser> {
   void didUpdateWidget(covariant _DetailBrowser oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.characters != widget.characters ||
-        oldWidget.initialRadicalForm != widget.initialRadicalForm ||
+        oldWidget.initialRadicalItem != widget.initialRadicalItem ||
         oldWidget.initialIndex != widget.initialIndex) {
       _contentGeneration++;
       _history.clear();
@@ -94,7 +103,7 @@ class _DetailBrowserState extends State<_DetailBrowser> {
         : (
             character:
                 widget.characters.isEmpty ? null : widget.characters[_index],
-            radicalForm: widget.initialRadicalForm
+            radicalItem: widget.initialRadicalItem
           );
     final colors = Theme.of(context).colorScheme;
     return Dialog(
@@ -120,7 +129,7 @@ class _DetailBrowserState extends State<_DetailBrowser> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        entry.radicalForm != null
+                        entry.radicalItem != null
                             ? 'Chi tiết bộ thủ'
                             : 'Phân tích Hán tự',
                         style: Theme.of(context).textTheme.titleLarge,
@@ -136,26 +145,41 @@ class _DetailBrowserState extends State<_DetailBrowser> {
               ),
               Divider(color: colors.outlineVariant, height: 1),
               Expanded(
-                child: SingleChildScrollView(
+                child: KeyedSubtree(
                   key: ValueKey(
-                    '$_contentGeneration:$_index:${_history.length}:${entry.character}:${entry.radicalForm?.radical.id}:${entry.radicalForm?.form}',
+                    '$_contentGeneration:$_index:${_history.length}:${entry.character}:${entry.radicalItem?.radical.id}:${entry.radicalItem?.form}',
                   ),
-                  padding: const EdgeInsets.all(20),
-                  child: entry.radicalForm != null
-                      ? _RadicalContent(
-                          radicalForm: entry.radicalForm!,
-                          onRadicalForm: (form) => _push(
-                            (character: null, radicalForm: form),
+                  child: entry.radicalItem != null
+                      ? SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: _RadicalContent(
+                            displayItem: entry.radicalItem!,
+                            onRadicalForm: (form) => _push(
+                              (
+                                character: null,
+                                radicalItem: radicalDisplayItemForForm(form),
+                              ),
+                            ),
+                            onKanji: (char) => _push(
+                              (character: char, radicalItem: null),
+                            ),
                           ),
-                          onKanji: (char) =>
-                              _push((character: char, radicalForm: null)),
                         )
                       : entry.character != null
                           ? _KanjiContent(
                               character: entry.character!,
+                              onRadicalForm: (form) => _push(
+                                (
+                                  character: null,
+                                  radicalItem: radicalDisplayItemForForm(form),
+                                ),
+                              ),
                             )
-                          : const Text(
-                              'Từ này không có ký tự Hán tự để phân tích.',
+                          : const Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Text(
+                                'Từ này không có ký tự Hán tự để phân tích.',
+                              ),
                             ),
                 ),
               ),
@@ -191,8 +215,9 @@ class _DetailBrowserState extends State<_DetailBrowser> {
 }
 
 class _KanjiContent extends ConsumerWidget {
-  const _KanjiContent({required this.character});
+  const _KanjiContent({required this.character, required this.onRadicalForm});
   final String character;
+  final ValueChanged<RadicalForm> onRadicalForm;
   @override
   Widget build(BuildContext context, WidgetRef ref) =>
       ref.watch(kanjiDetailProvider(character)).when(
@@ -207,25 +232,23 @@ class _KanjiContent extends ConsumerWidget {
                   'Chữ này chưa có trong danh mục 2.136 Jōyō. Các chữ được hỗ trợ vẫn có thể xem bằng Trước/Tiếp.',
                 );
               }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const KanjiSectionHeading('Thứ tự nét'),
-                  const SizedBox(height: 12),
-                  KanjiStrokeViewer(
-                    character: character,
-                    hanVietLabel:
-                        kanji.hanViet?.toUpperCase() ?? 'Chưa có âm Hán Việt',
-                  ),
-                  const SizedBox(height: 16),
-                  _TextSection(
-                    kanji.meaningVi == null
-                        ? 'Nghĩa tiếng Anh (chưa có bản dịch)'
-                        : 'Nghĩa tiếng Việt',
-                    kanji.meaningVi ?? kanji.meaningEn,
-                  ),
-                  _KanjiVocabularyReadings(character: character),
-                ],
+              return KanjiDecompositionViewer(
+                character: character,
+                onRadicalForm: onRadicalForm,
+                hanVietLabel:
+                    kanji.hanViet?.toUpperCase() ?? 'Chưa có âm Hán Việt',
+                details: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TextSection(
+                      kanji.meaningVi == null
+                          ? 'Nghĩa tiếng Anh (chưa có bản dịch)'
+                          : 'Nghĩa tiếng Việt',
+                      kanji.meaningVi ?? kanji.meaningEn,
+                    ),
+                    _KanjiVocabularyReadings(character: character),
+                  ],
+                ),
               );
             },
           );
@@ -233,22 +256,26 @@ class _KanjiContent extends ConsumerWidget {
 
 class _RadicalContent extends ConsumerWidget {
   const _RadicalContent({
-    required this.radicalForm,
+    required this.displayItem,
     required this.onRadicalForm,
     required this.onKanji,
   });
-  final RadicalForm radicalForm;
+  final RadicalDisplayItem displayItem;
   final ValueChanged<RadicalForm> onRadicalForm;
   final ValueChanged<String> onKanji;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(kanjiSnapshotProvider);
-    final radical = radicalForm.radical;
-    final familyForms = _familyForms(radicalForm, snapshot.valueOrNull);
-    final currentForm = familyForms.firstWhere(
-      (item) => item.form == radicalForm.form,
-      orElse: () => radicalForm,
-    );
+    final radical = displayItem.radical;
+    final familyForms = displayItem.isGrouped
+        ? const <RadicalForm>[]
+        : _familyForms(displayItem.radicalForm, snapshot.valueOrNull);
+    final currentForm = displayItem.isGrouped
+        ? displayItem.radicalForm
+        : familyForms.firstWhere(
+            (item) => item.form == displayItem.form,
+            orElse: () => displayItem.radicalForm,
+          );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -261,7 +288,7 @@ class _RadicalContent extends ConsumerWidget {
         ),
         _TextSection('Ý nghĩa', radical.meaningVi),
         _TextSection('Số nét của dạng gốc', '${radical.strokeCount}'),
-        if (radical.variants.isNotEmpty)
+        if (!displayItem.isGrouped && radical.variants.isNotEmpty)
           _RadicalFamilyNavigation(
             forms: familyForms,
             selectedForm: currentForm.form,
@@ -284,17 +311,26 @@ class _RadicalContent extends ConsumerWidget {
                 'Chưa có thống kê. Mở tab Hán tự và bấm Cập nhật thống kê.',
               );
             }
-            final matches = data.radicalForms.where(
-              (item) =>
-                  item.radical.id == radical.id &&
-                  item.form == currentForm.form,
-            );
-            final count =
-                matches.isEmpty ? currentForm.count : matches.first.count;
-            final key = (
+            final currentDisplayItem = displayItem.isGrouped
+                ? _displayItemFromSnapshot(data, displayItem)
+                : displayItem;
+            final count = currentDisplayItem.isGrouped
+                ? currentDisplayItem.count
+                : _formCount(data, radical, currentForm);
+            final key = RadicalFormsKey(
               radicalId: radical.id,
-              form: currentForm.form,
+              forms: currentDisplayItem.memberForms,
             );
+            final relatedKanji = currentDisplayItem.isGrouped
+                ? ref.watch(radicalKanjiIdsForFormsProvider(key))
+                : ref.watch(
+                    radicalKanjiIdsProvider(
+                      (
+                        radicalId: radical.id,
+                        form: currentForm.form,
+                      ),
+                    ),
+                  );
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -305,40 +341,52 @@ class _RadicalContent extends ConsumerWidget {
                     'Quy tắc phân tích đã thay đổi. Cập nhật thống kê ở tab Hán tự để xem Kanji liên quan.',
                   )
                 else
-                  ref.watch(radicalKanjiIdsProvider(key)).when(
-                        loading: () => const LinearProgressIndicator(),
-                        error: (_, __) => _Retry(
-                          message: 'Không tải được Kanji liên quan.',
-                          onRetry: () => ref.invalidate(
-                            radicalKanjiIdsProvider(key),
-                          ),
-                        ),
-                        data: (ids) {
-                          final kanji = data.kanji
-                              .where((k) => ids.contains(k.id))
-                              .toList();
-                          if (kanji.isEmpty) {
-                            return const Text(
-                              'Chưa gặp dạng này trong thư viện.',
-                            );
-                          }
-                          return Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: kanji
-                                .map(
-                                  (k) => ActionChip(
-                                    label: Text(
-                                      '${k.character} · ${k.count}',
-                                      style: AppTypography.kanji(context, null),
-                                    ),
-                                    onPressed: () => onKanji(k.character),
-                                  ),
-                                )
-                                .toList(),
+                  relatedKanji.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (_, __) => _Retry(
+                      message: 'Không tải được Kanji liên quan.',
+                      onRetry: () {
+                        if (currentDisplayItem.isGrouped) {
+                          ref.invalidate(
+                            radicalKanjiIdsForFormsProvider(key),
                           );
-                        },
-                      ),
+                        } else {
+                          ref.invalidate(
+                            radicalKanjiIdsProvider(
+                              (
+                                radicalId: radical.id,
+                                form: currentForm.form,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    data: (ids) {
+                      final kanji =
+                          data.kanji.where((k) => ids.contains(k.id)).toList();
+                      if (kanji.isEmpty) {
+                        return const Text(
+                          'Chưa gặp dạng này trong thư viện.',
+                        );
+                      }
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: kanji
+                            .map(
+                              (k) => ActionChip(
+                                label: Text(
+                                  '${k.character} · ${k.count}',
+                                  style: AppTypography.kanji(context, null),
+                                ),
+                                onPressed: () => onKanji(k.character),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  ),
               ],
             );
           },
@@ -346,6 +394,27 @@ class _RadicalContent extends ConsumerWidget {
       ],
     );
   }
+}
+
+RadicalDisplayItem _displayItemFromSnapshot(
+  KanjiSnapshot snapshot,
+  RadicalDisplayItem fallback,
+) {
+  for (final item in radicalDisplayItems(snapshot.radicalForms)) {
+    if (item.isGrouped &&
+        item.radical.id == fallback.radical.id &&
+        item.form == fallback.form) {
+      return item;
+    }
+  }
+  return fallback;
+}
+
+int _formCount(KanjiSnapshot snapshot, Radical radical, RadicalForm form) {
+  final matches = snapshot.radicalForms.where(
+    (item) => item.radical.id == radical.id && item.form == form.form,
+  );
+  return matches.isEmpty ? form.count : matches.first.count;
 }
 
 List<RadicalForm> _familyForms(

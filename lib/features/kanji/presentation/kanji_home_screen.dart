@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_typography.dart';
 import '../domain/kanji_models.dart';
 import 'providers/kanji_providers.dart';
+import 'radical_display_groups.dart';
 import 'widgets/kanji_detail_dialog.dart';
 
 class KanjiHomeScreen extends ConsumerWidget {
@@ -63,6 +64,8 @@ class KanjiHomeScreen extends ConsumerWidget {
                   'Bấm Cập nhật thống kê để xem Hán tự và bộ thủ trong thư viện.',
                 );
               }
+              final visibleRadicalItems =
+                  radicalDisplayItems(data.radicalForms);
               return TabBarView(
                 children: [
                   data.kanji.isEmpty
@@ -71,12 +74,12 @@ class KanjiHomeScreen extends ConsumerWidget {
                           'Thêm từ có Hán tự được hỗ trợ vào thư viện rồi cập nhật thống kê.',
                         )
                       : KanjiGridView(items: data.kanji),
-                  data.radicalForms.isEmpty
+                  visibleRadicalItems.isEmpty
                       ? const _Empty(
                           'Chưa có bộ thủ',
                           'Bộ thủ sẽ xuất hiện khi thư viện có Hán tự được hỗ trợ.',
                         )
-                      : RadicalGridView(items: data.radicalForms),
+                      : RadicalGridView(items: visibleRadicalItems),
                 ],
               );
             },
@@ -136,6 +139,9 @@ class _KanjiStatsOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final overview = snapshot?.overview;
+    final radicalCount = snapshot == null || overview == null
+        ? null
+        : radicalDisplayItems(snapshot!.radicalForms).length;
     return Card(
       margin: EdgeInsets.zero,
       color: colors.surfaceContainerLow,
@@ -167,7 +173,7 @@ class _KanjiStatsOverview extends StatelessWidget {
                       ),
                       _StatMetric(
                         width: width,
-                        value: overview.radicalCount,
+                        value: radicalCount!,
                         label: 'Bộ thủ',
                         icon: Icons.account_tree_outlined,
                         background: colors.secondaryContainer,
@@ -407,7 +413,7 @@ class KanjiGridView extends StatelessWidget {
 
 class RadicalGridView extends StatelessWidget {
   const RadicalGridView({required this.items, super.key});
-  final List<RadicalForm> items;
+  final List<RadicalDisplayItem> items;
   @override
   Widget build(BuildContext context) => _grid(items.length, (context, index) {
         final item = items[index];
@@ -415,10 +421,14 @@ class RadicalGridView extends StatelessWidget {
           character: item.form,
           label: item.radical.nameVi,
           count: item.count,
-          semanticKind: item.isOriginal ? 'dạng gốc' : 'biến thể',
+          semanticKind: item.isGrouped
+              ? null
+              : item.radicalForm.isOriginal
+                  ? 'dạng gốc'
+                  : 'biến thể',
           onTap: () => showDialog<void>(
             context: context,
-            builder: (_) => RadicalDetailDialog(radicalForm: item),
+            builder: (_) => RadicalDetailDialog(displayItem: item),
           ),
         );
       });
