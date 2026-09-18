@@ -16,7 +16,8 @@ class KanjiRepository {
   final String userId;
   final bool Function() _isOffline;
   static const _catalogPrefix = 'kanji.catalog.v3.';
-  static const _treePrefix = 'kanji.tree.v2.';
+  static const _treePrefix = 'kanji.tree.v3.';
+  static const _relationsPrefix = 'kanji.relations.v1.';
   Future<void> _writes = Future.value();
 
   Future<({dynamic json, bool cached})> _load(
@@ -56,8 +57,14 @@ class KanjiRepository {
     final operation = _writes.then((_) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(key, raw);
-      final prefix = key.startsWith(_treePrefix) ? _treePrefix : _catalogPrefix;
-      if (!key.startsWith(prefix)) return;
+      final prefix = key.startsWith(_treePrefix)
+          ? _treePrefix
+          : key.startsWith(_relationsPrefix)
+              ? _relationsPrefix
+              : key.startsWith(_catalogPrefix)
+                  ? _catalogPrefix
+                  : null;
+      if (prefix == null) return;
       final order = prefs.getStringList('${prefix}order') ?? [];
       order.remove(key);
       order.add(key);
@@ -152,7 +159,7 @@ class KanjiRepository {
 
   Future<List<KanjiComponent>> getComponents(int id) async {
     final result = await _load(
-      '${_catalogPrefix}components.$id',
+      '${_relationsPrefix}components.$id',
       () => store.getKanjiComponents(id),
     );
     return (result.json as List)
@@ -165,7 +172,7 @@ class KanjiRepository {
 
   Future<Set<int>> getKanjiIdsForRadicalForm(int id, String form) async {
     final result = await _load(
-      '${_catalogPrefix}related.$id.$form',
+      '${_relationsPrefix}related.$id.$form',
       () async => (await store.getKanjiIdsForRadicalForm(id, form)).toList(),
     );
     return (result.json as List).map((id) => (id as num).toInt()).toSet();

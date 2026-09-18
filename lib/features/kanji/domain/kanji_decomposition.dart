@@ -105,7 +105,7 @@ class KanjiDecomposition {
     required this.kanjivgCommit,
     required this.root,
   }) {
-    if (structureVersion != 2) {
+    if (structureVersion != 3) {
       throw const FormatException('Phiên bản cây chưa được hỗ trợ.');
     }
     final seen = <String>{};
@@ -128,9 +128,9 @@ class KanjiDecomposition {
       }
       if (node.children.isNotEmpty) {
         final strokes = node.children.expand((n) => n.strokeIds).toList();
-        if (strokes.length != node.strokeIds.length ||
-            strokes.toSet().length != strokes.length ||
-            !strokes.toSet().containsAll(node.strokeIds)) {
+        final parentStrokes = node.strokeIds.toSet();
+        if (!strokes.toSet().containsAll(parentStrokes) ||
+            !strokes.every(parentStrokes.contains)) {
           throw const FormatException('Các thành phần không phủ đúng nét cha.');
         }
       }

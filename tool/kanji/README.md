@@ -1,11 +1,12 @@
-## Quy tắc hiện hành — thống kê v4 / taxonomy v3 / cây v2 (2026-09-17)
+## Quy tắc hiện hành — thống kê v4 / taxonomy v3 / cây UI v3 (2026-09-18)
 
 - Chỉ có `radical`, `kanji`, `supplementary`. Tra bộ thủ theo `display_form → source_element → source_original`, trước kiểm tra Jōyō. Nguồn nhận dạng là `radicals.tsv` và ánh xạ sản phẩm `⺍ → 小`; không dùng các biến thể suy ra trong cache làm đầu vào nhận dạng.
 - Jōyō lấy từ KANJIDIC2 đã khóa checksum: lớp 1–6, 8, đúng 2.136 chữ. Tầng không phải bộ thủ/Jōyō được bỏ và đưa con lên; lá không nhận dạng được là Nét phụ. `partial` chỉ còn metadata nguồn `source_partial`, không phải loại đầu ra.
 - `display_form` luôn là dạng SVG. Bộ thủ có `radical_id`, tên/nghĩa và catalog gốc liên kết riêng. Ví dụ `孝 → 耂 Lão + 子 Tử`, `座 → 广 + 人 + 人 + 土`; hai 人 chọn độc lập. Liên kết “Chi tiết bộ thủ” giữ nguyên biến thể khi tra chữ liên quan.
-- Các generator cũ đều chuyển tới `build_taxonomy.py`. Cây UI sinh từ SVG gốc và dừng tại bộ thủ; occurrences vẫn là các lá của cây. Phép chiếu thống kê riêng duyệt cả bộ cha/con, giữ từng vị trí cấu tạo, nhưng bỏ wrapper khi bộ, dạng và toàn bộ nét trùng nhau. Vì vậy `員 → 口 + 貝 + 目 + 八`, còn cây UI của `員` vẫn chỉ hiện `口 + 貝`.
+- Cây UI v3 sinh từ SVG gốc và dừng tại bộ thủ. Với 113 chữ/148 nhóm đã rà cấu trúc, hai ô con được dùng chung nét để giữ thành phần hoàn chỉnh; ví dụ `井 → 二 + 廾` cùng dùng nét ngang giữa. Mọi nét cha phải xuất hiện ở ít nhất một con, và con không được có nét ngoài cha.
+- `kanji_component_occurrences` vẫn là phép chiếu phân hoạch v3 trước đây. Phép chiếu thống kê riêng duyệt cả bộ cha/con, giữ từng vị trí cấu tạo, nhưng bỏ wrapper khi bộ, dạng và toàn bộ nét trùng nhau. Vì vậy số liệu thống kê và snapshot không thay đổi; `kanji_components` mới là quan hệ lấy từ lá bộ thủ của cây UI để danh sách Kanji liên quan theo cấu trúc mới.
 - `202609170001_kanji_radical_statistics_v4.sql` dựng lại dữ liệu feature Kanji trong transaction, chặn FK từ bảng ngoài phạm vi và chỉ xóa snapshot thống kê Kanji. Bảng nội bộ `kanji_radical_stat_components` không cấp quyền đọc client; `kanji_components` giữ quan hệ tại điểm dừng để danh sách Hán tự liên quan không đổi.
-- Cache: `kanji.catalog.v3.`, `kanji.tree.v2.`, `kanji.snapshot.v4.{userId}`. Không đọc lại snapshot cũ; giữ cache SVG theo commit vì nét gốc không đổi. Nội dung mới cần tải online ít nhất một lần.
+- Cache: `kanji.catalog.v3.`, `kanji.tree.v3.`, `kanji.relations.v1.`, `kanji.snapshot.v4.{userId}`. Không đọc lại snapshot cũ; giữ cache SVG theo commit vì nét gốc không đổi. Nội dung mới cần tải online ít nhất một lần.
 - Số liệu sinh thực tế: 10.495 node UI (6.050 Bộ thủ, 3.047 Hán tự, 1.398 Nét phụ), 7.448 occurrences v3, 5.823 quan hệ UI và 7.659 quan hệ thống kê v4. Đây là kết quả, không phải quota kiểm thử; invariant là phân loại đúng nguồn và phân hoạch nét đầy đủ, không trùng.
 
 ```powershell

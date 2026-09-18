@@ -84,6 +84,39 @@ try {
   await db.exec(await readFile('supabase/tests/fixtures/kanji_taxonomy_assertions.sql', 'utf8'));
   await db.exec("delete from auth.users where id='aaaaaaaa-0000-0000-0000-000000000004'; select set_config('request.jwt.claim.sub','',false);");
   console.log('PASS: historical migrations preserved v1 snapshot; taxonomy rebuilds deliberately clear only Kanji statistics.');
+  await db.exec(`
+    insert into auth.users(id) values ('aaaaaaaa-0000-0000-0000-000000000008');
+    insert into public.folders(id,user_id,name) values
+      ('bbbbbbbb-0000-0000-0000-000000000008','aaaaaaaa-0000-0000-0000-000000000008','ui overlap');
+    insert into public.vocabulary(user_id,folder_id,kanji,kana,romaji,meaning) values
+      ('aaaaaaaa-0000-0000-0000-000000000008','bbbbbbbb-0000-0000-0000-000000000008','井囲','かな','test','test');
+    set role authenticated;
+    select set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000008',false);
+    select public.recalculate_user_kanji_and_radical_stats();
+    reset role;
+  `);
+  const beforeUiOverlap = (await db.query(`select
+    (select jsonb_agg(t order by kanji_id, occurrence_id) from public.kanji_component_occurrences t) as occurrences,
+    (select jsonb_agg(t order by kanji_id, radical_id, component_form) from public.kanji_radical_stat_components t) as statistic_components,
+    (select jsonb_agg(t order by kanji_id, radical_id, component_form) from public.kanji_components t) as components,
+    public.get_user_kanji_snapshot() as snapshot`)).rows[0];
+  await db.exec(await readFile('supabase/migrations/202609180001_kanji_ui_overlap_v3.sql', 'utf8'));
+  const afterUiOverlap = (await db.query(`select
+    (select jsonb_agg(t order by kanji_id, occurrence_id) from public.kanji_component_occurrences t) as occurrences,
+    (select jsonb_agg(t order by kanji_id, radical_id, component_form) from public.kanji_radical_stat_components t) as statistic_components,
+    (select jsonb_agg(t order by kanji_id, radical_id, component_form) from public.kanji_components t) as components,
+    public.get_user_kanji_snapshot() as snapshot`)).rows[0];
+  if (JSON.stringify(beforeUiOverlap.occurrences) !== JSON.stringify(afterUiOverlap.occurrences) ||
+      JSON.stringify(beforeUiOverlap.statistic_components) !== JSON.stringify(afterUiOverlap.statistic_components) ||
+      JSON.stringify(beforeUiOverlap.snapshot) !== JSON.stringify(afterUiOverlap.snapshot)) {
+    throw new Error('UI overlap migration changed strict occurrences, statistics or user snapshots');
+  }
+  if (JSON.stringify(beforeUiOverlap.components) === JSON.stringify(afterUiOverlap.components)) {
+    throw new Error('UI overlap migration did not rebuild related-Kanji components');
+  }
+  await db.exec(await readFile('supabase/tests/fixtures/kanji_ui_overlap_assertions.sql', 'utf8'));
+  await db.exec("delete from auth.users where id='aaaaaaaa-0000-0000-0000-000000000008'; select set_config('request.jwt.claim.sub','',false);");
+  console.log('PASS: UI overlap changes only trees and related-Kanji components.');
   // Supabase supplies table privileges by default; replicate that for old tables.
   await db.exec(`grant select, insert, update, delete on public.folders, public.vocabulary, public.srs_progress to authenticated;`);
   const assertions = await readFile('supabase/tests/fixtures/kanji_assertions.sql', 'utf8');

@@ -1,14 +1,14 @@
 {
-  "structure_version": 2,
+  "structure_version": 3,
   "occurrence_version": 3,
   "statistics_version": 4,
   "kanji_count": 2136,
   "node_counts": {
-    "radical": 6050,
+    "radical": 6109,
     "kanji": 3047,
-    "supplementary": 1398
+    "supplementary": 1271
   },
   "occurrence_count": 7448,
-  "relation_count": 5823,
+  "relation_count": 5886,
   "statistic_component_count": 7659
 }

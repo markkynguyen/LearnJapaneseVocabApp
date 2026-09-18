@@ -12,7 +12,7 @@ def extract(root, radical_forms, rules):
 def build():
     rows, characters = [], {}
     for row in build_trees():
-        leaves = occurrences(row['tree'])
+        leaves = occurrences(row['partition_tree'])
         for leaf in leaves:
             leaf.update(kanji_id=row['kanji_id'], component_version=3, kanjivg_commit=KVG_COMMIT)
         characters[chr(row['kanji_id'])] = leaves

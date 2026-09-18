@@ -1,4 +1,6 @@
 """Hierarchy semantics, exact root-relative strokes, deterministic full corpus."""
+import json
+from pathlib import Path
 import unittest
 import xml.etree.ElementTree as ET
 from build_decompositions import build, extract
@@ -39,9 +41,40 @@ class DecompositionTests(unittest.TestCase):
         self.assertEqual(len(two['source_group_ids']), 2)
 
     def test_deterministic_full_corpus(self):
-        # build validates recursive partitions, unique node IDs and ordering.
+        # build validates coverage, unique node IDs and ordering.
         self.assertEqual(len(self.rows), 2136)
         self.assertEqual(build(), self.rows)
+
+    def test_ui_overlap_groups_are_complete_while_statistics_stay_strict(self):
+        from build_taxonomy import build as taxonomy, nodes
+        rules = json.loads((Path(__file__).parent /
+                            'component_rules.json').read_text(encoding='utf8'))
+        data, trees, leaves, statistics = taxonomy()
+        by_character = {chr(row['kanji_id']): row['tree'] for row in trees}
+        overlap = rules['ui_overlap_groups']
+        self.assertEqual((len(overlap), sum(map(len, overlap.values()))), (113, 148))
+        for char, group_ids in overlap.items():
+            used = {group_id for node in nodes(by_character[char])
+                    for group_id in node['source_group_ids']}
+            self.assertTrue(set(group_ids) <= used, char)
+        well = by_character['井']['children']
+        self.assertEqual([node['display_form'] for node in well], ['二', '廾'])
+        self.assertEqual(set(well[0]['stroke_ids']) & set(well[1]['stroke_ids']),
+                         {'kvg:04e95-s2'})
+        enclosure = next(node for node in by_character['囲']['children']
+                         if node['display_form'] == '井')
+        self.assertEqual([node['display_form'] for node in enclosure['children']],
+                         ['二', '廾'])
+        self.assertEqual(leaves, json.loads((Path(__file__).parent /
+                                              '.cache/component_occurrences.json').read_text(encoding='utf8')))
+        self.assertEqual(statistics, json.loads((Path(__file__).parent /
+                                                  '.cache/radical_stat_components.json').read_text(encoding='utf8')))
+        self.assertIn((ord('井'), 7, '二'),
+                      {(row['kanji_id'], row['radical_id'], row['component_form'])
+                       for row in data['components']})
+        self.assertIn((ord('井'), 55, '廾'),
+                      {(row['kanji_id'], row['radical_id'], row['component_form'])
+                       for row in data['components']})
 
     def test_shared_tree_projection_and_editorial_catalog(self):
         from build_taxonomy import build as taxonomy, occurrences, nodes

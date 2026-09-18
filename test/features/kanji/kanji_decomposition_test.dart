@@ -33,7 +33,7 @@ Map<String, dynamic> node(
 
 Map<String, dynamic> treeJson() => {
       'kanji_id': '想'.runes.single,
-      'structure_version': 2,
+      'structure_version': 3,
       'kanjivg_commit': 'test',
       'tree': node('root', '想', 'kanji', List.generate(13, (i) => i + 1), [
         node('xiang', '相', 'kanji', List.generate(9, (i) => i + 1), [
@@ -44,12 +44,16 @@ Map<String, dynamic> treeJson() => {
       ]),
     };
 
-StrokeDocument drawing({String commit = 'test', bool fallback = false}) =>
+StrokeDocument drawing({
+  String commit = 'test',
+  bool fallback = false,
+  int count = 13,
+}) =>
     StrokeDocument.parse(
       '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 109 109"
     ${fallback ? 'transform="translate(0,0)"' : ''}>
     <g id="StrokePaths"><g id="root">
-    ${List.generate(13, (i) => '<path id="s${i + 1}" d="M10 ${i * 6 + 10} L90 ${i * 6 + 10}"/>').join()}
+    ${List.generate(count, (i) => '<path id="s${i + 1}" d="M10 ${i * 6 + 10} L90 ${i * 6 + 10}"/>').join()}
     </g></g></svg>''',
       kanjivgCommit: commit,
     );
@@ -76,7 +80,7 @@ void main() {
 
   test('rejects duplicate/omitted child strokes and unsupported versions', () {
     for (final invalid in [
-      {...treeJson(), 'structure_version': 1},
+      {...treeJson(), 'structure_version': 2},
       {
         ...treeJson(),
         'tree': node('root', '想', 'kanji', [
@@ -90,6 +94,24 @@ void main() {
     ]) {
       expect(() => KanjiDecomposition.fromJson(invalid), throwsFormatException);
     }
+  });
+
+  test('accepts sibling components that share a parent stroke', () {
+    final overlap = {
+      'kanji_id': '想'.runes.single,
+      'structure_version': 3,
+      'kanjivg_commit': 'test',
+      'tree': node('root', '想', 'kanji', [
+        1,
+        2,
+        3,
+        4,
+      ], [
+        node('two', '木', 'radical', [1, 2]),
+        node('open', '目', 'radical', [2, 3, 4]),
+      ]),
+    };
+    expect(() => KanjiDecomposition.fromJson(overlap), returnsNormally);
   });
 
   test('branch tracks occurrence IDs, collapses descendants and clears', () {
@@ -223,6 +245,32 @@ void main() {
           .onSelectionChanged,
       isNotNull,
     );
+  });
+
+  testWidgets('each overlapping chip highlights its complete stroke set',
+      (tester) async {
+    final overlap = KanjiDecomposition.fromJson({
+      'kanji_id': '想'.runes.single,
+      'structure_version': 3,
+      'kanjivg_commit': 'test',
+      'tree': node('root', '想', 'kanji', [
+        1,
+        2,
+        3,
+        4,
+      ], [
+        node('two', '木', 'radical', [1, 2]),
+        node('open', '目', 'radical', [2, 3, 4]),
+      ]),
+    });
+    await tester.pumpWidget(panel(overlap, document: drawing(count: 4)));
+    await tester.tap(chip('two'));
+    await tester.pumpAndSettle();
+    expect(painter(tester).highlightedStrokeIds, {'s1', 's2'});
+    await tester.tap(chip('open'));
+    await tester.pumpAndSettle();
+    expect(painter(tester).highlightedStrokeIds, {'s2', 's3', 's4'});
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('component chips show only the drawing and component name',

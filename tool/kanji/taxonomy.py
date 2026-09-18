@@ -8,7 +8,7 @@ from build_seed import HERE
 
 S = '{http://www.w3.org/2000/svg}'
 K = '{http://kanjivg.tagaini.net}'
-STRUCTURE_VERSION = 2
+STRUCTURE_VERSION = 3
 COMPONENT_VERSION = 3
 STATISTICS_VERSION = 4
 

@@ -26,8 +26,8 @@
     "滅": [["kvg:06ec5-g5", "kvg:06ec5-g11"]],
     "章": [["kvg:07ae0-g1", "kvg:07ae0-g6"]]
   },
-  "expand_groups_note": "Structurally verified: other parts are covered by earlier ancestor stops. Expand these fragments without stealing strokes. Validator recomputes this exact set for the pinned corpus.",
-  "expand_groups": {
+  "ui_overlap_groups_note": "Structurally verified: preserve these split parts as full UI components even when a peer is nested under another component. The UI tree may share the peer stroke; occurrences and statistics remain the strict partition projection.",
+  "ui_overlap_groups": {
   "囲": [
     "kvg:056f2-g3"
   ],
@@ -402,5 +402,9 @@
   "摯": [
     "kvg:0646f-g5"
   ]
-}
+},
+  "ui_overlap_part_groups": {
+    "滋": [["kvg:06ecb-g9", "kvg:06ecb-g7"]],
+    "磁": [["kvg:078c1-g10", "kvg:078c1-g8"]]
+  }
 }

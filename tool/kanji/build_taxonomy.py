@@ -1,4 +1,4 @@
-"""Generate catalog, UI tree v2, occurrences v3 and statistics mapping v4."""
+"""Generate UI tree v3, strict occurrences v3 and statistics mapping v4."""
 import argparse
 from collections import Counter
 import json
@@ -6,7 +6,7 @@ import json
 from build_seed import HERE, ROOT, KVG_COMMIT, sql, write_json
 from taxonomy import COMPONENT_VERSION, STATISTICS_VERSION, dictionary, radical_catalog
 
-OUTPUT = ROOT/'supabase/migrations/202609170001_kanji_radical_statistics_v4.sql'
+OUTPUT = ROOT/'supabase/migrations/202609180001_kanji_ui_overlap_v3.sql'
 
 
 def catalog():
@@ -94,11 +94,16 @@ def build():
                         radical['positions'].append(label)
             else:
                 assert not node['children'] and node['radical_id'] is None
-        leaves = occurrences(row['tree'])
+        # Occurrences remain the strict, non-overlapping projection used by
+        # existing stroke data and statistics.
+        leaves = occurrences(row['partition_tree'])
         assert Counter(s for n in leaves for s in n['stroke_ids']) == Counter(row['tree']['stroke_ids'])
         for leaf in leaves:
             leaf.update(kanji_id=row['kanji_id'], component_version=COMPONENT_VERSION, kanjivg_commit=KVG_COMMIT)
             flat.append(leaf)
+        # Related Kanji follows the new UI leaves, where two components may
+        # intentionally share a stroke.
+        for leaf in occurrences(row['tree']):
             rid, form = leaf['radical_id'], leaf['display_form']
             if rid is None:
                 continue
@@ -118,7 +123,8 @@ def build():
             if form != radical['character'] and form not in radical['variants']:
                 radical['variants'].append(form)
     decompositions = [
-        {key: value for key, value in row.items() if key != 'statistics'}
+        {key: value for key, value in row.items()
+         if key not in ('statistics', 'partition_tree')}
         for row in source_trees
     ]
     for row in decompositions:
@@ -151,7 +157,7 @@ def main():
     data, trees, flat, statistics = build()
     if args.release and any(not k['translation_reviewed'] or not k['meaning_vi'] or not k['han_viet'] for k in data['kanji']):
         raise ValueError('Release requires complete human-approved Vietnamese data.')
-    report = dict(structure_version=2, occurrence_version=COMPONENT_VERSION,
+    report = dict(structure_version=3, occurrence_version=COMPONENT_VERSION,
                   statistics_version=STATISTICS_VERSION, kanji_count=len(trees),
                   node_counts=dict(Counter(n['kind'] for r in trees for n in nodes(r['tree']))),
                   occurrence_count=len(flat), relation_count=len(data['components']),
@@ -163,13 +169,10 @@ def main():
             write_json(HERE/f'.cache/{name}.json', content)
         write_json(HERE/'taxonomy_validation_report.json', report)
     if not args.validate_only and not args.cache_only:
-        statements = [(HERE/'taxonomy_migration.sql').read_text(encoding='utf-8')]
-        for table, rows in [('radicals', data['radicals']), ('kanji', data['kanji']),
-                            ('kanji_decompositions', trees), ('kanji_component_occurrences', flat),
-                            ('kanji_components', data['components']),
-                            ('kanji_radical_stat_components', statistics)]:
+        statements = [(HERE/'ui_overlap_migration.sql').read_text(encoding='utf-8')]
+        for table, rows in [('kanji_decompositions', trees),
+                            ('kanji_components', data['components'])]:
             statements.extend(insert(table, rows))
-        statements.append((HERE/'stats_v4.sql').read_text(encoding='utf-8'))
         statements.append('commit;\n')
         OUTPUT.write_text('\n\n'.join(statements), encoding='utf-8')
     print(json.dumps(report, ensure_ascii=False, indent=2))
